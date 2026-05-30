@@ -1,0 +1,32 @@
+{
+  "name": "PlatformIO Arduino Blink Stub",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "vscode",
+  "mounts": [
+    "source=${localEnv:SSH_AUTH_SOCK},target=/ssh-agent,type=bind"
+  ],
+  "remoteEnv": {
+    "SSH_AUTH_SOCK": "/ssh-agent"
+  },
+  "runArgs": [
+    "--init",
+    "--privileged"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "platformio.platformio-ide",
+        "github.copilot",
+        "openai.chatgpt"
+      ],
+      "settings": {
+        "platformio-ide.useBuiltinPIOCore": true,
+        "platformio-ide.useBuiltinPython": false,
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "postCreateCommand": "code --install-extension openai.chatgpt && platformio pkg update --global || true"
+}
