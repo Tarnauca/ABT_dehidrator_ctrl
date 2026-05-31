@@ -66,8 +66,8 @@ Hard faults:
 
 - PT50 missing, invalid, or out of range.
 - PT50 temperature at or above 80 C.
-- Temperature does not rise by at least 2 C within 5 min while heater is commanded ON.
-- Suspected heater stuck ON: PT50 rises by 3 C over 5 min while heater command is OFF.
+- Temperature does not rise by at least 2 C within 5 min of accumulated heater ON command time.
+- Suspected heater stuck ON: after a 2 min post-heater-off grace period, PT50 rises by 3 C over 5 min while heater command is OFF.
 - Pushbutton stuck active for 30 s.
 - Watchdog reset during an active run.
 
@@ -93,6 +93,7 @@ Warnings are shown/logged but do not require acknowledgement.
 - Temperature/RH/status should be reported periodically, not on every sensor read.
 - Raw ADC values should appear only in verbose/debug output.
 - Initial serial scope is logs only; no command parser in the baseline.
+- Hard-fault buzzer/backlight alarm continues until user acknowledgement.
 
 ## Persistence
 
