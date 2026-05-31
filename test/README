@@ -9,3 +9,9 @@ in the development cycle.
 
 More information about PlatformIO Unit Testing:
 - https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
+
+Current project direction:
+- `env:native` is used for desktop tests of pure C++ logic.
+- `env:megaatmega2560` is used for firmware build/upload.
+- Pure domain tests must avoid Arduino-only headers.
+- Hardware adapter behavior is verified with Mega2560 builds and bench tests.
