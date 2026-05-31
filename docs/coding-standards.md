@@ -10,6 +10,15 @@ Status: draft baseline.
 - Keep Arduino-specific calls in hardware adapter modules.
 - Keep control logic independent from Arduino APIs where practical.
 
+## Documentation Comments
+
+- Public headers shall use Doxygen-style comments for every public type, enum, struct, function, method, and important constant.
+- Document `@brief`, parameters, return values, safety assumptions, timing assumptions, units, and side effects where applicable.
+- Private `.cpp` helpers should use Doxygen or concise comments when behavior is non-obvious.
+- Prefer good names and useful comments together; do not rely on naming alone for safety or business intent.
+- Avoid comments that only restate a single obvious implementation line.
+- Functional code changes shall update corresponding requirements, architecture, test-plan, hardware, UI, or review documentation in the same branch when behavior or design intent changes.
+
 ## Naming And Units
 
 - Use English identifiers and comments.
