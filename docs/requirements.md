@@ -2,6 +2,13 @@
 
 Status: draft baseline from discovery conversation. Requirement IDs are stable and must not be reused. If a requirement is removed, mark it retired instead of reusing its ID.
 
+## Requirement Change Rules
+
+- Requirement IDs are stable.
+- Retired IDs shall not be reused.
+- Material behavior changes should be noted in the branch or review that introduced them.
+- Tests should reference requirement IDs where practical.
+
 ## Functional Requirements
 
 - REQ-FUNC-001: The controller shall support manual on/off mode.
@@ -13,22 +20,31 @@ Status: draft baseline from discovery conversation. Requirement IDs are stable a
 - REQ-FUNC-007: The controller shall clear resume state automatically after normal finish.
 - REQ-FUNC-008: The controller shall support duration input/display as `HH:MM` with maximum `99:00`.
 - REQ-FUNC-009: Temperature settings shall use Celsius with 1 C step.
+- REQ-FUNC-010: In manual mode, the user may control heater operation only within safety constraints; if heater is requested ON, fan shall also be commanded ON.
+- REQ-FUNC-011: Pause shall command heater OFF and fan OFF immediately, suspend program timer/profile progression, and keep the active run resumable.
+- REQ-FUNC-012: Resume from pause shall continue the same profile from the paused point.
+- REQ-FUNC-013: Confirmed user stop/cancel shall command heater OFF and fan OFF immediately, shall not run cooldown, and shall clear or mark resume state non-resumable.
+- REQ-FUNC-014: Normal program finish shall command heater OFF, run fan for a fixed 3-minute cooldown, command fan OFF, then issue the finish alarm.
+- REQ-FUNC-015: The initial fluctuating mode algorithm shall alternate time-based low-temperature and high-temperature phases around the configured profile range. Default phase timing is TBD and shall be configurable in code.
 
 ## Safety Requirements
 
 - REQ-SAFE-001: The maximum user/program setpoint shall be 75 C.
-- REQ-SAFE-002: The heater shall be forced OFF when PT50 temperature is above 75 C.
+- REQ-SAFE-002: The heater shall be forced OFF when PT50 temperature is greater than 75 C.
 - REQ-SAFE-003: A hard over-temperature fault shall occur when PT50 temperature is at or above 80 C.
 - REQ-SAFE-004: The heater shall never be commanded ON unless the fan is commanded ON.
 - REQ-SAFE-005: PT50 missing, invalid, or out-of-range condition shall trigger a hard fault.
-- REQ-SAFE-006: If temperature does not rise by at least 2 C within 5 min while heater is commanded ON, the controller shall trigger a hard fault.
-- REQ-SAFE-007: If PT50 temperature rises by 3 C over 5 min while heater command is OFF, the controller shall trigger a suspected-heater-stuck-ON hard fault.
+- REQ-SAFE-006: If temperature does not rise by at least 2 C within 5 min of accumulated heater ON command time, the controller shall trigger a hard fault.
+- REQ-SAFE-007: If PT50 temperature rises by 3 C over 5 min while heater command is OFF, measured from the end of a 2 min post-heater-off grace period, the controller shall trigger a suspected-heater-stuck-ON hard fault.
 - REQ-SAFE-008: A pushbutton active continuously for 30 s shall trigger a hard fault.
 - REQ-SAFE-009: During a hard fault, heater and fan shall be commanded OFF immediately.
 - REQ-SAFE-010: A hard fault shall require user acknowledgement before another run can start.
 - REQ-SAFE-011: Watchdog reset during an active run shall be treated as a hard fault/non-auto-resume condition.
 - REQ-SAFE-012: Manual mode shall not bypass safety checks or limits.
 - REQ-SAFE-013: Startup shall initialize outputs OFF before allowing any run.
+- REQ-SAFE-014: Startup self-checks shall include PT50 plausibility, AHT availability, EEPROM config validation/defaulting, input stuck detection where feasible, interrupted-run detection, and commanded output-safe-state verification.
+- REQ-SAFE-015: Warnings shall be shown/logged but shall not require acknowledgement and shall not block operation unless later promoted to hard faults.
+- REQ-SAFE-016: The firmware shall define stable fault and warning codes for UI, logs, tests, and documentation.
 
 Product-minded recommendation: add independent hardware thermal protection in the heater power path.
 
@@ -44,6 +60,7 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-HW-008: User input shall use a rotary encoder with pushbutton.
 - REQ-HW-009: A piezo buzzer shall be used for finish and fault alarms.
 - REQ-HW-010: A secondary hardware serial output shall mirror structured logs by default.
+- REQ-HW-011: The secondary serial interface shall be output-only in the current scope and shall not accept commands.
 
 ## UI Requirements
 
@@ -52,8 +69,8 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-UI-003: Serial logs, source code, comments, and developer docs shall be English.
 - REQ-UI-004: LCD shall show RH when the AHT sensor is present and functional.
 - REQ-UI-005: A bottom-right heartbeat symbol shall always indicate that the main loop is alive.
-- REQ-UI-006: Finish alarm shall use buzzer and blinking LCD backlight.
-- REQ-UI-007: Fault alarm shall use buzzer, blinking LCD backlight, and a compact Romanian fault message.
+- REQ-UI-006: Finish alarm shall use buzzer and blinking LCD backlight after the 3-minute finish cooldown completes.
+- REQ-UI-007: Fault alarm shall use buzzer, blinking LCD backlight, and a compact Romanian fault message until user acknowledgement.
 - REQ-UI-008: Encoder rotation shall navigate/change values.
 - REQ-UI-009: Encoder short press shall select/confirm.
 - REQ-UI-010: Encoder long press shall go back/cancel.
@@ -67,6 +84,7 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-LOG-005: Temperature/RH/status shall be logged periodically every 5 s during active operation.
 - REQ-LOG-006: Raw ADC values shall be emitted only in verbose/debug mode.
 - REQ-LOG-007: Reset cause shall be logged at boot when feasible.
+- REQ-LOG-008: Stable English fault and warning codes shall be used in serial logs, while LCD messages shall use compact Romanian text.
 
 ## Persistence Requirements
 
@@ -78,6 +96,8 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-PERSIST-006: Invalid config shall load defaults and emit a warning.
 - REQ-PERSIST-007: Faulted run context may be retained for diagnostics but shall not allow resume.
 - REQ-PERSIST-008: Reset cause/event shall be recorded in EEPROM carefully when feasible.
+- REQ-PERSIST-009: After power loss or brown-out during an active run, the controller shall offer resume only after user confirmation.
+- REQ-PERSIST-010: Watchdog-reset run context shall not allow automatic or user-confirmed resume without starting a new run.
 
 ## Testing And Verification Requirements
 
