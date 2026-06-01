@@ -180,6 +180,11 @@ Initial responsibilities:
 
 `LogDispatcher` may hold a fixed set of `LogSink` references or direct sink pointers. It must not allocate dynamically.
 
+Secondary serial is currently used only as a mirrored structured-log sink for
+early bring-up. If the port later becomes Modbus RTU or another gateway
+protocol, that protocol must be implemented as a separate adapter rather than
+as a `LogSink`.
+
 ## Testing Approach
 
 Pure logic modules should be testable with fake sensors, fake outputs, and fake clocks. Arduino-specific adapters may need board/manual tests.

@@ -34,7 +34,7 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 
 - [x] Add minimal domain/interface skeleton.
 - [x] Replace blink stub with cooperative scheduler skeleton.
-- [ ] Add logging abstraction and mirrored serial output.
+- [x] Add logging abstraction and mirrored serial output.
 - [ ] Add hardware config placeholders.
 - [x] Keep firmware buildable on Mega2560.
 
