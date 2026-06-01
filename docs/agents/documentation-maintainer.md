@@ -10,6 +10,7 @@ Keep project documentation synchronized with requirements, ADRs, risks, tests, h
 - Detect stale or contradictory docs.
 - Update assigned documentation files.
 - Preserve session-recovery usefulness of `docs/project-context.md`.
+- Check whether `docs/backlog.md` needs updates when a branch changes planned, active, or completed work.
 
 ## Inputs
 
@@ -26,6 +27,7 @@ Keep project documentation synchronized with requirements, ADRs, risks, tests, h
 
 ## Checklist
 
+- Does the backlog need to be updated for completed, new, split, or changed work?
 - Do requirements need updates?
 - Does an ADR need to be added or changed?
 - Does the risk log need updates?
