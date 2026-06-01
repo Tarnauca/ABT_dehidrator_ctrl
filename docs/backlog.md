@@ -12,30 +12,31 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 ## Phase 1: Requirements Baseline
 
 - [ ] Incorporate the user's full draft requirements when available.
-- [ ] Convert requirements into stable IDs.
-- [ ] Review requirements with Requirements Analyst and Safety Reviewer.
-- [ ] Add acceptance criteria and traceability notes.
+- [x] Convert requirements into stable IDs.
+- [x] Review requirements with Requirements Analyst and Safety Reviewer.
+- [x] Add initial acceptance criteria and traceability notes.
 
 ## Phase 2: Architecture
 
-- [ ] Define module boundaries for control, profiles, faults, hardware adapters, UI, logging, persistence, and scheduler.
-- [ ] Define configuration layout.
-- [ ] Define test strategy for pure logic and hardware adapters.
-- [ ] Review architecture against ADRs and risks.
+- [x] Define module boundaries for control, profiles, faults, hardware adapters, UI, logging, persistence, and scheduler.
+- [x] Define configuration layout.
+- [x] Define test strategy for pure logic and hardware adapters.
+- [x] Review architecture against ADRs and safety requirements.
 
 ## Phase 3: PlatformIO And Test Setup
 
-- [ ] Audit current PlatformIO targets.
-- [ ] Propose simplification to Mega2560 plus native test target.
-- [ ] Ask approval before editing `platformio.ini`.
-- [ ] Add first pure C++ unit test example.
+- [x] Audit current PlatformIO targets.
+- [x] Propose simplification to Mega2560 plus native test target.
+- [x] Ask approval before editing `platformio.ini`.
+- [x] Add first pure C++ unit test example.
 
 ## Phase 4: Firmware Skeleton
 
+- [x] Add minimal domain/interface skeleton.
 - [ ] Replace blink stub with cooperative scheduler skeleton.
 - [ ] Add logging abstraction and mirrored serial output.
 - [ ] Add hardware config placeholders.
-- [ ] Keep firmware buildable on Mega2560.
+- [x] Keep firmware buildable on Mega2560.
 
 ## Phase 5: Core Logic
 
