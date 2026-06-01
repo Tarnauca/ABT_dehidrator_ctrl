@@ -400,3 +400,51 @@ abstracted before more firmware logic depends on direct serial calls.
 - `test/test_logging/test_logging.cpp`
 - `docs/reviews/system-architect-logging-001.md`
 - `docs/architecture.md`
+
+### 2026-06-01 - Hardware Config Placeholders
+
+**Context**
+Phase 4 still had one open item: hardware config placeholders. The scheduler
+and logging shell still owned constants such as baud rate, task intervals, log
+buffer sizes, and the built-in LED pin directly in `main.cpp`.
+
+**Trigger**
+Codex selected the next backlog item after the logbook workflow was merged:
+centralize early hardware/runtime configuration before adding more firmware
+logic.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added documented config headers for hardware placeholders and runtime
+  settings.
+- Moved scheduler, serial, logging, and status LED constants out of `main.cpp`
+  and into config headers.
+- Added native config tests to keep key defaults visible.
+- Updated backlog to mark hardware config placeholders complete.
+
+**Decisions**
+- Placeholder wiring values are centralized but must be reviewed before real
+  heater/fan hardware is connected.
+- Relay polarity is represented in config early, even though relay adapters are
+  not implemented yet.
+- Runtime constants used by the current shell are centralized now so future
+  modules do not grow scattered local constants.
+
+**Commits / Branches**
+- Branch: `feature/hardware-config-placeholders`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 18 tests passed.
+- `platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/config/HardwareConfig.h`
+- `include/dehydrator/config/RuntimeConfig.h`
+- `test/test_config/test_config.cpp`
+- `src/main.cpp`
+- `docs/backlog.md`
