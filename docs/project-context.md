@@ -134,10 +134,13 @@ Warnings are shown/logged but do not require acknowledgement.
 - First branch/commit/push may be performed by Codex to establish the baseline.
 - After that, the user wants to perform Git operations manually for a while under Codex supervision.
 - Prefer focused branches and focused commits.
-- Before committing: check status, review diff, stage explicit paths, commit with a clear message.
+- Before committing: check status, review diff, stage explicit paths, commit with a semantic message in the form `type(scope): short imperative summary`.
+- Before Codex commits or merges, Codex must ask whether the user has changes to make first.
+- Merge commits should use the project convention `merge(scope): short merge summary`.
 - Documentation impact check is required before branch merge and when a commit clearly affects requirements, architecture, safety, tests, UI, persistence, hardware assumptions, or external interfaces.
 - Branches that complete, start, split, remove, or materially change planned work must update `docs/backlog.md` in the same branch, or explicitly state that no backlog update was needed.
 - Branches with meaningful agent reviews, workflow changes, milestone commits/merges, or user decisions that change direction must update `docs/logbook.md`, or explicitly state that no logbook update was needed.
+- Interactions that produce reusable lessons must update `docs/learning/`, or explicitly state that no learning-note update was needed.
 
 ## Agentic Development
 

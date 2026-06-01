@@ -424,6 +424,9 @@ logic.
   and into config headers.
 - Added native config tests to keep key defaults visible.
 - Updated backlog to mark hardware config placeholders complete.
+- User asked why hardware pins were grouped into a struct.
+- Codex explained the design rationale and captured it as a reusable learning
+  note.
 
 **Decisions**
 - Placeholder wiring values are centralized but must be reviewed before real
@@ -432,6 +435,9 @@ logic.
   not implemented yet.
 - Runtime constants used by the current shell are centralized now so future
   modules do not grow scattered local constants.
+- Hardware pins are grouped in a `HardwarePins` struct because pins are a
+  coherent category of wiring assumptions, separate from relay polarity and
+  bus/address settings.
 
 **Commits / Branches**
 - Branch: `feature/hardware-config-placeholders`
@@ -448,3 +454,47 @@ logic.
 - `test/test_config/test_config.cpp`
 - `src/main.cpp`
 - `docs/backlog.md`
+- `docs/learning/architecture-decisions.md`
+
+### 2026-06-01 - Learning Notes Workflow
+
+**Context**
+The logbook captured process flow, but reusable learning explanations were
+still embedded in the chat and mixed into chronological entries.
+
+**Trigger**
+The user asked to preserve explanations such as Git usage exercises and the
+hardware pin struct rationale in a dedicated place for later review.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added `docs/learning/` as a study-oriented documentation area.
+- Backfilled learning notes for Git workflow, architecture decisions, embedded
+  C++, and testing.
+- Updated agent workflow and Documentation Maintainer responsibilities so
+  learning-note impact is checked when meaningful learning moments occur.
+
+**Decisions**
+- The logbook remains chronological.
+- Learning notes explain reusable concepts.
+- Meaningful user questions, design rationale, debugging lessons, workflow
+  lessons, and agent/process lessons should trigger a learning-notes impact
+  check.
+
+**Commits / Branches**
+- Branch: pending
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Documentation-only change.
+
+**Links**
+- `docs/learning/README.md`
+- `docs/learning/git-workflow.md`
+- `docs/learning/architecture-decisions.md`
+- `docs/learning/embedded-cpp.md`
+- `docs/learning/testing.md`
