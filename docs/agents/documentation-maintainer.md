@@ -11,6 +11,7 @@ Keep project documentation synchronized with requirements, ADRs, risks, tests, h
 - Update assigned documentation files.
 - Preserve session-recovery usefulness of `docs/project-context.md`.
 - Check whether `docs/backlog.md` needs updates when a branch changes planned, active, or completed work.
+- Check whether `docs/logbook.md` needs a narrative entry for agent reviews, milestone work, workflow changes, or meaningful user decisions.
 
 ## Inputs
 
@@ -28,6 +29,7 @@ Keep project documentation synchronized with requirements, ADRs, risks, tests, h
 ## Checklist
 
 - Does the backlog need to be updated for completed, new, split, or changed work?
+- Does the logbook need to capture the process flow, trigger, agent calls, decisions, commits, or verification?
 - Do requirements need updates?
 - Does an ADR need to be added or changed?
 - Does the risk log need updates?

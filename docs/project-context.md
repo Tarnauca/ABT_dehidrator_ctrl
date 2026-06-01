@@ -137,6 +137,7 @@ Warnings are shown/logged but do not require acknowledgement.
 - Before committing: check status, review diff, stage explicit paths, commit with a clear message.
 - Documentation impact check is required before branch merge and when a commit clearly affects requirements, architecture, safety, tests, UI, persistence, hardware assumptions, or external interfaces.
 - Branches that complete, start, split, remove, or materially change planned work must update `docs/backlog.md` in the same branch, or explicitly state that no backlog update was needed.
+- Branches with meaningful agent reviews, workflow changes, milestone commits/merges, or user decisions that change direction must update `docs/logbook.md`, or explicitly state that no logbook update was needed.
 
 ## Agentic Development
 
