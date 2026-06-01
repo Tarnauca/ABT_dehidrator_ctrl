@@ -1,21 +1,19 @@
 #include <Arduino.h>
 
 #include "dehydrator/app/PeriodicTask.h"
+#include "dehydrator/config/HardwareConfig.h"
+#include "dehydrator/config/RuntimeConfig.h"
 #include "dehydrator/logging/LogDispatcher.h"
 #include "dehydrator/logging/LogFormatter.h"
 #include "dehydrator/logging/LogSink.h"
 
-constexpr unsigned long BAUD_RATE = 115200;
-constexpr uint32_t LED_TASK_INTERVAL_MS = 1000;
-constexpr uint32_t STATE_LOG_INTERVAL_MS = 5000;
-constexpr size_t LOG_SINK_CAPACITY = 2;
-constexpr size_t LOG_LINE_SIZE = 96;
-
 constexpr char LOG_TRUNCATED_EVENT[] = "WARN code=log_truncated source=event";
 constexpr char LOG_TRUNCATED_STATE[] = "WARN code=log_truncated source=state";
 
-dehydrator::PeriodicTask ledTask(LED_TASK_INTERVAL_MS);
-dehydrator::PeriodicTask stateLogTask(STATE_LOG_INTERVAL_MS);
+dehydrator::PeriodicTask ledTask(
+    dehydrator::config::SCHEDULER.statusLedIntervalMs);
+dehydrator::PeriodicTask stateLogTask(
+    dehydrator::config::SCHEDULER.stateLogIntervalMs);
 
 bool ledOn = false;
 
@@ -44,8 +42,9 @@ class ArduinoSerialLogSink final : public dehydrator::LogSink {
 
 ArduinoSerialLogSink usbLogSink(Serial);
 ArduinoSerialLogSink telemetryLogSink(Serial1);
-dehydrator::LogSink* logSinks[LOG_SINK_CAPACITY] = {};
-dehydrator::LogDispatcher logger(logSinks, LOG_SINK_CAPACITY);
+dehydrator::LogSink* logSinks[dehydrator::config::LOGGING.sinkCapacity] = {};
+dehydrator::LogDispatcher logger(logSinks,
+                                 dehydrator::config::LOGGING.sinkCapacity);
 
 /**
  * @brief Writes one structured log line to all configured sinks.
@@ -63,7 +62,7 @@ void writeLogLine(const char* line) {
  * @param detail Stable event detail token.
  */
 void logEvent(const char* type, const char* detail) {
-  char line[LOG_LINE_SIZE] = {};
+  char line[dehydrator::config::LOGGING.lineSize] = {};
   if (dehydrator::LogFormatter::formatEvent(line, sizeof(line), type, detail)) {
     writeLogLine(line);
     return;
@@ -83,7 +82,7 @@ void updateLedTask(uint32_t nowMs) {
   }
 
   ledOn = !ledOn;
-  digitalWrite(LED_BUILTIN, ledOn ? HIGH : LOW);
+  digitalWrite(dehydrator::config::HARDWARE.pins.statusLed, ledOn ? HIGH : LOW);
   logEvent("led", ledOn ? "on" : "off");
 }
 
@@ -97,7 +96,7 @@ void updateStateLogTask(uint32_t nowMs) {
     return;
   }
 
-  char line[LOG_LINE_SIZE] = {};
+  char line[dehydrator::config::LOGGING.lineSize] = {};
   if (dehydrator::LogFormatter::formatSchedulerState(line, sizeof(line), nowMs,
                                                      ledOn)) {
     writeLogLine(line);
@@ -108,13 +107,15 @@ void updateStateLogTask(uint32_t nowMs) {
 }
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
+  pinMode(dehydrator::config::HARDWARE.pins.statusLed, OUTPUT);
+  digitalWrite(dehydrator::config::HARDWARE.pins.statusLed, LOW);
 
-  Serial.begin(BAUD_RATE);
-  Serial1.begin(BAUD_RATE);
+  Serial.begin(dehydrator::config::SERIAL_PORTS.baudRate);
+  Serial1.begin(dehydrator::config::SERIAL_PORTS.baudRate);
   unsigned long serial_start = millis();
-  while (!Serial && millis() - serial_start < 2000) {
+  while (!Serial &&
+         millis() - serial_start <
+             dehydrator::config::SCHEDULER.serialStartupWaitMs) {
     // Wait briefly for native USB serial boards, then continue anyway.
   }
 
