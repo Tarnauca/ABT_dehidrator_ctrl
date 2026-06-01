@@ -73,6 +73,7 @@ Required before branch merge and whenever a commit clearly affects requirements,
 
 Checklist:
 
+- Logbook updated or confirmed unchanged.
 - Backlog updated or confirmed unchanged.
 - Requirements updated or confirmed unchanged.
 - ADR needed/updated or confirmed unnecessary.
@@ -89,6 +90,18 @@ Any branch that completes, starts, splits, removes, or materially changes planne
 - If new work is discovered, add or adjust backlog items in the same branch.
 - If no backlog change is needed, say so in the final branch summary.
 - The Documentation Maintainer is responsible for checking backlog impact before merge.
+
+## Logbook Impact Rule
+
+Any branch that includes an agent review, meaningful design discussion, workflow
+change, milestone commit/merge, or user decision that changes direction must
+check `docs/logbook.md`.
+
+- Add narrative entries that summarize the flow and link to source artifacts.
+- Do not duplicate full review files or diffs; link to them.
+- Include trigger, participants, actions, decisions, commits/branches,
+  verification, and links where relevant.
+- If no logbook entry is needed, say so in the final branch summary.
 
 ## Session Recovery
 
