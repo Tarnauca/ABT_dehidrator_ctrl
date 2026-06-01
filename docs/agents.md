@@ -73,12 +73,22 @@ Required before branch merge and whenever a commit clearly affects requirements,
 
 Checklist:
 
+- Backlog updated or confirmed unchanged.
 - Requirements updated or confirmed unchanged.
 - ADR needed/updated or confirmed unnecessary.
 - Risk log updated or confirmed unchanged.
 - Test plan updated or confirmed unchanged.
 - UI/user docs updated or confirmed unchanged.
 - Hardware/dev environment docs updated or confirmed unchanged.
+
+## Backlog Impact Rule
+
+Any branch that completes, starts, splits, removes, or materially changes planned work must check `docs/backlog.md`.
+
+- If a backlog item is completed, mark it complete in the same branch.
+- If new work is discovered, add or adjust backlog items in the same branch.
+- If no backlog change is needed, say so in the final branch summary.
+- The Documentation Maintainer is responsible for checking backlog impact before merge.
 
 ## Session Recovery
 
