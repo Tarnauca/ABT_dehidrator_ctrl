@@ -7,6 +7,7 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 - [x] Inspect current repository and preserve existing setup knowledge.
 - [x] Create durable project context and discovery log.
 - [x] Create narrative development logbook and process-tracking rule.
+- [x] Create reusable learning notes and learning-note workflow rule.
 - [x] Create initial requirements, risks, test plan, hardware, UI, coding standards, ADRs, and agent definitions.
 - [x] Commit and push the first documentation baseline.
 

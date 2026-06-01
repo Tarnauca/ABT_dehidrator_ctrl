@@ -73,6 +73,7 @@ Required before branch merge and whenever a commit clearly affects requirements,
 
 Checklist:
 
+- Learning notes updated or confirmed unchanged.
 - Logbook updated or confirmed unchanged.
 - Backlog updated or confirmed unchanged.
 - Requirements updated or confirmed unchanged.
@@ -81,6 +82,40 @@ Checklist:
 - Test plan updated or confirmed unchanged.
 - UI/user docs updated or confirmed unchanged.
 - Hardware/dev environment docs updated or confirmed unchanged.
+
+## Commit Message Rule
+
+Agents and Codex should recommend semantic commit messages in this form:
+
+```text
+type(scope): short imperative summary
+```
+
+Common types: `docs`, `feat`, `fix`, `test`, `refactor`, `chore`, `build`,
+and `ci`.
+
+Examples:
+
+- `docs(backlog): update progress after firmware skeleton`
+- `feat(logging): add mirrored log dispatcher`
+- `test(config): cover runtime defaults`
+
+Merge commits should use the project convention:
+
+```text
+merge(scope): short merge summary
+```
+
+Example:
+
+- `merge(logging): merge logging abstraction`
+
+## Commit And Merge Approval Rule
+
+Before Codex performs a commit or merge, Codex must ask whether the user has
+changes to make first. If the user confirms there are no additional changes,
+Codex may commit, push, merge to `main`, push `main`, and report the resulting
+commit and merge hashes.
 
 ## Backlog Impact Rule
 
@@ -102,6 +137,22 @@ check `docs/logbook.md`.
 - Include trigger, participants, actions, decisions, commits/branches,
   verification, and links where relevant.
 - If no logbook entry is needed, say so in the final branch summary.
+
+## Learning Notes Impact Rule
+
+Any interaction that produces a reusable lesson should check `docs/learning/`.
+
+Examples:
+
+- Git workflow explanation or exercise.
+- Design rationale, tradeoff, or architecture pattern.
+- Embedded C++ lesson.
+- Testing technique.
+- Debugging lesson from a failure.
+- Agent/workflow practice that should be repeated.
+
+Learning notes should be concise, reusable, and grouped by topic. Link from the
+logbook when the lesson was triggered by a specific project moment.
 
 ## Session Recovery
 
