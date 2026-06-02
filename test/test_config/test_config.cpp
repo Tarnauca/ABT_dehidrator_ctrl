@@ -33,6 +33,20 @@ void test_control_minimum_relay_timing_matches_baseline() {
                            dehydrator::config::CONTROL.minHeaterOffSeconds);
 }
 
+void test_safety_fault_thresholds_match_requirements() {
+  TEST_ASSERT_EQUAL_INT16(80, dehydrator::config::SAFETY.hardFaultTempC);
+  TEST_ASSERT_EQUAL_INT16(2, dehydrator::config::SAFETY.noRiseMinIncreaseC);
+  TEST_ASSERT_EQUAL_UINT16(5U * 60U,
+                           dehydrator::config::SAFETY.noRiseWindowSeconds);
+  TEST_ASSERT_EQUAL_UINT16(
+      2U * 60U, dehydrator::config::SAFETY.stuckHeaterGraceSeconds);
+  TEST_ASSERT_EQUAL_INT16(3, dehydrator::config::SAFETY.stuckHeaterRiseC);
+  TEST_ASSERT_EQUAL_UINT16(
+      5U * 60U, dehydrator::config::SAFETY.stuckHeaterWindowSeconds);
+  TEST_ASSERT_EQUAL_UINT16(30U,
+                           dehydrator::config::SAFETY.buttonStuckSeconds);
+}
+
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_serial_defaults_to_required_baud_rate);
@@ -41,6 +55,7 @@ void setup() {
   RUN_TEST(test_hardware_uses_status_led_placeholder);
   RUN_TEST(test_control_force_off_threshold_matches_requirement);
   RUN_TEST(test_control_minimum_relay_timing_matches_baseline);
+  RUN_TEST(test_safety_fault_thresholds_match_requirements);
   UNITY_END();
 }
 

@@ -73,15 +73,15 @@ Status values:
 | REQ-FUNC-014 | Unit | Finish enters 3-minute cooldown before alarm | `test_run_state_machine` cooldown transition tests | Passing |
 | REQ-SAFE-001 | Unit | Reject or clamp setpoints above 75 C | `test_profile_engine` validation test | Passing |
 | REQ-SAFE-002 | Unit | Heater may remain governed at 75 C but is forced OFF at 76 C | `test_temperature_control` boundary tests | Passing |
-| REQ-SAFE-003 | Unit | Hard fault at 80 C and above | `test_fault_detector` | Planned |
+| REQ-SAFE-003 | Unit | Hard fault at 80 C and above | `test_fault_detector` over-temperature boundary tests | Passing |
 | REQ-SAFE-004 | Unit/Bench | Heater command cannot be ON while fan command is OFF | Temperature-control policy tests passing; command sanitizer exists; relay adapter bench check still pending | Implemented |
-| REQ-SAFE-005 | Unit | PT50 invalid triggers hard fault | `test_fault_detector` | Planned |
-| REQ-SAFE-006 | Unit | No 2 C rise within 5 min accumulated heater ON time triggers hard fault | `FakeClock`, `FakeSensorReader` | Planned |
-| REQ-SAFE-007 | Unit | After 2 min grace, 3 C rise over 5 min heater OFF triggers stuck-ON fault | `FakeClock`, `FakeSensorReader` | Planned |
-| REQ-SAFE-008 | Unit | Button active for 30 s triggers hard fault | `FakeClock`, fake input state | Planned |
+| REQ-SAFE-005 | Unit | PT50 invalid triggers hard fault | `test_fault_detector` validity and plausible-range tests | Passing |
+| REQ-SAFE-006 | Unit | No 2 C rise within 5 min accumulated heater ON time triggers hard fault | `test_fault_detector` accumulated heater-ON timing tests | Passing |
+| REQ-SAFE-007 | Unit | After 2 min grace, 3 C rise over 5 min heater OFF triggers stuck-ON fault | `test_fault_detector` heater-OFF grace and rise tests | Passing |
+| REQ-SAFE-008 | Unit | Button active for 30 s triggers hard fault | `test_fault_detector` stuck-button timing tests | Passing |
 | REQ-SAFE-009 | Unit/Bench | Hard fault forces heater/fan OFF immediately | `test_run_state_machine` output policy tests; relay bench check still pending | Implemented |
 | REQ-SAFE-010 | Unit/UI | Hard fault requires acknowledgement before new run | `test_run_state_machine` acknowledgement tests; UI flow still pending | Implemented |
-| REQ-SAFE-011 | Unit | Watchdog reset during run is non-resumable fault context | `FakePersistentStore` reset-cause setup | Planned |
+| REQ-SAFE-011 | Unit | Watchdog reset during run is non-resumable fault context | `test_fault_detector` watchdog-reset input covered; resume/persistence behavior pending | Implemented |
 | REQ-SAFE-014 | Unit | Startup self-check validates sensors/config/input/output-safe-state | `test_control_state_machine`, fakes | Planned |
 | REQ-UI-005 | Bench | Heartbeat visible bottom-right and runs in all states | LCD bench test | Planned |
 | REQ-UI-006 | Unit/Bench | Finish alarm starts after cooldown | State machine plus buzzer/backlight bench check | Planned |
