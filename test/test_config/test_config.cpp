@@ -63,6 +63,16 @@ void test_pt50_calibration_defaults_are_explicit() {
           dehydrator::config::CALIBRATION.pt50DividerOrientation));
 }
 
+void test_alarm_output_polarity_defaults_are_explicit() {
+  TEST_ASSERT_EQUAL(
+      static_cast<int>(dehydrator::config::ActiveLevel::ActiveHigh),
+      static_cast<int>(
+          dehydrator::config::HARDWARE.lcdBacklightActiveLevel));
+  TEST_ASSERT_EQUAL(
+      static_cast<int>(dehydrator::config::ActiveLevel::ActiveHigh),
+      static_cast<int>(dehydrator::config::HARDWARE.buzzerActiveLevel));
+}
+
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_serial_defaults_to_required_baud_rate);
@@ -73,6 +83,7 @@ void setup() {
   RUN_TEST(test_control_minimum_relay_timing_matches_baseline);
   RUN_TEST(test_safety_fault_thresholds_match_requirements);
   RUN_TEST(test_pt50_calibration_defaults_are_explicit);
+  RUN_TEST(test_alarm_output_polarity_defaults_are_explicit);
   UNITY_END();
 }
 
