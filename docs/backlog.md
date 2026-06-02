@@ -53,7 +53,7 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 - [x] Add PT50 conversion model and interface-based reader.
 - [ ] Add concrete Arduino PT50 analog adapter after wiring is confirmed.
 - [ ] Add AHT-like sensor adapter.
-- [ ] Add relay output adapter with configurable polarity.
+- [x] Add relay output adapter with configurable polarity.
 - [ ] Add LCD, encoder, buzzer, and backlight adapters.
 
 ## Phase 7: UI And Presets

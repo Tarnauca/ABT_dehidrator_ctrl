@@ -23,6 +23,7 @@ What caused the action or decision.
 - User
 - Codex
 - Agent: Safety Reviewer/Test Engineer
+- Agent: Safety Reviewer/Test Engineer
 - Agent: Test Engineer
 - Agent: Test Engineer
 - Agent: ...
@@ -806,3 +807,65 @@ PT50 analog reader and calibration model.
 - `docs/backlog.md`
 - `docs/test-plan.md`
 - `docs/reviews/test-engineer-pt50-reader-001.md`
+
+### 2026-06-02 - Relay Output Adapter
+
+**Context**
+Phase 6 hardware-adapter work had the PT50 interface-based reader merged. The
+concrete PT50 Arduino adapter remains pending until wiring is confirmed, so the
+next well-defined hardware slice was relay output handling.
+
+**Trigger**
+The user asked to proceed with the next phase after the PT50 branch was merged.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Created `feature/relay-output-adapter`.
+- Added `DigitalOutput`, a project-owned interface for MCU output pin access.
+- Added `RelayOutputs`, an `OutputController` implementation for heater and
+  fan relays.
+- Added native Unity tests for relay polarity, startup force-off behavior,
+  safe write ordering, unsafe command sanitization, fan-only operation, and
+  unassigned placeholder pins.
+- Spawned a Safety Reviewer/Test Engineer review and fixed findings around
+  active-low startup pulse risk, mixed assigned/unassigned relay pins, and
+  active-low ON coverage.
+- Updated backlog, hardware notes, test-plan traceability, and the logbook.
+
+**Agent Calls**
+- Safety Reviewer/Test Engineer reviewed relay output safety, polarity,
+  write ordering, unassigned pins, and documentation claims.
+
+**Decisions**
+- Keep Arduino `pinMode()`/`digitalWrite()` behind a `DigitalOutput` interface
+  so relay behavior can be tested without hardware.
+- Treat pin `255` as an unassigned placeholder and skip writes for it.
+- Sequence heater/fan writes defensively: fan ON before heater ON, heater OFF
+  before fan OFF.
+- Sanitize unsafe commands in the relay adapter even though higher layers also
+  enforce the heater/fan invariant.
+- Preload inactive relay levels before configuring pins as outputs to avoid
+  active-low startup pulses on AVR-style GPIO.
+- Block heater ON when the fan relay pin is unassigned, even if the logical
+  command requests fan ON.
+
+**Commits / Branches**
+- Branch: `feature/relay-output-adapter`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 116 tests passed.
+- `platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/hardware/RelayOutputs.h`
+- `include/dehydrator/interfaces/DigitalOutput.h`
+- `test/test_relay_outputs/test_relay_outputs.cpp`
+- `docs/backlog.md`
+- `docs/hardware.md`
+- `docs/test-plan.md`
+- `docs/reviews/safety-reviewer-relay-output-adapter-001.md`
