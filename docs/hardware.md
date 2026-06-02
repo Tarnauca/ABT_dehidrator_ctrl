@@ -46,4 +46,6 @@ The AHT-like sensor provides secondary temperature and RH. Its failure is a warn
 
 Relay polarity must be configurable. Application logic should command logical `heater ON/OFF` and `fan ON/OFF`; only the hardware adapter should translate logical output into pin level.
 
+The firmware contains a relay output adapter with configurable active-high or active-low relay polarity. It defensively sanitizes unsafe commands so heater cannot remain ON when fan is OFF, writes fan ON before heater ON, and writes heater OFF before fan OFF. Startup configuration preloads inactive relay levels before enabling output mode through the project `DigitalOutput` interface. Placeholder relay pins are ignored until real wiring is assigned, and heater ON is blocked if the fan relay pin is unassigned.
+
 Product-minded recommendation: use independent hardware thermal protection in the heater power path.
