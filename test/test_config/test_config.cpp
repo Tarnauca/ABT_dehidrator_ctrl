@@ -21,12 +21,26 @@ void test_hardware_uses_status_led_placeholder() {
   TEST_ASSERT_EQUAL_UINT8(13U, dehydrator::config::HARDWARE.pins.statusLed);
 }
 
+void test_control_force_off_threshold_matches_requirement() {
+  TEST_ASSERT_EQUAL_INT16(
+      75, dehydrator::config::CONTROL.heaterForceOffAboveTempC);
+}
+
+void test_control_minimum_relay_timing_matches_baseline() {
+  TEST_ASSERT_EQUAL_UINT16(10U,
+                           dehydrator::config::CONTROL.minHeaterOnSeconds);
+  TEST_ASSERT_EQUAL_UINT16(10U,
+                           dehydrator::config::CONTROL.minHeaterOffSeconds);
+}
+
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_serial_defaults_to_required_baud_rate);
   RUN_TEST(test_logging_supports_two_initial_sinks);
   RUN_TEST(test_scheduler_state_log_interval_matches_requirement);
   RUN_TEST(test_hardware_uses_status_led_placeholder);
+  RUN_TEST(test_control_force_off_threshold_matches_requirement);
+  RUN_TEST(test_control_minimum_relay_timing_matches_baseline);
   UNITY_END();
 }
 

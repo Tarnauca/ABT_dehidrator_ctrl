@@ -36,6 +36,20 @@ struct LoggingConfig {
   size_t lineSize;
 };
 
+/**
+ * @brief Temperature control configuration for relay-based heater control.
+ */
+struct ControlConfig {
+  /** Hysteresis distance below target before heater may turn ON. */
+  int16_t hysteresisC;
+  /** Minimum commanded heater ON time for normal hysteresis switching. */
+  uint16_t minHeaterOnSeconds;
+  /** Minimum commanded heater OFF time for normal hysteresis switching. */
+  uint16_t minHeaterOffSeconds;
+  /** Temperature above which heater is forced OFF by safety policy. */
+  int16_t heaterForceOffAboveTempC;
+};
+
 /** Default serial configuration for USB debug and secondary telemetry. */
 constexpr SerialConfig SERIAL_PORTS = {
     115200UL,
@@ -52,6 +66,14 @@ constexpr SchedulerConfig SCHEDULER = {
 constexpr LoggingConfig LOGGING = {
     2U,
     96U,
+};
+
+/** Default control settings for simple relay hysteresis. */
+constexpr ControlConfig CONTROL = {
+    1,
+    10U,
+    10U,
+    75,
 };
 
 }  // namespace config

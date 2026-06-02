@@ -43,7 +43,7 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 ## Phase 5: Core Logic
 
 - [x] Implement profile engine.
-- [ ] Implement hysteresis heater control.
+- [x] Implement hysteresis heater control.
 - [ ] Implement safety/fault detector.
 - [x] Implement run state machine.
 - [ ] Add unit tests for each module.

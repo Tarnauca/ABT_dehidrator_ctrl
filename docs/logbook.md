@@ -23,6 +23,7 @@ What caused the action or decision.
 - User
 - Codex
 - Agent: Test Engineer
+- Agent: Test Engineer
 - Agent: ...
 
 **Actions**
@@ -611,3 +612,64 @@ The user approved proceeding to the next phase after the profile engine merge.
 - `docs/backlog.md`
 - `docs/test-plan.md`
 - `docs/reviews/test-engineer-run-state-machine-001.md`
+
+### 2026-06-02 - Hysteresis Temperature Control
+
+**Context**
+After the run state machine was merged, Phase 5 still needed the heater control
+logic that turns profile targets and PT50 readings into a logical heater
+request.
+
+**Trigger**
+The user asked Codex to commit/merge the state machine and continue with the
+next phase.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Created `feature/hysteresis-temperature-control`.
+- Added `TemperatureControl`, a pure C++ relay hysteresis controller.
+- Added `ControlConfig` defaults for hysteresis, optional minimum heater
+  on/off timing, and the 75 C force-off threshold.
+- Added native Unity tests for hysteresis ON/OFF thresholds, the 75/76 C safety
+  boundary, run-policy blocking, previous-command forced-off behavior, minimum
+  relay timing, and safety override of minimum ON time.
+- Added a config test for the force-off threshold.
+- Spawned a Test Engineer review and fixed findings around 10 s production
+  relay timing, REQ-SAFE-004 wording, config coverage, and over-temperature
+  reason reporting when run policy also blocks heat.
+- Updated backlog and test-plan traceability.
+
+**Agent Calls**
+- Test Engineer reviewed the hysteresis temperature control branch and found
+  default relay timing/documentation mismatches plus one reason-reporting edge
+  case.
+
+**Decisions**
+- Keep temperature control separate from the run state machine and hardware
+  relay adapter.
+- Treat `currentTempC > 75` as a control-level forced-off condition, while
+  allowing exactly 75 C to be governed by normal hysteresis rather than labeled
+  as a safety force-off.
+- Use scheduler-provided elapsed seconds for optional minimum relay timing.
+- Allow hard safety and run-state policy to override relay minimum timing.
+
+**Commits / Branches**
+- Branch: `feature/hysteresis-temperature-control`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 73 tests passed.
+- `platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/domain/TemperatureControl.h`
+- `include/dehydrator/config/RuntimeConfig.h`
+- `test/test_temperature_control/test_temperature_control.cpp`
+- `test/test_config/test_config.cpp`
+- `docs/backlog.md`
+- `docs/test-plan.md`
+- `docs/reviews/test-engineer-temperature-control-001.md`
