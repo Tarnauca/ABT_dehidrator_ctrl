@@ -27,6 +27,17 @@ Status: draft baseline. Pin assignments are TBD until wiring is finalized.
 
 PT50 is the primary control sensor. It is currently expected to be measured through a voltage divider into an analog input using MCU VCC as supply/reference.
 
+The firmware contains a ratiometric PT50 conversion model with configurable divider orientation, fixed resistor value, PT50 nominal resistance, alpha, offset, scale, and plausible temperature range. Default values are placeholders and must be reviewed against the real divider before heater testing:
+
+- fixed resistor: 100 ohm,
+- PT50 nominal resistance: 50 ohm at 0 C,
+- alpha: 3850 ppm/C,
+- ADC range: 0..1023,
+- default divider orientation: fixed resistor high side, PT50 low side,
+- plausible converted PT50 range: -20 C..120 C.
+
+The current branch adds a project-owned `AnalogInput` interface and a PT50 reader that can consume raw ADC counts through that interface. A concrete Arduino `analogRead()` adapter is still pending until wiring is confirmed.
+
 Product-minded recommendation: consider a precision reference, calibration procedure, ratiometric review, or RTD interface IC for improved measurement accuracy.
 
 The AHT-like sensor provides secondary temperature and RH. Its failure is a warning only and must not stop drying unless a future feature depends on RH.

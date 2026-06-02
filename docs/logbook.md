@@ -737,3 +737,72 @@ temperature control.
 - `docs/backlog.md`
 - `docs/test-plan.md`
 - `docs/reviews/safety-reviewer-fault-detector-001.md`
+
+### 2026-06-02 - PT50 Calibration And Reader
+
+**Context**
+Phase 5 core logic was complete. Phase 6 started with the primary PT50 sensor
+path because it feeds control and safety logic.
+
+**Trigger**
+The user asked to proceed after Codex recommended starting Phase 6 with the
+PT50 analog reader and calibration model.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Created `feature/pt50-calibration-reader`.
+- Added `CalibrationConfig` defaults for PT50 divider conversion, offset,
+  scale, ADC range, and plausible temperature range.
+- Added `Pt50SensorModel`, a pure ratiometric ADC-to-temperature converter.
+- Added `AnalogInput`, a project-owned interface for raw ADC access.
+- Added `Pt50Reader`, a thin wrapper that reads an ADC channel through
+  `AnalogInput` and applies the PT50 model.
+- Added native Unity tests for 0 C and 100 C conversion, calibration offset and
+  scale, invalid ADC endpoints, plausible-range rejection, divider orientation,
+  and reader channel usage.
+- Spawned a Test Engineer review and fixed a safety-relevant near-rail ADC
+  overflow path before commit.
+- Updated hardware notes, backlog, and test-plan traceability.
+
+**Agent Calls**
+- Test Engineer reviewed PT50 conversion and reader behavior, focusing on ADC
+  math, divider assumptions, overflow, validity handling, tests, and docs.
+
+**Decisions**
+- Keep PT50 conversion ratiometric because the divider is supplied from the same
+  VCC used as ADC reference.
+- Make divider orientation configurable because final wiring has not been
+  confirmed.
+- Use integer math with explicit 64-bit intermediate calculations for
+  resistance and calibration scaling to avoid hidden overflow.
+- Validate plausible temperature in a wide integer type before assigning the
+  final `int16_t` temperature so near-rail ADC values cannot wrap into a
+  valid-looking reading.
+- Treat the 100 ohm fixed resistor and default divider orientation as
+  placeholders that must be checked before real heater testing.
+- Keep the concrete Arduino `analogRead()` adapter as a separate backlog item
+  until wiring is confirmed.
+
+**Commits / Branches**
+- Branch: `feature/pt50-calibration-reader`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 106 tests passed.
+- `platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/domain/Pt50SensorModel.h`
+- `include/dehydrator/sensors/Pt50Reader.h`
+- `include/dehydrator/interfaces/AnalogInput.h`
+- `include/dehydrator/config/RuntimeConfig.h`
+- `test/test_pt50_sensor/test_pt50_sensor.cpp`
+- `test/test_config/test_config.cpp`
+- `docs/hardware.md`
+- `docs/backlog.md`
+- `docs/test-plan.md`
+- `docs/reviews/test-engineer-pt50-reader-001.md`
