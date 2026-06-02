@@ -918,3 +918,57 @@ The user approved continuing from the `feature/alarm-output-adapter` branch.
 - `docs/backlog.md`
 - `docs/hardware.md`
 - `docs/test-plan.md`
+
+### 2026-06-02 - AHT Interface-Based Reader
+
+**Context**
+The user asked to do the AHT part after the alarm output adapter was merged.
+The exact AHT device/library is still not selected, so the implementation
+focused on a testable interface-based reader.
+
+**Trigger**
+The user said "do the AHT part now".
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Created `feature/aht-sensor-adapter`.
+- Added `AhtSensorDriver`, a project-owned interface for future AHT-like
+  library adapters.
+- Added `AhtReader`, a secondary telemetry reader that applies temperature and
+  RH calibration offsets and validates plausible ranges.
+- Added AHT calibration defaults to `CalibrationConfig`.
+- Added native Unity tests for valid readings, invalid driver samples,
+  temperature/RH offsets, temperature range rejection, RH above 100%, and
+  negative calibrated RH.
+- Added config tests for AHT calibration defaults.
+- Updated backlog, hardware notes, test-plan traceability, and logbook.
+
+**Decisions**
+- Keep AHT as warning/telemetry-only in this slice; invalid AHT readings return
+  `valid=false` and do not create hard faults.
+- Use centi-Celsius and centi-percent RH at the driver boundary so a future
+  concrete adapter can preserve precision without floating point.
+- Leave the concrete Arduino AHT library adapter pending until the exact sensor
+  library/device is confirmed.
+
+**Commits / Branches**
+- Branch: `feature/aht-sensor-adapter`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 133 tests passed.
+- `platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/interfaces/AhtSensorDriver.h`
+- `include/dehydrator/sensors/AhtReader.h`
+- `include/dehydrator/config/RuntimeConfig.h`
+- `test/test_aht_reader/test_aht_reader.cpp`
+- `test/test_config/test_config.cpp`
+- `docs/backlog.md`
+- `docs/hardware.md`
+- `docs/test-plan.md`
