@@ -47,6 +47,22 @@ void test_safety_fault_thresholds_match_requirements() {
                            dehydrator::config::SAFETY.buttonStuckSeconds);
 }
 
+void test_pt50_calibration_defaults_are_explicit() {
+  TEST_ASSERT_EQUAL_INT32(100000,
+                          dehydrator::config::CALIBRATION
+                              .pt50FixedResistorMilliOhms);
+  TEST_ASSERT_EQUAL_INT32(50000,
+                          dehydrator::config::CALIBRATION.pt50NominalMilliOhms);
+  TEST_ASSERT_EQUAL_INT32(3850,
+                          dehydrator::config::CALIBRATION.pt50AlphaPpmPerC);
+  TEST_ASSERT_EQUAL_UINT16(1023U,
+                           dehydrator::config::CALIBRATION.adcMaxCount);
+  TEST_ASSERT_EQUAL(
+      static_cast<int>(dehydrator::config::DividerOrientation::FixedHighPt50Low),
+      static_cast<int>(
+          dehydrator::config::CALIBRATION.pt50DividerOrientation));
+}
+
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_serial_defaults_to_required_baud_rate);
@@ -56,6 +72,7 @@ void setup() {
   RUN_TEST(test_control_force_off_threshold_matches_requirement);
   RUN_TEST(test_control_minimum_relay_timing_matches_baseline);
   RUN_TEST(test_safety_fault_thresholds_match_requirements);
+  RUN_TEST(test_pt50_calibration_defaults_are_explicit);
   UNITY_END();
 }
 

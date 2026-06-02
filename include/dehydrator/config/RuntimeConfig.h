@@ -74,6 +74,40 @@ struct SafetyConfig {
   uint16_t buttonStuckSeconds;
 };
 
+/**
+ * @brief Voltage-divider orientation for PT50 resistance calculation.
+ */
+enum class DividerOrientation {
+  /** Fixed resistor to VCC, PT50 to ground. ADC ratio rises with temperature. */
+  FixedHighPt50Low,
+  /** PT50 to VCC, fixed resistor to ground. ADC ratio falls with temperature. */
+  Pt50HighFixedLow,
+};
+
+/**
+ * @brief Calibration constants for PT50 ADC conversion.
+ */
+struct CalibrationConfig {
+  /** Fixed divider resistor in milliohms. Must match the real circuit. */
+  int32_t pt50FixedResistorMilliOhms;
+  /** PT50 nominal resistance at 0 C in milliohms. */
+  int32_t pt50NominalMilliOhms;
+  /** PT50 temperature coefficient in parts per million per C. */
+  int32_t pt50AlphaPpmPerC;
+  /** Maximum ADC count for the configured ADC resolution. */
+  uint16_t adcMaxCount;
+  /** Divider orientation used by the real PT50 wiring. */
+  DividerOrientation pt50DividerOrientation;
+  /** Offset applied after raw PT50 conversion, in centi-Celsius. */
+  int16_t pt50OffsetCentiC;
+  /** Scale factor applied after offset, in parts per million. */
+  int32_t pt50ScalePpm;
+  /** Lowest plausible converted PT50 temperature, in Celsius. */
+  int16_t pt50MinValidTempC;
+  /** Highest plausible converted PT50 temperature, in Celsius. */
+  int16_t pt50MaxValidTempC;
+};
+
 /** Default serial configuration for USB debug and secondary telemetry. */
 constexpr SerialConfig SERIAL_PORTS = {
     115200UL,
@@ -111,6 +145,19 @@ constexpr SafetyConfig SAFETY = {
     3,
     5U * 60U,
     30U,
+};
+
+/** Default PT50 conversion and calibration constants. */
+constexpr CalibrationConfig CALIBRATION = {
+    100000,
+    50000,
+    3850,
+    1023U,
+    DividerOrientation::FixedHighPt50Low,
+    0,
+    1000000,
+    -20,
+    120,
 };
 
 }  // namespace config
