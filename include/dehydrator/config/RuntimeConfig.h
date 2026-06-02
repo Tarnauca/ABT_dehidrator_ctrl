@@ -106,6 +106,14 @@ struct CalibrationConfig {
   int16_t pt50MinValidTempC;
   /** Highest plausible converted PT50 temperature, in Celsius. */
   int16_t pt50MaxValidTempC;
+  /** AHT temperature offset, in centi-Celsius. */
+  int16_t ahtTempOffsetCentiC;
+  /** AHT relative humidity offset, in centi-percent RH. */
+  int16_t ahtRhOffsetCentiPercent;
+  /** Lowest plausible AHT temperature, in Celsius. */
+  int16_t ahtMinValidTempC;
+  /** Highest plausible AHT temperature, in Celsius. */
+  int16_t ahtMaxValidTempC;
 };
 
 /** Default serial configuration for USB debug and secondary telemetry. */
@@ -158,6 +166,10 @@ constexpr CalibrationConfig CALIBRATION = {
     1000000,
     -20,
     120,
+    0,
+    0,
+    -40,
+    85,
 };
 
 }  // namespace config

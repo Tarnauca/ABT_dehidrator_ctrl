@@ -42,6 +42,8 @@ Product-minded recommendation: consider a precision reference, calibration proce
 
 The AHT-like sensor provides secondary temperature and RH. Its failure is a warning only and must not stop drying unless a future feature depends on RH.
 
+The firmware contains an interface-based AHT reader that accepts centi-Celsius and centi-percent RH samples from a future concrete driver, applies optional calibration offsets, and rejects implausible temperature/RH values. A concrete Arduino AHT library adapter is still pending until the exact device/library is confirmed.
+
 ## Output Notes
 
 Relay polarity must be configurable. Application logic should command logical `heater ON/OFF` and `fan ON/OFF`; only the hardware adapter should translate logical output into pin level.
