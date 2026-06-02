@@ -869,3 +869,52 @@ The user asked to proceed with the next phase after the PT50 branch was merged.
 - `docs/hardware.md`
 - `docs/test-plan.md`
 - `docs/reviews/safety-reviewer-relay-output-adapter-001.md`
+
+### 2026-06-02 - Alarm Output Adapter
+
+**Context**
+Phase 6 had relay outputs merged. The remaining LCD/encoder/AHT work depends
+on library and wiring choices, but buzzer and LCD backlight outputs can use the
+same digital-output abstraction as relays.
+
+**Trigger**
+The user approved continuing from the `feature/alarm-output-adapter` branch.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added active-level configuration for LCD backlight and buzzer outputs.
+- Added `AlarmOutputs`, an `OutputController` implementation for buzzer and
+  LCD backlight.
+- Added native Unity tests for active-high and active-low startup levels,
+  buzzer/backlight ON/OFF commands, placeholder pins, and ignoring heater/fan
+  fields.
+- Added config tests for default alarm output polarity.
+- Updated backlog, hardware notes, test-plan traceability, and logbook.
+
+**Decisions**
+- Keep buzzer/backlight behind `DigitalOutput`, matching the relay adapter
+  pattern.
+- Preload inactive output levels during startup to avoid active-low pulses.
+- Keep LCD and encoder adapters as separate pending work because they require
+  more specific UI/input behavior and likely library choices.
+
+**Commits / Branches**
+- Branch: `feature/alarm-output-adapter`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 124 tests passed.
+- `platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/hardware/AlarmOutputs.h`
+- `include/dehydrator/config/HardwareConfig.h`
+- `test/test_alarm_outputs/test_alarm_outputs.cpp`
+- `test/test_config/test_config.cpp`
+- `docs/backlog.md`
+- `docs/hardware.md`
+- `docs/test-plan.md`

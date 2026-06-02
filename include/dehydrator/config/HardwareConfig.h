@@ -56,6 +56,10 @@ struct HardwareConfig {
   ActiveLevel heaterRelayActiveLevel;
   /** Fan relay active polarity. */
   ActiveLevel fanRelayActiveLevel;
+  /** LCD backlight FET active polarity. */
+  ActiveLevel lcdBacklightActiveLevel;
+  /** Piezo buzzer active polarity. */
+  ActiveLevel buzzerActiveLevel;
   /** LCD I2C address placeholder. */
   uint8_t lcdI2cAddress;
 };
@@ -80,6 +84,8 @@ constexpr HardwareConfig HARDWARE = {
     },
     ActiveLevel::ActiveLow,
     ActiveLevel::ActiveLow,
+    ActiveLevel::ActiveHigh,
+    ActiveLevel::ActiveHigh,
     0x27U,
 };
 
