@@ -22,6 +22,7 @@ What caused the action or decision.
 **Participants**
 - User
 - Codex
+- Agent: Safety Reviewer/Test Engineer
 - Agent: Test Engineer
 - Agent: Test Engineer
 - Agent: ...
@@ -673,3 +674,66 @@ next phase.
 - `docs/backlog.md`
 - `docs/test-plan.md`
 - `docs/reviews/test-engineer-temperature-control-001.md`
+
+### 2026-06-02 - Safety Fault Detector
+
+**Context**
+After profile, run-state, and heater-control logic were merged, the remaining
+Phase 5 core module was hard-fault detection.
+
+**Trigger**
+The user asked Codex to continue with the next phase after merging hysteresis
+temperature control.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Created `feature/fault-detector`.
+- Added `SafetyConfig` defaults for PT50 plausible range, 80 C hard fault,
+  no-temperature-rise timing, suspected stuck-heater timing, and stuck-button
+  timing.
+- Added `FaultDetector`, a pure C++ latched hard-fault detector.
+- Added native Unity tests for PT50 invalid/out-of-range, 80 C over-temperature,
+  no-rise fault timing, stuck-heater grace/rise timing, stuck button, watchdog
+  reset during run, first-fault latching, and reset behavior.
+- Added config tests for the agreed safety thresholds.
+- Spawned a Safety Reviewer/Test Engineer review and fixed findings around
+  accumulated heater-ON timing, stuck-heater monitoring lifetime, idle false
+  positives, and watchdog coverage wording.
+- Marked Phase 5 core logic and unit-test coverage complete in the backlog.
+
+**Agent Calls**
+- Safety Reviewer/Test Engineer reviewed the fault detector branch and found
+  safety-relevant mismatches in no-rise accumulation and stuck-heater timing.
+
+**Decisions**
+- Latch the first hard fault until `reset()` so later symptoms cannot hide the
+  original fault reason before user acknowledgement.
+- Keep watchdog-reset-during-run as an explicit input for now; persistence and
+  boot reset-cause storage remain future integration work.
+- No-rise tracking accumulates heater-ON command time across relay cycles and
+  resets only after the required temperature rise is observed.
+- Stuck-heater monitoring starts only after the 2-minute heater-OFF grace
+  period and only after the heater was previously commanded ON.
+- Stuck-heater monitoring rebaselines after each 5-minute window without a
+  fault, so detection does not silently expire after the first window.
+
+**Commits / Branches**
+- Branch: `feature/fault-detector`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 93 tests passed.
+- `platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/domain/FaultDetector.h`
+- `include/dehydrator/config/RuntimeConfig.h`
+- `test/test_fault_detector/test_fault_detector.cpp`
+- `test/test_config/test_config.cpp`
+- `docs/backlog.md`
+- `docs/test-plan.md`
+- `docs/reviews/safety-reviewer-fault-detector-001.md`

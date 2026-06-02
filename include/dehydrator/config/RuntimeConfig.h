@@ -50,6 +50,30 @@ struct ControlConfig {
   int16_t heaterForceOffAboveTempC;
 };
 
+/**
+ * @brief Safety thresholds for hard-fault detection.
+ */
+struct SafetyConfig {
+  /** Lowest plausible PT50 reading accepted by the fault detector. */
+  int16_t pt50MinValidTempC;
+  /** Highest plausible PT50 reading accepted by the fault detector. */
+  int16_t pt50MaxValidTempC;
+  /** Temperature at or above which an over-temperature hard fault occurs. */
+  int16_t hardFaultTempC;
+  /** Minimum required rise while heater is commanded ON. */
+  int16_t noRiseMinIncreaseC;
+  /** Accumulated heater ON time allowed before no-rise fault. */
+  uint16_t noRiseWindowSeconds;
+  /** Grace time after heater command OFF before stuck-heater monitoring starts. */
+  uint16_t stuckHeaterGraceSeconds;
+  /** Temperature rise while heater is OFF that indicates suspected stuck ON. */
+  int16_t stuckHeaterRiseC;
+  /** Monitoring window for stuck-heater temperature rise. */
+  uint16_t stuckHeaterWindowSeconds;
+  /** Continuous active button time before stuck-input hard fault. */
+  uint16_t buttonStuckSeconds;
+};
+
 /** Default serial configuration for USB debug and secondary telemetry. */
 constexpr SerialConfig SERIAL_PORTS = {
     115200UL,
@@ -74,6 +98,19 @@ constexpr ControlConfig CONTROL = {
     10U,
     10U,
     75,
+};
+
+/** Default safety thresholds agreed during requirements discovery. */
+constexpr SafetyConfig SAFETY = {
+    -20,
+    120,
+    80,
+    2,
+    5U * 60U,
+    2U * 60U,
+    3,
+    5U * 60U,
+    30U,
 };
 
 }  // namespace config
