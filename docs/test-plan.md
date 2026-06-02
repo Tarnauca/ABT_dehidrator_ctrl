@@ -72,9 +72,9 @@ Status values:
 | REQ-FUNC-013 | Unit | Confirmed stop turns outputs OFF and clears/disables resume | `test_run_state_machine` stop transition tests | Passing |
 | REQ-FUNC-014 | Unit | Finish enters 3-minute cooldown before alarm | `test_run_state_machine` cooldown transition tests | Passing |
 | REQ-SAFE-001 | Unit | Reject or clamp setpoints above 75 C | `test_profile_engine` validation test | Passing |
-| REQ-SAFE-002 | Unit | Heater may remain governed at 75 C but is forced OFF at 76 C | `test_temperature_control` | Planned |
+| REQ-SAFE-002 | Unit | Heater may remain governed at 75 C but is forced OFF at 76 C | `test_temperature_control` boundary tests | Passing |
 | REQ-SAFE-003 | Unit | Hard fault at 80 C and above | `test_fault_detector` | Planned |
-| REQ-SAFE-004 | Unit/Bench | Heater command cannot be ON while fan command is OFF | Command sanitizer, `RelayOutputs` bench check | Planned |
+| REQ-SAFE-004 | Unit/Bench | Heater command cannot be ON while fan command is OFF | Temperature-control policy tests passing; command sanitizer exists; relay adapter bench check still pending | Implemented |
 | REQ-SAFE-005 | Unit | PT50 invalid triggers hard fault | `test_fault_detector` | Planned |
 | REQ-SAFE-006 | Unit | No 2 C rise within 5 min accumulated heater ON time triggers hard fault | `FakeClock`, `FakeSensorReader` | Planned |
 | REQ-SAFE-007 | Unit | After 2 min grace, 3 C rise over 5 min heater OFF triggers stuck-ON fault | `FakeClock`, `FakeSensorReader` | Planned |
