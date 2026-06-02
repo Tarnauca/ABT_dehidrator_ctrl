@@ -441,8 +441,8 @@ logic.
 
 **Commits / Branches**
 - Branch: `feature/hardware-config-placeholders`
-- Commit: pending
-- Merge commit: pending
+- Commit: `badf255 feat(config): add hardware placeholders`
+- Merge commit: `9964a2b Merge hardware config placeholders`
 
 **Verification**
 - `platformio test -e native`: 18 tests passed.
@@ -485,9 +485,9 @@ hardware pin struct rationale in a dedicated place for later review.
   check.
 
 **Commits / Branches**
-- Branch: pending
-- Commit: pending
-- Merge commit: pending
+- Branch: `docs/learning-notes-workflow`
+- Commit: `1972817 docs(learning): add reusable learning notes`
+- Merge commit: `0251714 merge(learning): merge learning notes workflow`
 
 **Verification**
 - Documentation-only change.
@@ -498,3 +498,57 @@ hardware pin struct rationale in a dedicated place for later review.
 - `docs/learning/architecture-decisions.md`
 - `docs/learning/embedded-cpp.md`
 - `docs/learning/testing.md`
+
+### 2026-06-02 - Profile Engine
+
+**Context**
+Phase 5 core logic started after the firmware skeleton, scheduler, logging, and
+configuration placeholders were in place. The next useful domain slice was the
+profile engine because later temperature control and state-machine behavior
+need a current target temperature.
+
+**Trigger**
+The user said "let's go" after the current status summary recommended
+`feature/profile-engine`.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added a pure C++ `ProfileEngine` with fixed and fluctuating profile support.
+- Added profile config and target result types using integer Celsius and minute
+  durations.
+- Added native tests for fixed profiles, fluctuating high/low cycles,
+  completion, safety setpoint validation, max duration validation, and invalid
+  phase durations.
+- Ran Test Engineer review and added boundary tests/traceability improvements
+  from the findings.
+- Updated backlog and test-plan traceability.
+
+**Decisions**
+- Profile evaluation receives active elapsed seconds from the caller. It does
+  not own clocks or pause/resume state.
+- Fluctuating profiles start with the high-temperature phase, then alternate
+  high/low phases.
+- Profile validation rejects setpoints above 75 C and durations beyond 99 hours.
+- In fluctuating mode, `targetTempC` is user-entered average metadata and must
+  also obey the 75 C setpoint limit.
+- Profile evaluation may still return a target when `complete == true`; later
+  control/state-machine code should use the completion flag to stop control.
+
+**Commits / Branches**
+- Branch: `feature/profile-engine`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 35 tests passed.
+- `platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/domain/ProfileEngine.h`
+- `test/test_profile_engine/test_profile_engine.cpp`
+- `docs/backlog.md`
+- `docs/test-plan.md`
+- `docs/reviews/test-engineer-profile-engine-001.md`
