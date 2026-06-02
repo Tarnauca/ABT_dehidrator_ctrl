@@ -67,10 +67,10 @@ Status values:
 | REQ-FUNC-003 | Unit | Fluctuating mode alternates low/high phases | `test_profile_engine` with active elapsed time input | Passing |
 | REQ-FUNC-008 | Unit | Profile duration accepts `99:00` and rejects invalid duration | `test_profile_engine` duration validation tests | Passing |
 | REQ-FUNC-015 | Unit | Initial fluctuating algorithm starts high and alternates high/low phases | `test_profile_engine` phase boundary tests | Passing |
-| REQ-FUNC-011 | Unit | Pause turns heater/fan OFF and suspends time | `test_control_state_machine`, `test_run_timer`, `FakeOutputController` | Planned |
-| REQ-FUNC-012 | Unit | Resume continues from paused profile point | `test_control_state_machine`, `test_run_timer` | Planned |
-| REQ-FUNC-013 | Unit | Confirmed stop turns outputs OFF and clears/disables resume | `test_control_state_machine`, `FakePersistentStore` | Planned |
-| REQ-FUNC-014 | Unit | Finish enters 3-minute cooldown before alarm | `test_control_state_machine`, `test_run_timer`, `FakeClock` | Planned |
+| REQ-FUNC-011 | Unit | Pause turns heater/fan OFF and suspends time | `test_run_state_machine` with scheduler-provided time delta | Passing |
+| REQ-FUNC-012 | Unit | Resume continues from paused profile point | `test_run_state_machine` elapsed-time tests | Passing |
+| REQ-FUNC-013 | Unit | Confirmed stop turns outputs OFF and clears/disables resume | `test_run_state_machine` stop transition tests | Passing |
+| REQ-FUNC-014 | Unit | Finish enters 3-minute cooldown before alarm | `test_run_state_machine` cooldown transition tests | Passing |
 | REQ-SAFE-001 | Unit | Reject or clamp setpoints above 75 C | `test_profile_engine` validation test | Passing |
 | REQ-SAFE-002 | Unit | Heater may remain governed at 75 C but is forced OFF at 76 C | `test_temperature_control` | Planned |
 | REQ-SAFE-003 | Unit | Hard fault at 80 C and above | `test_fault_detector` | Planned |
@@ -79,8 +79,8 @@ Status values:
 | REQ-SAFE-006 | Unit | No 2 C rise within 5 min accumulated heater ON time triggers hard fault | `FakeClock`, `FakeSensorReader` | Planned |
 | REQ-SAFE-007 | Unit | After 2 min grace, 3 C rise over 5 min heater OFF triggers stuck-ON fault | `FakeClock`, `FakeSensorReader` | Planned |
 | REQ-SAFE-008 | Unit | Button active for 30 s triggers hard fault | `FakeClock`, fake input state | Planned |
-| REQ-SAFE-009 | Unit/Bench | Hard fault forces heater/fan OFF immediately | `FakeOutputController`, relay bench check | Planned |
-| REQ-SAFE-010 | Unit/UI | Hard fault requires acknowledgement before new run | `test_control_state_machine` | Planned |
+| REQ-SAFE-009 | Unit/Bench | Hard fault forces heater/fan OFF immediately | `test_run_state_machine` output policy tests; relay bench check still pending | Implemented |
+| REQ-SAFE-010 | Unit/UI | Hard fault requires acknowledgement before new run | `test_run_state_machine` acknowledgement tests; UI flow still pending | Implemented |
 | REQ-SAFE-011 | Unit | Watchdog reset during run is non-resumable fault context | `FakePersistentStore` reset-cause setup | Planned |
 | REQ-SAFE-014 | Unit | Startup self-check validates sensors/config/input/output-safe-state | `test_control_state_machine`, fakes | Planned |
 | REQ-UI-005 | Bench | Heartbeat visible bottom-right and runs in all states | LCD bench test | Planned |

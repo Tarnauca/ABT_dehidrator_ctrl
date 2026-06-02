@@ -22,6 +22,7 @@ What caused the action or decision.
 **Participants**
 - User
 - Codex
+- Agent: Test Engineer
 - Agent: ...
 
 **Actions**
@@ -552,3 +553,61 @@ The user said "let's go" after the current status summary recommended
 - `docs/backlog.md`
 - `docs/test-plan.md`
 - `docs/reviews/test-engineer-profile-engine-001.md`
+
+### 2026-06-02 - Run State Machine
+
+**Context**
+Phase 5 core logic had a tested profile engine. The next open backlog item was
+the lifecycle state machine for start, pause, resume, finish cooldown, stop,
+and hard fault behavior.
+
+**Trigger**
+The user approved proceeding to the next phase after the profile engine merge.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Created `feature/run-state-machine`.
+- Added a pure C++ `RunStateMachine` that owns run lifecycle transitions and
+  scheduler-provided elapsed-time accounting.
+- Added lifecycle-level output policy so the application coordinator can later
+  combine run state with temperature control and hardware output adapters.
+- Added native Unity tests for valid/invalid start, pause/resume, elapsed time
+  suspension, normal finish cooldown, finish acknowledgement, confirmed stop,
+  fault entry, and fault acknowledgement.
+- Spawned a Test Engineer review and added tests for fault acknowledgement
+  gating, fault transitions from multiple runtime states, stop transitions from
+  non-running states, and zero-delta timing boundaries.
+- Updated backlog and test-plan traceability.
+
+**Agent Calls**
+- Test Engineer reviewed the run state machine branch and found missing tests
+  around hard-fault acknowledgement, fault transitions from runtime states,
+  stop transition coverage, and timing boundaries.
+
+**Decisions**
+- Keep the state machine independent from Arduino APIs and hardware pins.
+- Pass elapsed seconds into `update()` instead of reading a clock internally.
+- Keep heater hysteresis and fault detection as separate modules; the state
+  machine exposes whether heater control is allowed, not the final relay state.
+- User-confirmed stop returns directly to idle with outputs off and no cooldown.
+- Hard fault disables resume and exposes a fault alarm policy until
+  acknowledgement.
+
+**Commits / Branches**
+- Branch: `feature/run-state-machine`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 48 tests passed.
+- `platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/domain/RunStateMachine.h`
+- `test/test_run_state_machine/test_run_state_machine.cpp`
+- `docs/backlog.md`
+- `docs/test-plan.md`
+- `docs/reviews/test-engineer-run-state-machine-001.md`
