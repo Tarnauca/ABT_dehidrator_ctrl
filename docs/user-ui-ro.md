@@ -72,6 +72,9 @@ Apas=OK Tine=Inap
 
 The last line still keeps the bottom-right heartbeat glyph.
 
+The menu does not wrap around at the ends. The selected item stays on the
+first visible line, with the remaining visible items listed below it.
+
 ## Implemented Manual Mode Shell
 
 Current bring-up behavior:

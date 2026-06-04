@@ -62,7 +62,7 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 
 ## Phase 7: UI And Presets
 
-- [ ] Document Romanian 4x20 menu flow.
+- [x] Document Romanian 4x20 menu flow.
 - [x] Implement initial status screen with bottom-right heartbeat.
 - [x] Implement initial encoder-driven menu shell.
 - [x] Implement initial manual mode screen shell.
