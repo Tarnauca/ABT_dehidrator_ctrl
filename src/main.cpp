@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include <Adafruit_AHTX0.h>
 #include <Bounce2.h>
+#include <DHT.h>
 #include <Encoder.h>
 #include <LiquidCrystal_I2C.h>
 #include <string.h>
@@ -13,13 +13,13 @@
 #include "dehydrator/domain/Pt50SensorModel.h"
 #include "dehydrator/hardware/RelayOutputs.h"
 #include "dehydrator/hardware/ArduinoAnalogInput.h"
-#include "dehydrator/hardware/ArduinoAhtSensorDriver.h"
+#include "dehydrator/hardware/ArduinoDhtSensorDriver.h"
 #include "dehydrator/interfaces/DigitalOutput.h"
 #include "dehydrator/interfaces/CharacterDisplay.h"
 #include "dehydrator/logging/LogDispatcher.h"
 #include "dehydrator/logging/LogFormatter.h"
 #include "dehydrator/logging/LogSink.h"
-#include "dehydrator/sensors/AhtReader.h"
+#include "dehydrator/sensors/TempRhReader.h"
 #include "dehydrator/sensors/Pt50Reader.h"
 #include "dehydrator/presets/PresetCatalog.h"
 #include "dehydrator/ui/LcdManualView.h"
@@ -39,8 +39,8 @@ dehydrator::PeriodicTask stateLogTask(
     dehydrator::config::SCHEDULER.stateLogIntervalMs);
 dehydrator::PeriodicTask sensorSampleTask(
     dehydrator::config::SCHEDULER.sensorSampleIntervalMs);
-dehydrator::PeriodicTask ahtSampleTask(
-    dehydrator::config::SCHEDULER.ahtSampleIntervalMs);
+dehydrator::PeriodicTask tempRhSampleTask(
+    dehydrator::config::SCHEDULER.tempRhSampleIntervalMs);
 dehydrator::PeriodicTask lcdRefreshTask(
     dehydrator::config::SCHEDULER.lcdRefreshIntervalMs);
 dehydrator::PeriodicTask inputScanTask(
@@ -54,7 +54,7 @@ long lastEncoderPosition = 0L;
 uint32_t buttonPressedAtMs = 0UL;
 bool buttonPressed = false;
 dehydrator::Pt50Reading latestPt50;
-dehydrator::AhtReading latestAht;
+dehydrator::TempRhReading latestTempRh;
 dehydrator::EncoderStepFilter encoderStepFilter(4);
 dehydrator::PresetRunController presetRunController;
 dehydrator::OutputCommand activeOutputCommand;
@@ -157,11 +157,13 @@ ArduinoDigitalOutput digitalOutput;
 dehydrator::RelayOutputs relayOutputs(digitalOutput, dehydrator::config::HARDWARE);
 dehydrator::LcdStatusView statusView(lcdDisplay);
 dehydrator::ArduinoAnalogInput analogInput;
-dehydrator::ArduinoAhtSensorDriver ahtDriver;
+dehydrator::ArduinoDhtSensorDriver tempRhDriver(
+    dehydrator::config::HARDWARE.pins.tempRhData);
 dehydrator::Pt50Reader pt50Reader(analogInput,
                                   dehydrator::config::HARDWARE.pins.pt50Analog,
                                   dehydrator::config::CALIBRATION);
-dehydrator::AhtReader ahtReader(ahtDriver, dehydrator::config::CALIBRATION);
+dehydrator::TempRhReader tempRhReader(tempRhDriver,
+                                      dehydrator::config::CALIBRATION);
 dehydrator::MenuController menuController;
 dehydrator::ManualModeController manualModeController;
 dehydrator::PresetSelectController presetSelectController;
@@ -359,16 +361,16 @@ void updateSensorTask(uint32_t nowMs) {
 }
 
 /**
- * @brief Cooperative AHT temperature/RH sampling task.
+ * @brief Cooperative secondary temp/RH sampling task.
  *
  * @param nowMs Current firmware uptime in milliseconds.
  */
-void updateAhtTask(uint32_t nowMs) {
-  if (!ahtSampleTask.shouldRun(nowMs)) {
+void updateTempRhTask(uint32_t nowMs) {
+  if (!tempRhSampleTask.shouldRun(nowMs)) {
     return;
   }
 
-  latestAht = ahtReader.read();
+  latestTempRh = tempRhReader.read();
 }
 
 /**
@@ -433,8 +435,8 @@ void updateLcdTask(uint32_t nowMs) {
   snapshot.stateLabel = presetRunController.stateLabelRo();
   snapshot.pt50TempC = latestPt50.tempC;
   snapshot.pt50Valid = latestPt50.valid;
-  snapshot.rhPercent = latestAht.rhPercent;
-  snapshot.rhValid = latestAht.valid;
+  snapshot.rhPercent = latestTempRh.rhPercent;
+  snapshot.rhValid = latestTempRh.valid;
   snapshot.heaterOn = activeOutputCommand.heaterOn;
   snapshot.fanOn = activeOutputCommand.fanOn;
   snapshot.heartbeatOn = heartbeatOn;
@@ -580,8 +582,8 @@ void updateStateLogTask(uint32_t nowMs) {
   char line[dehydrator::config::LOGGING.lineSize] = {};
   if (dehydrator::LogFormatter::formatBringupState(
           line, sizeof(line), nowMs, ledOn, latestPt50.valid,
-          latestPt50.tempC, latestPt50.adcCount, latestAht.valid,
-          latestAht.tempC, latestAht.rhPercent,
+          latestPt50.tempC, latestPt50.adcCount, latestTempRh.valid,
+          latestTempRh.tempC, latestTempRh.rhPercent,
           presetRunController.stateToken(),
           activePreset != nullptr ? activePreset->token : nullptr,
           activeOutputCommand.heaterOn, activeOutputCommand.fanOn)) {
@@ -622,10 +624,10 @@ void setup() {
   logger.addSink(usbLogSink);
   logger.addSink(telemetryLogSink);
 
-  if (ahtDriver.begin()) {
-    logEvent("sensor", "aht_ready");
+  if (tempRhDriver.begin()) {
+    logEvent("sensor", "temp_rh_ready");
   } else {
-    logEvent("sensor", "aht_missing");
+    logEvent("sensor", "temp_rh_missing");
   }
 
   lcd.init();
@@ -644,7 +646,7 @@ void loop() {
 
   updateLedTask(nowMs);
   updateSensorTask(nowMs);
-  updateAhtTask(nowMs);
+  updateTempRhTask(nowMs);
   updateRunControlTask(nowMs);
   updateStateLogTask(nowMs);
   updateInputTask(nowMs);

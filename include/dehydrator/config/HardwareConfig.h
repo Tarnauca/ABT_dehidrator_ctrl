@@ -44,6 +44,8 @@ struct HardwarePins {
   uint8_t encoderB;
   /** Rotary encoder pushbutton pin placeholder. */
   uint8_t encoderButton;
+  /** Secondary DHT22/AM2302 temp/RH sensor data pin placeholder. */
+  uint8_t tempRhData;
 };
 
 /**
@@ -75,13 +77,14 @@ constexpr HardwareConfig HARDWARE = {
     {
         13U,   // statusLed
         0U,    // pt50Analog: analog channel placeholder
-        255U,  // heaterRelay: TBD
-        255U,  // fanRelay: TBD
+        28U,  // heaterRelay: TBD
+        32U,  // fanRelay: TBD
         7U,    // lcdBacklight: temporary bench pin
         8U,    // buzzer: temporary bench pin
         2U,    // encoderA: temporary interrupt-capable bench pin
         3U,    // encoderB: temporary interrupt-capable bench pin
         4U,    // encoderButton: temporary bench pin with INPUT_PULLUP
+        14U,  // tempRhData: TBD
     },
     ActiveLevel::ActiveLow,
     ActiveLevel::ActiveLow,

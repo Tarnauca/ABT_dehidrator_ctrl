@@ -15,7 +15,7 @@ Use simple hysteresis control with relay minimum on/off timing.
 Safety baseline:
 
 - PT50 is the primary control sensor.
-- AHT-like sensor is secondary telemetry and warning-only if unavailable.
+- DHT22/AM2302-class sensor is secondary telemetry and warning-only if unavailable.
 - User setpoint maximum is 75 C.
 - Heater is forced OFF above 75 C.
 - Hard over-temperature fault occurs at 80 C.

@@ -81,7 +81,7 @@ Pure logic modules:
 Hardware-facing adapters:
 
 - `Pt50AnalogSensor`.
-- `AhtSensorAdapter`.
+- `TempRhSensorAdapter`.
 - `RelayOutputs`.
 - `LcdDisplay`.
 - `EncoderInput`.
@@ -123,7 +123,7 @@ Hard faults override relay minimum ON/OFF timing and force heater/fan OFF immedi
 `FaultDetector` should operate on explicit inputs:
 
 - PT50 validity and filtered temperature.
-- AHT availability and optional temperature/RH.
+- Secondary temp/RH sensor availability and optional temperature/RH.
 - Current heater/fan commands.
 - Previous heater/fan command history.
 - Accumulated heater ON command time.
@@ -151,7 +151,7 @@ Proposed configuration ownership:
 - `UiConfig`: LCD dimensions, heartbeat interval, alarm blink timing.
 - `LoggingConfig`: periodic state interval, verbose/raw ADC enable flag.
 - `PersistenceConfig`: EEPROM schema version, checkpoint interval, validation settings.
-- `CalibrationConfig`: default PT50 and AHT calibration constants.
+- `CalibrationConfig`: default PT50 and secondary temp/RH calibration constants.
 - `PresetCatalog`: built-in drying presets.
 
 ## Interfaces
@@ -172,7 +172,7 @@ class PersistentStore;
 Initial responsibilities:
 
 - `Clock`: provides `millis()`-style monotonic time to pure logic and tests.
-- `SensorReader`: provides latest PT50/AHT readings and validity flags.
+- `SensorReader`: provides latest PT50/secondary temp-RH readings and validity flags.
 - `OutputController`: accepts logical heater/fan/backlight/buzzer commands.
 - `LogSink`: writes already-formatted log lines to one destination.
 - `Display`: writes LCD view updates without exposing LCD library details to domain logic.

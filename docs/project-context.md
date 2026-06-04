@@ -19,7 +19,7 @@ The device must work safely. Software safety is important, but product-minded re
 
 - Primary temperature sensor: PT50 through voltage divider into analog input.
 - PT50 supply/reference: MCU VCC, no dedicated voltage reference currently.
-- Secondary sensor: AHT21-like temperature/RH sensor.
+- Secondary sensor: DHT22/AM2302-class temperature/RH sensor.
 - Heater control: relay, on/off only.
 - Fan control: relay, on/off only.
 - Relay polarity: configurable; exact hardware behavior TBD.
@@ -52,7 +52,7 @@ Product-minded recommendation: use an independent thermal fuse, thermal cutoff, 
 - Heater relay minimum ON/OFF time: 10 s.
 - Fan relay minimum ON/OFF time: 10 s, except hard fault or explicit stop may force OFF immediately.
 - PT50/control update interval: 1 s.
-- AHT sensor update interval: 2 s.
+- Secondary temp/RH sensor update interval: 2 s.
 - Periodic serial state log interval: 5 s.
 - Finish cooldown: heater OFF, fan ON for 3 minutes, then fan OFF and finish alarm.
 - Pause: heater OFF and fan OFF immediately; timer/profile progression suspended.
@@ -73,8 +73,8 @@ Hard faults:
 
 Warnings:
 
-- AHT sensor unavailable.
-- PT50 and AHT temperature mismatch.
+- Secondary temp/RH sensor unavailable.
+- PT50 and secondary temp/RH temperature mismatch.
 - EEPROM/config invalid; defaults are loaded.
 - Encoder signal abnormal/chattering, unless later proven to be a hard blocking fault.
 

@@ -52,7 +52,7 @@ void test_format_bringup_state_includes_valid_pt50_fields() {
 
   TEST_ASSERT_TRUE(ok);
   TEST_ASSERT_EQUAL_STRING(
-      "STATE app=bringup uptime_ms=5000 led=on run=running preset=mere h=off f=on pt50=57 adc=512 aht_t=24 rh=43",
+      "STATE app=bringup uptime_ms=5000 led=on run=running preset=mere h=off f=on pt50=57 adc=512 env_t=24 rh=43",
       line);
 }
 
@@ -66,11 +66,11 @@ void test_format_bringup_state_marks_invalid_pt50_as_null() {
 
   TEST_ASSERT_TRUE(ok);
   TEST_ASSERT_EQUAL_STRING(
-      "STATE app=bringup uptime_ms=5000 led=off run=idle preset=null h=off f=off pt50=null adc=0 aht_t=null rh=null",
+      "STATE app=bringup uptime_ms=5000 led=off run=idle preset=null h=off f=off pt50=null adc=0 env_t=null rh=null",
       line);
 }
 
-void test_format_bringup_state_marks_invalid_aht_as_null() {
+void test_format_bringup_state_marks_invalid_temp_rh_as_null() {
   char line[160] = {};
 
   const bool ok = LogFormatter::formatBringupState(line, sizeof(line), 5000U,
@@ -80,7 +80,7 @@ void test_format_bringup_state_marks_invalid_aht_as_null() {
 
   TEST_ASSERT_TRUE(ok);
   TEST_ASSERT_EQUAL_STRING(
-      "STATE app=bringup uptime_ms=5000 led=on run=finish_cooldown preset=ierburi h=off f=on pt50=57 adc=512 aht_t=null rh=null",
+      "STATE app=bringup uptime_ms=5000 led=on run=finish_cooldown preset=ierburi h=off f=on pt50=57 adc=512 env_t=null rh=null",
       line);
 }
 
@@ -148,7 +148,7 @@ void setup() {
   RUN_TEST(test_format_scheduler_state_creates_parseable_line);
   RUN_TEST(test_format_bringup_state_includes_valid_pt50_fields);
   RUN_TEST(test_format_bringup_state_marks_invalid_pt50_as_null);
-  RUN_TEST(test_format_bringup_state_marks_invalid_aht_as_null);
+  RUN_TEST(test_format_bringup_state_marks_invalid_temp_rh_as_null);
   RUN_TEST(test_formatter_reports_truncated_line);
   RUN_TEST(test_formatter_uses_stable_null_token);
   RUN_TEST(test_dispatcher_fans_out_to_all_sinks);

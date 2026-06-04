@@ -28,7 +28,7 @@ Target pure C++ modules where practical:
 Native tests should use simple fakes:
 
 - `FakeClock`: deterministic `millis()`-style time control.
-- `FakeSensorReader`: PT50/AHT values, validity flags, RH availability.
+- `FakeSensorReader`: PT50/secondary temp-RH values, validity flags, RH availability.
 - `FakeOutputController`: captures logical heater/fan/backlight/buzzer commands.
 - `FakePersistentStore`: captures config, resume state, reset cause, and diagnostic writes.
 - `FakeLogSink`: captures formatted log lines for exact or parseable checks.
@@ -84,14 +84,14 @@ Status values:
 | REQ-SAFE-011 | Unit | Watchdog reset during run is non-resumable fault context | `test_fault_detector` watchdog-reset input covered; resume/persistence behavior pending | Implemented |
 | REQ-SAFE-014 | Unit | Startup self-check validates sensors/config/input/output-safe-state | `test_control_state_machine`, fakes | Planned |
 | REQ-HW-002 | Unit/Bench | PT50 is converted as the primary control temperature sensor | `test_pt50_sensor`; Arduino analog adapter builds; real divider/calibration bench check pending | Implemented |
-| REQ-HW-003 | Unit/Bench | AHT-like sensor provides secondary temperature/RH telemetry when available | `test_aht_reader`; concrete `Adafruit_AHTX0` adapter builds; bench check pending | Implemented |
+| REQ-HW-003 | Unit/Bench | DHT22/AM2302-class sensor provides secondary temperature/RH telemetry when available | `test_temp_rh_reader`; concrete `DHT` adapter builds; bench check pending | Implemented |
 | REQ-HW-004 | Unit/Bench | Heater and fan relay outputs translate logical commands to pins | `test_relay_outputs`; relay bench check pending | Implemented |
 | REQ-HW-005 | Unit/Bench | Relay polarity is configurable | `test_relay_outputs` active-high/active-low tests; relay bench check pending | Implemented |
 | REQ-HW-006 | Unit/Bench | LCD is 4x20 and driven through I2C backpack | `test_lcd_status_view`; Mega build with `LiquidCrystal_I2C`; LCD bench check pending | Implemented |
 | REQ-HW-007 | Unit/Bench | LCD backlight uses dedicated output pin | `test_alarm_outputs`; backlight FET bench check pending | Implemented |
 | REQ-HW-008 | Bench | Encoder and pushbutton provide user input events | Mega build with `Encoder` and `Bounce2`; serial event bench check pending | Implemented |
 | REQ-HW-009 | Unit/Bench | Piezo buzzer is used for finish/fault alarms | `test_alarm_outputs`; buzzer bench check pending | Implemented |
-| REQ-UI-004 | Unit/Bench | LCD shall show RH when AHT sensor is present and functional | `test_aht_reader` plus firmware integration with concrete AHT adapter; real sensor bench check pending | Implemented |
+| REQ-UI-004 | Unit/Bench | LCD shall show RH when the secondary temp/RH sensor is present and functional | `test_temp_rh_reader` plus firmware integration with concrete DHT adapter; real sensor bench check pending | Implemented |
 | REQ-UI-008 | Unit/Bench | Encoder rotation navigates menu items | `test_menu_controller`, `test_lcd_menu_view`; bench encoder/menu check pending | Implemented |
 | REQ-UI-009 | Unit/Bench | Encoder short press selects or confirms | `test_menu_controller`; bench button/menu check pending | Implemented |
 | REQ-UI-010 | Unit | Long press has no required navigation behavior in current scope | Controller tests verify short-press navigation paths; no functional dependency on long press | Implemented |
@@ -128,7 +128,7 @@ Before connecting real heater power:
 - Verify LCD 4x20 layout and heartbeat.
 - Verify encoder rotation, short press, `Inapoi` navigation, and stuck-button detection.
 - Verify PT50 analog readings and calibration visibility.
-- Verify AHT temperature/RH reporting and warning on disconnect.
+- Verify DHT22/AM2302 temperature/RH reporting and warning on disconnect.
 - Verify serial logs on USB and secondary serial.
 - Verify secondary serial is output-only in current firmware scope.
 
