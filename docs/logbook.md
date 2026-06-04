@@ -1216,3 +1216,57 @@ The user said "let's proceed" after the concrete AHT bring-up was merged.
 - `include/dehydrator/ui/LcdMenuView.h`
 - `src/main.cpp`
 - `docs/user-ui-ro.md`
+
+### 2026-06-04 - Manual Mode Shell
+
+**Context**
+The menu shell is in place, but selecting `Mod manual` only logged a choice.
+The next small vertical slice is to make that menu item open a real editable
+screen with visible output state and the agreed heater/fan manual constraints.
+
+**Trigger**
+The user said "let's go" after the menu shell was merged.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Created `feature/manual-mode-shell`.
+- Added a pure `ManualModeController` that owns logical manual output commands.
+- Added `LcdManualView` for the Romanian 4x20 manual screen.
+- Wired `main.cpp` so selecting `Mod manual` opens the manual screen, encoder
+  rotation switches selected field, short press toggles the selected output,
+  and long press returns to the menu.
+- Reused `sanitizeOutputCommand()` so heater/fan safety stays consistent with
+  the rest of the codebase.
+- Reflected manual logical output states on the status screen as well.
+- Updated backlog, UI notes, test plan, and logbook.
+
+**Decisions**
+- Keep manual mode as a logical output shell for now; real relay writing is
+  still separate hardware-adapter work.
+- Use `Fan` and `Heat` as the only editable fields in this slice.
+- Enforce the simple safety rule in manual mode immediately:
+  heater ON forces fan ON, and fan OFF forces heater OFF.
+
+**Commits / Branches**
+- Branch: `feature/manual-mode-shell`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 152 tests passed.
+- `platformio run -e megaatmega2560`: success.
+- `platformio run -e megaatmega2560 -t upload`: success.
+- Short serial monitor capture showed clean startup after flashing:
+  `aht_missing`, `boot`, and periodic `STATE app=bringup ...` records.
+- Manual-mode encoder/button interaction is implemented and covered by native
+  tests; the quick human bench exercise of opening `Mod manual` and toggling
+  `Fan`/`Heat` remains pending.
+
+**Links**
+- `include/dehydrator/ui/ManualModeController.h`
+- `include/dehydrator/ui/LcdManualView.h`
+- `src/main.cpp`
+- `docs/user-ui-ro.md`
