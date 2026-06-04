@@ -94,6 +94,20 @@ class PresetRunController {
   }
 
   /**
+   * @brief Applies a confirmed user stop and returns to idle immediately.
+   *
+   * @return true when an active lifecycle state was stopped.
+   */
+  bool stopConfirmed() {
+    if (!stateMachine_.stopConfirmed()) {
+      return false;
+    }
+
+    clearRunContext();
+    return true;
+  }
+
+  /**
    * @brief Returns the current logical device output command.
    *
    * @return Latest heater/fan/alarm command.
