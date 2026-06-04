@@ -62,19 +62,32 @@ class LogFormatter {
                                  uint32_t uptimeMs, bool ledOn,
                                  bool pt50Valid, int16_t pt50TempC,
                                  uint16_t pt50AdcCount, bool ahtValid,
-                                 int16_t ahtTempC, uint8_t rhPercent) {
+                                 int16_t ahtTempC, uint8_t rhPercent,
+                                 const char* runStateToken = nullptr,
+                                 const char* presetToken = nullptr,
+                                 bool heaterOn = false, bool fanOn = false) {
+    const char* stateToken = safeToken(runStateToken);
+    const char* activePreset = safeToken(presetToken);
     if (!pt50Valid && !ahtValid) {
       return format(buffer, bufferSize,
-                    "STATE app=bringup uptime_ms=%lu led=%s pt50=null adc=%u aht_t=null rh=null",
+                    "STATE app=bringup uptime_ms=%lu led=%s run=%s preset=%s h=%s f=%s pt50=null adc=%u aht_t=null rh=null",
                     static_cast<unsigned long>(uptimeMs),
                     ledOn ? "on" : "off",
+                    stateToken,
+                    activePreset,
+                    heaterOn ? "on" : "off",
+                    fanOn ? "on" : "off",
                     static_cast<unsigned int>(pt50AdcCount));
     }
 
     if (!pt50Valid) {
       return format(buffer, bufferSize,
-                    "STATE app=bringup uptime_ms=%lu led=%s pt50=null adc=%u aht_t=%d rh=%u",
+                    "STATE app=bringup uptime_ms=%lu led=%s run=%s preset=%s h=%s f=%s pt50=null adc=%u aht_t=%d rh=%u",
                     static_cast<unsigned long>(uptimeMs), ledOn ? "on" : "off",
+                    stateToken,
+                    activePreset,
+                    heaterOn ? "on" : "off",
+                    fanOn ? "on" : "off",
                     static_cast<unsigned int>(pt50AdcCount),
                     ahtValid ? static_cast<int>(ahtTempC) : 0,
                     ahtValid ? static_cast<unsigned int>(rhPercent) : 0U);
@@ -82,15 +95,23 @@ class LogFormatter {
 
     if (!ahtValid) {
       return format(buffer, bufferSize,
-                    "STATE app=bringup uptime_ms=%lu led=%s pt50=%d adc=%u aht_t=null rh=null",
+                    "STATE app=bringup uptime_ms=%lu led=%s run=%s preset=%s h=%s f=%s pt50=%d adc=%u aht_t=null rh=null",
                     static_cast<unsigned long>(uptimeMs), ledOn ? "on" : "off",
+                    stateToken,
+                    activePreset,
+                    heaterOn ? "on" : "off",
+                    fanOn ? "on" : "off",
                     static_cast<int>(pt50TempC),
                     static_cast<unsigned int>(pt50AdcCount));
     }
 
     return format(buffer, bufferSize,
-                  "STATE app=bringup uptime_ms=%lu led=%s pt50=%d adc=%u aht_t=%d rh=%u",
+                  "STATE app=bringup uptime_ms=%lu led=%s run=%s preset=%s h=%s f=%s pt50=%d adc=%u aht_t=%d rh=%u",
                   static_cast<unsigned long>(uptimeMs), ledOn ? "on" : "off",
+                  stateToken,
+                  activePreset,
+                  heaterOn ? "on" : "off",
+                  fanOn ? "on" : "off",
                   static_cast<int>(pt50TempC),
                   static_cast<unsigned int>(pt50AdcCount),
                   static_cast<int>(ahtTempC),

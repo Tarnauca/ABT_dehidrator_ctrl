@@ -32,7 +32,7 @@ void test_format_event_creates_parseable_line() {
 }
 
 void test_format_scheduler_state_creates_parseable_line() {
-  char line[96] = {};
+  char line[160] = {};
 
   const bool ok = LogFormatter::formatSchedulerState(line, sizeof(line), 5000U,
                                                      true);
@@ -43,41 +43,44 @@ void test_format_scheduler_state_creates_parseable_line() {
 }
 
 void test_format_bringup_state_includes_valid_pt50_fields() {
-  char line[96] = {};
+  char line[160] = {};
 
   const bool ok = LogFormatter::formatBringupState(line, sizeof(line), 5000U,
                                                    true, true, 57, 512U, true,
-                                                   24, 43U);
+                                                   24, 43U, "running", "mere",
+                                                   false, true);
 
   TEST_ASSERT_TRUE(ok);
   TEST_ASSERT_EQUAL_STRING(
-      "STATE app=bringup uptime_ms=5000 led=on pt50=57 adc=512 aht_t=24 rh=43",
+      "STATE app=bringup uptime_ms=5000 led=on run=running preset=mere h=off f=on pt50=57 adc=512 aht_t=24 rh=43",
       line);
 }
 
 void test_format_bringup_state_marks_invalid_pt50_as_null() {
-  char line[96] = {};
+  char line[160] = {};
 
   const bool ok = LogFormatter::formatBringupState(line, sizeof(line), 5000U,
                                                    false, false, 0, 0U, false,
-                                                   0, 0U);
+                                                   0, 0U, "idle", nullptr,
+                                                   false, false);
 
   TEST_ASSERT_TRUE(ok);
   TEST_ASSERT_EQUAL_STRING(
-      "STATE app=bringup uptime_ms=5000 led=off pt50=null adc=0 aht_t=null rh=null",
+      "STATE app=bringup uptime_ms=5000 led=off run=idle preset=null h=off f=off pt50=null adc=0 aht_t=null rh=null",
       line);
 }
 
 void test_format_bringup_state_marks_invalid_aht_as_null() {
-  char line[96] = {};
+  char line[160] = {};
 
   const bool ok = LogFormatter::formatBringupState(line, sizeof(line), 5000U,
                                                    true, true, 57, 512U, false,
-                                                   0, 0U);
+                                                   0, 0U, "finish_cooldown",
+                                                   "ierburi", false, true);
 
   TEST_ASSERT_TRUE(ok);
   TEST_ASSERT_EQUAL_STRING(
-      "STATE app=bringup uptime_ms=5000 led=on pt50=57 adc=512 aht_t=null rh=null",
+      "STATE app=bringup uptime_ms=5000 led=on run=finish_cooldown preset=ierburi h=off f=on pt50=57 adc=512 aht_t=null rh=null",
       line);
 }
 

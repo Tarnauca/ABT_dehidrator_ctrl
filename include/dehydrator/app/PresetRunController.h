@@ -1,0 +1,244 @@
+#pragma once
+
+#include <stdint.h>
+
+#include "dehydrator/config/RuntimeConfig.h"
+#include "dehydrator/domain/ProfileEngine.h"
+#include "dehydrator/domain/RunState.h"
+#include "dehydrator/domain/RunStateMachine.h"
+#include "dehydrator/domain/TemperatureControl.h"
+#include "dehydrator/interfaces/OutputController.h"
+#include "dehydrator/presets/PresetCatalog.h"
+
+namespace dehydrator {
+
+/**
+ * @brief Pure coordinator that turns a selected preset into a live run shell.
+ *
+ * This class bridges the existing pure modules:
+ * - `RunStateMachine` for lifecycle ownership,
+ * - `ProfileEngine` for target generation,
+ * - `TemperatureControl` for relay-safe heater decisions.
+ *
+ * It deliberately stays allocation-free and hardware-independent so native
+ * tests can cover the first preset-to-run vertical slice before bench upload.
+ */
+class PresetRunController {
+ public:
+  /**
+   * @brief Creates a preset-run controller with the provided control config.
+   *
+   * @param controlConfig Hysteresis and relay timing configuration.
+   */
+  explicit constexpr PresetRunController(
+      const config::ControlConfig& controlConfig = config::CONTROL)
+      : controlConfig_(controlConfig) {}
+
+  /**
+   * @brief Starts a run from one built-in preset.
+   *
+   * @param preset Preset definition chosen by the user.
+   * @return true when the run was accepted from idle state.
+   */
+  bool startPreset(const PresetDefinition& preset) {
+    if (!stateMachine_.start(preset.profile)) {
+      return false;
+    }
+
+    activePreset_ = &preset;
+    lastTargetTempC_ = initialTargetTempC(preset.profile);
+    currentCommand_ = {};
+    temperatureControl_.reset(false);
+    updateCommand(0U, false, 0);
+    return true;
+  }
+
+  /**
+   * @brief Advances the active run using the latest PT50 reading.
+   *
+   * @param deltaSeconds Scheduler-provided elapsed time.
+   * @param pt50Valid Whether the PT50 reading may be used for control.
+   * @param pt50TempC Latest PT50 temperature in Celsius.
+   */
+  void update(uint16_t deltaSeconds, bool pt50Valid, int16_t pt50TempC) {
+    stateMachine_.update(deltaSeconds);
+    updateCommand(deltaSeconds, pt50Valid, pt50TempC);
+  }
+
+  /**
+   * @brief Acknowledges the finish alarm and returns to idle.
+   *
+   * @return true when the finish alarm was acknowledged.
+   */
+  bool acknowledgeFinished() {
+    if (!stateMachine_.acknowledgeFinished()) {
+      return false;
+    }
+
+    clearRunContext();
+    return true;
+  }
+
+  /**
+   * @brief Acknowledges a hard fault and returns to idle.
+   *
+   * @return true when the fault was acknowledged.
+   */
+  bool acknowledgeFault() {
+    if (!stateMachine_.acknowledgeFault()) {
+      return false;
+    }
+
+    clearRunContext();
+    return true;
+  }
+
+  /**
+   * @brief Returns the current logical device output command.
+   *
+   * @return Latest heater/fan/alarm command.
+   */
+  constexpr OutputCommand outputCommand() const { return currentCommand_; }
+
+  /**
+   * @brief Returns the current lifecycle snapshot.
+   *
+   * @return Current run timers and state flags.
+   */
+  RunStateSnapshot snapshot() const { return stateMachine_.snapshot(); }
+
+  /**
+   * @brief Returns the active preset, if any.
+   *
+   * @return Active preset pointer or null when idle.
+   */
+  constexpr const PresetDefinition* activePreset() const { return activePreset_; }
+
+  /**
+   * @brief Returns the last profile target temperature used for control.
+   *
+   * @return Integer target temperature in Celsius.
+   */
+  constexpr int16_t lastTargetTempC() const { return lastTargetTempC_; }
+
+  /**
+   * @brief Returns a stable English token for logs and diagnostics.
+   *
+   * @return Stable lower-case state token.
+   */
+  const char* stateToken() const {
+    switch (stateMachine_.snapshot().state) {
+      case RunState::Running:
+        return "running";
+      case RunState::Paused:
+        return "paused";
+      case RunState::FinishCooldown:
+        return "finish_cooldown";
+      case RunState::FinishedAlarm:
+        return "finished_alarm";
+      case RunState::Fault:
+        return "fault";
+      case RunState::Boot:
+        return "boot";
+      case RunState::SelfCheck:
+        return "self_check";
+      case RunState::ResumeOffer:
+        return "resume_offer";
+      case RunState::Stopping:
+        return "stopping";
+      case RunState::Idle:
+      default:
+        return "idle";
+    }
+  }
+
+  /**
+   * @brief Returns the Romanian LCD state label for the current run state.
+   *
+   * @return Compact Romanian state text suitable for the status screen.
+   */
+  const char* stateLabelRo() const {
+    switch (stateMachine_.snapshot().state) {
+      case RunState::Running:
+        return "RULARE";
+      case RunState::Paused:
+        return "PAUZA";
+      case RunState::FinishCooldown:
+        return "RACIRE";
+      case RunState::FinishedAlarm:
+        return "FINALIZAT";
+      case RunState::Fault:
+        return "EROARE";
+      case RunState::Boot:
+        return "PORNIRE";
+      case RunState::SelfCheck:
+        return "VERIFICARE";
+      case RunState::ResumeOffer:
+        return "RELUARE";
+      case RunState::Stopping:
+        return "OPRIRE";
+      case RunState::Idle:
+      default:
+        return "INACTIV";
+    }
+  }
+
+ private:
+  static int16_t initialTargetTempC(const ProfileConfig& profile) {
+    return profile.mode == ProfileMode::Fluctuating ? profile.highTempC
+                                                    : profile.targetTempC;
+  }
+
+  void clearRunContext() {
+    activePreset_ = nullptr;
+    currentCommand_ = {};
+    lastTargetTempC_ = 0;
+    temperatureControl_.reset(false);
+  }
+
+  void updateCommand(uint16_t deltaSeconds, bool pt50Valid, int16_t pt50TempC) {
+    const RunStateSnapshot snapshot = stateMachine_.snapshot();
+    const RunOutputPolicy runPolicy = stateMachine_.outputPolicy();
+
+    currentCommand_.fanOn = runPolicy.fanOn;
+    currentCommand_.heaterOn = false;
+    currentCommand_.buzzerOn = runPolicy.finishAlarmOn || runPolicy.faultAlarmOn;
+    currentCommand_.backlightOn = true;
+
+    if (snapshot.state != RunState::Running || activePreset_ == nullptr) {
+      if (snapshot.state == RunState::Idle) {
+        activePreset_ = nullptr;
+      }
+      temperatureControl_.reset(false);
+      return;
+    }
+
+    const ProfileTarget target =
+        ProfileEngine::evaluate(activePreset_->profile, snapshot.activeElapsedSeconds);
+    lastTargetTempC_ = target.targetTempC;
+
+    if (!pt50Valid) {
+      temperatureControl_.reset(false);
+      return;
+    }
+
+    TemperatureControlInput controlInput;
+    controlInput.currentTempC = pt50TempC;
+    controlInput.targetTempC = target.targetTempC;
+    controlInput.runPolicy = runPolicy;
+    controlInput.deltaSeconds = deltaSeconds;
+    const TemperatureControlOutput controlOutput =
+        temperatureControl_.update(controlConfig_, controlInput);
+    currentCommand_.heaterOn = controlOutput.heaterOn;
+    currentCommand_ = sanitizeOutputCommand(currentCommand_);
+  }
+
+  const config::ControlConfig& controlConfig_;
+  RunStateMachine stateMachine_;
+  TemperatureControl temperatureControl_;
+  const PresetDefinition* activePreset_ = nullptr;
+  OutputCommand currentCommand_;
+  int16_t lastTargetTempC_ = 0;
+};
+
+}  // namespace dehydrator

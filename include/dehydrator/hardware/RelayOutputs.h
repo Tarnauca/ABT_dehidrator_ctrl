@@ -77,8 +77,8 @@ class RelayOutputs final : public OutputController {
   }
 
  private:
-  static constexpr bool activeLevelToPinHigh(config::ActiveLevel activeLevel,
-                                             bool active) {
+  static bool activeLevelToPinHigh(config::ActiveLevel activeLevel,
+                                   bool active) {
     if (activeLevel == config::ActiveLevel::ActiveHigh) {
       return active;
     }

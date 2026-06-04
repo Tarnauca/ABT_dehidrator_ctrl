@@ -6,12 +6,15 @@
 #include <string.h>
 
 #include "dehydrator/app/EncoderStepFilter.h"
+#include "dehydrator/app/PresetRunController.h"
 #include "dehydrator/app/PeriodicTask.h"
 #include "dehydrator/config/HardwareConfig.h"
 #include "dehydrator/config/RuntimeConfig.h"
 #include "dehydrator/domain/Pt50SensorModel.h"
+#include "dehydrator/hardware/RelayOutputs.h"
 #include "dehydrator/hardware/ArduinoAnalogInput.h"
 #include "dehydrator/hardware/ArduinoAhtSensorDriver.h"
+#include "dehydrator/interfaces/DigitalOutput.h"
 #include "dehydrator/interfaces/CharacterDisplay.h"
 #include "dehydrator/logging/LogDispatcher.h"
 #include "dehydrator/logging/LogFormatter.h"
@@ -42,6 +45,8 @@ dehydrator::PeriodicTask lcdRefreshTask(
     dehydrator::config::SCHEDULER.lcdRefreshIntervalMs);
 dehydrator::PeriodicTask inputScanTask(
     dehydrator::config::SCHEDULER.inputScanIntervalMs);
+dehydrator::PeriodicTask runControlTask(
+    dehydrator::config::SCHEDULER.sensorSampleIntervalMs);
 
 bool ledOn = false;
 bool heartbeatOn = false;
@@ -51,6 +56,8 @@ bool buttonPressed = false;
 dehydrator::Pt50Reading latestPt50;
 dehydrator::AhtReading latestAht;
 dehydrator::EncoderStepFilter encoderStepFilter(4);
+dehydrator::PresetRunController presetRunController;
+dehydrator::OutputCommand activeOutputCommand;
 
 enum class BringupScreen {
   Status,
@@ -118,7 +125,36 @@ class ArduinoLcdCharacterDisplay final : public dehydrator::CharacterDisplay {
   LiquidCrystal_I2C& lcd_;
 };
 
+/**
+ * @brief Arduino digital output adapter used by relay output helpers.
+ */
+class ArduinoDigitalOutput final : public dehydrator::DigitalOutput {
+ public:
+  /**
+   * @brief Preloads one pin level and configures it as OUTPUT.
+   *
+   * @param pin MCU pin number.
+   * @param initialHigh Initial logical high/low level.
+   */
+  void configureOutput(uint8_t pin, bool initialHigh) override {
+    digitalWrite(pin, initialHigh ? HIGH : LOW);
+    pinMode(pin, OUTPUT);
+  }
+
+  /**
+   * @brief Writes one logical level to a configured output pin.
+   *
+   * @param pin MCU pin number.
+   * @param high True for HIGH, false for LOW.
+   */
+  void write(uint8_t pin, bool high) override {
+    digitalWrite(pin, high ? HIGH : LOW);
+  }
+};
+
 ArduinoLcdCharacterDisplay lcdDisplay(lcd);
+ArduinoDigitalOutput digitalOutput;
+dehydrator::RelayOutputs relayOutputs(digitalOutput, dehydrator::config::HARDWARE);
 dehydrator::LcdStatusView statusView(lcdDisplay);
 dehydrator::ArduinoAnalogInput analogInput;
 dehydrator::ArduinoAhtSensorDriver ahtDriver;
@@ -281,6 +317,20 @@ void logPresetResult(const dehydrator::PresetUiResult& result) {
 }
 
 /**
+ * @brief Logs lifecycle state changes for the active preset-run shell.
+ *
+ * @param previous Previous lifecycle state token.
+ * @param current Current lifecycle state token.
+ */
+void logRunStateChange(const char* previous, const char* current) {
+  if (previous == nullptr || current == nullptr || strcmp(previous, current) == 0) {
+    return;
+  }
+
+  logEvent("run_state", current);
+}
+
+/**
  * @brief Cooperative LED task used by the scheduler shell.
  *
  * @param nowMs Current firmware uptime in milliseconds.
@@ -319,6 +369,24 @@ void updateAhtTask(uint32_t nowMs) {
   }
 
   latestAht = ahtReader.read();
+}
+
+/**
+ * @brief Advances the active preset run and applies logical relay outputs.
+ *
+ * @param nowMs Current firmware uptime in milliseconds.
+ */
+void updateRunControlTask(uint32_t nowMs) {
+  if (!runControlTask.shouldRun(nowMs)) {
+    return;
+  }
+
+  const char* previousState = presetRunController.stateToken();
+  presetRunController.update(1U, latestPt50.valid, latestPt50.tempC);
+  logRunStateChange(previousState, presetRunController.stateToken());
+
+  activeOutputCommand = presetRunController.outputCommand();
+  relayOutputs.apply(activeOutputCommand);
 }
 
 /**
@@ -362,13 +430,13 @@ void updateLcdTask(uint32_t nowMs) {
   }
 
   dehydrator::LcdStatusSnapshot snapshot;
-  snapshot.stateLabel = "INACTIV";
+  snapshot.stateLabel = presetRunController.stateLabelRo();
   snapshot.pt50TempC = latestPt50.tempC;
   snapshot.pt50Valid = latestPt50.valid;
   snapshot.rhPercent = latestAht.rhPercent;
   snapshot.rhValid = latestAht.valid;
-  snapshot.heaterOn = manualModeController.command().heaterOn;
-  snapshot.fanOn = manualModeController.command().fanOn;
+  snapshot.heaterOn = activeOutputCommand.heaterOn;
+  snapshot.fanOn = activeOutputCommand.fanOn;
   snapshot.heartbeatOn = heartbeatOn;
   statusView.render(snapshot);
 }
@@ -440,8 +508,17 @@ void updateInputTask(uint32_t nowMs) {
       const dehydrator::PresetUiResult result = presetSelectController.onShortPress();
       logPresetResult(result);
       if (result.presetSelected) {
-        logEvent("preset_start", presetSelectController.currentToken());
-        currentScreen = BringupScreen::Status;
+        const dehydrator::PresetDefinition* preset =
+            presetSelectController.currentPreset();
+        if (preset != nullptr && presetRunController.startPreset(*preset)) {
+          activeOutputCommand = presetRunController.outputCommand();
+          relayOutputs.apply(activeOutputCommand);
+          logEvent("preset_start", preset->token);
+          logEvent("run_state", presetRunController.stateToken());
+          currentScreen = BringupScreen::Status;
+        } else {
+          logEvent("preset_start", "rejected");
+        }
       } else if (result.exitToMenu) {
         currentScreen = BringupScreen::Menu;
       }
@@ -449,6 +526,19 @@ void updateInputTask(uint32_t nowMs) {
     }
 
     const dehydrator::UiResult result = menuController.onShortPress();
+
+    if (currentScreen == BringupScreen::Status &&
+        presetRunController.snapshot().state ==
+            dehydrator::RunState::FinishedAlarm &&
+        result.action == dehydrator::UiAction::OpenMenu) {
+      if (presetRunController.acknowledgeFinished()) {
+        activeOutputCommand = presetRunController.outputCommand();
+        relayOutputs.apply(activeOutputCommand);
+        logEvent("run_ack", "finished");
+      }
+      return;
+    }
+
     logUiResult(result);
     if (result.action == dehydrator::UiAction::OpenMenu) {
       currentScreen = BringupScreen::Menu;
@@ -486,11 +576,15 @@ void updateStateLogTask(uint32_t nowMs) {
     return;
   }
 
+  const dehydrator::PresetDefinition* activePreset = presetRunController.activePreset();
   char line[dehydrator::config::LOGGING.lineSize] = {};
   if (dehydrator::LogFormatter::formatBringupState(
           line, sizeof(line), nowMs, ledOn, latestPt50.valid,
           latestPt50.tempC, latestPt50.adcCount, latestAht.valid,
-          latestAht.tempC, latestAht.rhPercent)) {
+          latestAht.tempC, latestAht.rhPercent,
+          presetRunController.stateToken(),
+          activePreset != nullptr ? activePreset->token : nullptr,
+          activeOutputCommand.heaterOn, activeOutputCommand.fanOn)) {
     writeLogLine(line);
     return;
   }
@@ -538,6 +632,7 @@ void setup() {
   lcd.backlight();
   lcd.clear();
   lcd.createChar(dehydrator::LcdStatusView::HEARTBEAT_CHAR, heartbeatGlyph);
+  relayOutputs.begin();
   lastEncoderPosition = rotaryEncoder.read();
   encoderStepFilter.reset(lastEncoderPosition);
 
@@ -550,6 +645,7 @@ void loop() {
   updateLedTask(nowMs);
   updateSensorTask(nowMs);
   updateAhtTask(nowMs);
+  updateRunControlTask(nowMs);
   updateStateLogTask(nowMs);
   updateInputTask(nowMs);
   updateLcdTask(nowMs);
