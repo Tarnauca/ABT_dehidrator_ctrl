@@ -1264,6 +1264,54 @@ proceed with the previous request about menu behavior.
 - `test/test_lcd_menu_view/test_lcd_menu_view.cpp`
 - `docs/user-ui-ro.md`
 
+### 2026-06-04 - Preset Selection Shell
+
+**Context**
+The menu and manual mode shells were in place, but `Pornire preset` still did
+not lead anywhere useful. The next step was to add a real preset-selection
+screen with a starter catalog and a confirm action.
+
+**Trigger**
+The user asked to proceed with the next step after confirming the menu was OK.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added a small built-in preset catalog with starter values for `Mere`,
+  `Ierburi`, `Jerky`, and `Iaurt`.
+- Added `PresetSelectController` for navigation, confirm, and return-to-menu
+  behavior.
+- Added `LcdPresetView` for the Romanian 4x20 preset screen.
+- Wired `main.cpp` so selecting `Pornire preset` opens the preset screen and
+  confirming a preset logs the choice and returns to the status screen.
+- Added native tests for the preset controller and preset view.
+- Updated backlog and Romanian UI notes.
+
+**Decisions**
+- Keep the preset flow as a shell for now: the user can choose a preset and the
+  firmware logs the selection, but the full run-start wiring remains a separate
+  later slice.
+- Keep the preset values centralized in a dedicated catalog so they can be
+  revised from a PDF or bench results without changing UI logic.
+
+**Commits / Branches**
+- Branch: `feature/preset-run-config`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 164 tests passed.
+- `platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/presets/PresetCatalog.h`
+- `include/dehydrator/ui/PresetSelectController.h`
+- `include/dehydrator/ui/LcdPresetView.h`
+- `src/main.cpp`
+- `docs/user-ui-ro.md`
+
 ### 2026-06-04 - Manual Mode Shell
 
 **Context**

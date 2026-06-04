@@ -18,10 +18,13 @@
 #include "dehydrator/logging/LogSink.h"
 #include "dehydrator/sensors/AhtReader.h"
 #include "dehydrator/sensors/Pt50Reader.h"
+#include "dehydrator/presets/PresetCatalog.h"
 #include "dehydrator/ui/LcdManualView.h"
+#include "dehydrator/ui/LcdPresetView.h"
 #include "dehydrator/ui/LcdMenuView.h"
 #include "dehydrator/ui/LcdStatusView.h"
 #include "dehydrator/ui/ManualModeController.h"
+#include "dehydrator/ui/PresetSelectController.h"
 #include "dehydrator/ui/MenuController.h"
 
 constexpr char LOG_TRUNCATED_EVENT[] = "WARN code=log_truncated source=event";
@@ -53,6 +56,7 @@ enum class BringupScreen {
   Status,
   Menu,
   Manual,
+  Preset,
 };
 
 BringupScreen currentScreen = BringupScreen::Status;
@@ -124,6 +128,7 @@ dehydrator::Pt50Reader pt50Reader(analogInput,
 dehydrator::AhtReader ahtReader(ahtDriver, dehydrator::config::CALIBRATION);
 dehydrator::MenuController menuController;
 dehydrator::ManualModeController manualModeController;
+dehydrator::PresetSelectController presetSelectController;
 
 /**
  * @brief Arduino `Stream` adapter for the project log sink interface.
@@ -155,6 +160,7 @@ dehydrator::LogDispatcher logger(logSinks,
                                  dehydrator::config::LOGGING.sinkCapacity);
 dehydrator::LcdMenuView menuView(lcdDisplay);
 dehydrator::LcdManualView manualView(lcdDisplay);
+dehydrator::LcdPresetView presetView(lcdDisplay);
 
 /**
  * @brief Returns whether a pin has been assigned in hardware configuration.
@@ -256,6 +262,25 @@ void logManualResult(const dehydrator::ManualUiResult& result) {
 }
 
 /**
+ * @brief Logs preset selection UI transitions and choices.
+ *
+ * @param result Result produced by the preset selection controller.
+ */
+void logPresetResult(const dehydrator::PresetUiResult& result) {
+  if (result.selectionChanged) {
+    logEvent("ui", presetSelectController.currentPreset()->token);
+  }
+
+  if (result.presetSelected) {
+    logEvent("preset_select", presetSelectController.currentPreset()->token);
+  }
+
+  if (result.exitToMenu) {
+    logEvent("ui", "preset_close");
+  }
+}
+
+/**
  * @brief Cooperative LED task used by the scheduler shell.
  *
  * @param nowMs Current firmware uptime in milliseconds.
@@ -316,6 +341,16 @@ void updateLcdTask(uint32_t nowMs) {
     return;
   }
 
+  if (currentScreen == BringupScreen::Preset) {
+    dehydrator::LcdPresetSnapshot presetSnapshot;
+    presetSnapshot.presets = dehydrator::PresetCatalog::items();
+    presetSnapshot.presetCount = dehydrator::PresetCatalog::PRESET_COUNT;
+    presetSnapshot.selectedIndex = presetSelectController.selectedIndex();
+    presetSnapshot.heartbeatOn = heartbeatOn;
+    presetView.render(presetSnapshot);
+    return;
+  }
+
   if (currentScreen == BringupScreen::Menu) {
     dehydrator::LcdMenuSnapshot menuSnapshot;
     menuSnapshot.items = dehydrator::MenuController::items();
@@ -354,6 +389,8 @@ void updateInputTask(uint32_t nowMs) {
     logEvent("input", delta > 0 ? "encoder_cw" : "encoder_ccw");
     if (currentScreen == BringupScreen::Manual) {
       logManualResult(manualModeController.onRotate(delta));
+    } else if (currentScreen == BringupScreen::Preset) {
+      logPresetResult(presetSelectController.onRotate(delta));
     } else if (currentScreen == BringupScreen::Menu) {
       logUiResult(menuController.onRotate(delta));
     }
@@ -377,6 +414,12 @@ void updateInputTask(uint32_t nowMs) {
         if (result.exitToMenu) {
           currentScreen = BringupScreen::Menu;
         }
+      } else if (currentScreen == BringupScreen::Preset) {
+        const dehydrator::PresetUiResult result = presetSelectController.onLongPress();
+        logPresetResult(result);
+        if (result.exitToMenu) {
+          currentScreen = BringupScreen::Menu;
+        }
       } else {
         const dehydrator::UiResult result = menuController.onLongPress();
         logUiResult(result);
@@ -390,6 +433,16 @@ void updateInputTask(uint32_t nowMs) {
     logEvent("input", "button_short");
     if (currentScreen == BringupScreen::Manual) {
       logManualResult(manualModeController.onShortPress());
+      return;
+    }
+
+    if (currentScreen == BringupScreen::Preset) {
+      const dehydrator::PresetUiResult result = presetSelectController.onShortPress();
+      logPresetResult(result);
+      if (result.presetSelected) {
+        logEvent("preset_start", presetSelectController.currentPreset()->token);
+        currentScreen = BringupScreen::Status;
+      }
       return;
     }
 
@@ -410,6 +463,11 @@ void updateInputTask(uint32_t nowMs) {
         strcmp(menuController.currentToken(), "mod_manual") == 0) {
       currentScreen = BringupScreen::Manual;
       logEvent("ui", "manual_open");
+    } else if (result.action == dehydrator::UiAction::SelectItem &&
+               menuController.currentToken() != nullptr &&
+               strcmp(menuController.currentToken(), "pornire_preset") == 0) {
+      currentScreen = BringupScreen::Preset;
+      logEvent("ui", "preset_open");
     }
   }
 }

@@ -96,6 +96,7 @@ Status values:
 | REQ-UI-009 | Unit/Bench | Encoder short press selects or confirms | `test_menu_controller`; bench button/menu check pending | Implemented |
 | REQ-UI-010 | Unit/Bench | Encoder long press goes back or cancels | `test_menu_controller`; bench long-press check pending | Implemented |
 | REQ-FUNC-001 | Unit/Bench | Manual mode supports direct on/off control shell | `test_manual_mode_controller`, `test_lcd_manual_view`; bench manual-mode check pending | Implemented |
+| REQ-FUNC-004 | Unit/Bench | Built-in preset selection shell is available from the menu | `test_preset_select_controller`, `test_lcd_preset_view`; bench preset check pending | Implemented |
 | REQ-FUNC-010 | Unit/Bench | Manual heat request forces fan ON within safety constraints | `test_manual_mode_controller`; bench manual toggle check pending | Implemented |
 | REQ-PERSIST-001 | Unit | Calibration defaults are explicit and later persistable | `test_config` PT50 calibration default tests; EEPROM persistence pending | Implemented |
 | REQ-UI-005 | Unit/Bench | Heartbeat visible bottom-right and runs in all states | `test_lcd_status_view`; LCD bench test pending | Implemented |
