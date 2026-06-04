@@ -14,6 +14,8 @@ enum class ManualField {
   Fan,
   /** Heater ON/OFF selection field. */
   Heater,
+  /** Back entry that returns to the previous menu level. */
+  Back,
 };
 
 /**
@@ -63,8 +65,20 @@ class ManualModeController {
       return {};
     }
 
-    selectedField_ = selectedField_ == ManualField::Fan ? ManualField::Heater
-                                                        : ManualField::Fan;
+    if (delta > 0) {
+      if (selectedField_ == ManualField::Fan) {
+        selectedField_ = ManualField::Heater;
+      } else if (selectedField_ == ManualField::Heater) {
+        selectedField_ = ManualField::Back;
+      }
+    } else {
+      if (selectedField_ == ManualField::Back) {
+        selectedField_ = ManualField::Heater;
+      } else if (selectedField_ == ManualField::Heater) {
+        selectedField_ = ManualField::Fan;
+      }
+    }
+
     ManualUiResult result;
     result.selectionChanged = true;
     return result;
@@ -76,6 +90,12 @@ class ManualModeController {
    * @return Result indicating whether outputs changed.
    */
   ManualUiResult onShortPress() {
+    if (selectedField_ == ManualField::Back) {
+      ManualUiResult result;
+      result.exitToMenu = true;
+      return result;
+    }
+
     const OutputCommand previous = command_;
 
     if (selectedField_ == ManualField::Fan) {
@@ -96,7 +116,7 @@ class ManualModeController {
   }
 
   /**
-   * @brief Handles a long press by leaving manual mode.
+   * @brief Handles a long press with currently reserved behavior.
    *
    * @return Result requesting a return to the menu.
    */

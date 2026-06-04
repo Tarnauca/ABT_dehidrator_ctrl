@@ -38,13 +38,14 @@ void test_rotation_stops_at_end_of_menu() {
   controller.onRotate(1);
   controller.onRotate(1);
   controller.onRotate(1);
+  controller.onRotate(1);
 
   const UiResult result = controller.onRotate(1);
 
   TEST_ASSERT_EQUAL(static_cast<int>(UiAction::None),
                     static_cast<int>(result.action));
   TEST_ASSERT_EQUAL_UINT(MenuController::ITEM_COUNT - 1U, controller.selectedIndex());
-  TEST_ASSERT_EQUAL_STRING("Oprire", controller.currentItem());
+  TEST_ASSERT_EQUAL_STRING("Inapoi", controller.currentItem());
 }
 
 void test_rotation_stops_at_start_of_menu() {
@@ -71,11 +72,16 @@ void test_short_press_on_menu_selects_current_item() {
   TEST_ASSERT_EQUAL_STRING("Mod manual", result.selectedItem);
 }
 
-void test_long_press_closes_menu_back_to_status() {
+void test_short_press_on_inapoi_closes_menu() {
   MenuController controller;
   controller.onShortPress();
+  controller.onRotate(1);
+  controller.onRotate(1);
+  controller.onRotate(1);
+  controller.onRotate(1);
+  controller.onRotate(1);
 
-  const UiResult result = controller.onLongPress();
+  const UiResult result = controller.onShortPress();
 
   TEST_ASSERT_EQUAL(static_cast<int>(UiAction::CloseMenu),
                     static_cast<int>(result.action));
@@ -90,7 +96,7 @@ void setup() {
   RUN_TEST(test_rotation_stops_at_end_of_menu);
   RUN_TEST(test_rotation_stops_at_start_of_menu);
   RUN_TEST(test_short_press_on_menu_selects_current_item);
-  RUN_TEST(test_long_press_closes_menu_back_to_status);
+  RUN_TEST(test_short_press_on_inapoi_closes_menu);
   UNITY_END();
 }
 

@@ -18,7 +18,7 @@ Target pure C++ modules where practical:
 - `test_temperature_control`: hysteresis, relay minimum ON/OFF timing, heater forced OFF above 75 C, hard fault behavior handoff.
 - `test_fault_detector`: PT50 invalid, over-temperature, no-temperature-rise, heater-stuck-ON, stuck button, watchdog reset.
 - `test_profile_engine`: fixed target and fluctuating low/high phase target generation.
-- `test_run_timer`: `HH:MM` duration limits, pause/resume, finish timing, 3-minute finish cooldown timing.
+- `test_run_timer`: duration limits up to 99 h 0 min, pause/resume, finish timing, and 3-minute finish cooldown timing.
 - `test_log_formatter`: stable English event/state/warning/fault records that are human-readable and parseable.
 - `test_persistence_validation`: EEPROM version/checksum validation, defaulting, resume snapshots, faulted non-resumable state.
 - `test_preset_catalog`: built-in preset validation once preset values are defined.
@@ -94,7 +94,12 @@ Status values:
 | REQ-UI-004 | Unit/Bench | LCD shall show RH when AHT sensor is present and functional | `test_aht_reader` plus firmware integration with concrete AHT adapter; real sensor bench check pending | Implemented |
 | REQ-UI-008 | Unit/Bench | Encoder rotation navigates menu items | `test_menu_controller`, `test_lcd_menu_view`; bench encoder/menu check pending | Implemented |
 | REQ-UI-009 | Unit/Bench | Encoder short press selects or confirms | `test_menu_controller`; bench button/menu check pending | Implemented |
-| REQ-UI-010 | Unit/Bench | Encoder long press goes back or cancels | `test_menu_controller`; bench long-press check pending | Implemented |
+| REQ-UI-010 | Unit | Long press has no required navigation behavior in current scope | Controller tests verify short-press navigation paths; no functional dependency on long press | Implemented |
+| REQ-UI-011 | Unit/Bench | Every menu-like screen exposes `Inapoi` as the last selectable entry | `test_menu_controller`, `test_preset_select_controller`, `test_manual_mode_controller`, LCD view tests; bench menu check pending | Implemented |
+| REQ-UI-012 | Unit/Bench | Selecting `Inapoi` returns one UI level up | Menu, preset, and manual controller tests; bench navigation check pending | Implemented |
+| REQ-UI-013 | Unit/Bench | Menu-like screens use line 1 as section title and lower lines for items | `test_lcd_menu_view`, `test_lcd_preset_view`, `test_lcd_manual_view`; LCD bench check pending | Implemented |
+| REQ-UI-014 | Unit/Bench | LCD temperatures use `°C` consistently | `test_lcd_status_view`, `test_lcd_preset_view`; LCD bench check pending | Implemented |
+| REQ-UI-015 | Unit/Bench | Preset summary durations use `Xh Ym` format | `test_lcd_preset_view`; LCD bench check pending | Implemented |
 | REQ-FUNC-001 | Unit/Bench | Manual mode supports direct on/off control shell | `test_manual_mode_controller`, `test_lcd_manual_view`; bench manual-mode check pending | Implemented |
 | REQ-FUNC-004 | Unit/Bench | Built-in preset selection shell is available from the menu | `test_preset_select_controller`, `test_lcd_preset_view`; bench preset check pending | Implemented |
 | REQ-FUNC-010 | Unit/Bench | Manual heat request forces fan ON within safety constraints | `test_manual_mode_controller`; bench manual toggle check pending | Implemented |
@@ -118,7 +123,7 @@ Before connecting real heater power:
 - Verify fan relay behavior.
 - Verify buzzer and backlight FET.
 - Verify LCD 4x20 layout and heartbeat.
-- Verify encoder rotation, short press, long press, and stuck-button detection.
+- Verify encoder rotation, short press, `Inapoi` navigation, and stuck-button detection.
 - Verify PT50 analog readings and calibration visibility.
 - Verify AHT temperature/RH reporting and warning on disconnect.
 - Verify serial logs on USB and secondary serial.

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdio.h>
 #include <stdint.h>
 
 #include "dehydrator/interfaces/CharacterDisplay.h"
@@ -57,7 +58,7 @@ class LcdPresetView {
     writeLine(2U, line, false);
 
     fillLine(line);
-    writeToken(line, "Apas=OK Tine=Inap", 0U);
+    writeToken(line, currentDetails(snapshot), 0U);
     writeLine(3U, line, snapshot.heartbeatOn);
   }
 
@@ -71,18 +72,54 @@ class LcdPresetView {
     return &snapshot.presets[snapshot.selectedIndex];
   }
 
+  static bool currentIsBack(const LcdPresetSnapshot& snapshot) {
+    return snapshot.selectedIndex == snapshot.presetCount;
+  }
+
   static const char* currentLabel(const LcdPresetSnapshot& snapshot) {
+    if (currentIsBack(snapshot)) {
+      return "Inapoi";
+    }
     const PresetDefinition* preset = currentPreset(snapshot);
     return preset != nullptr ? preset->label : "";
   }
 
   static const char* currentDescription(const LcdPresetSnapshot& snapshot) {
+    if (currentIsBack(snapshot)) {
+      return "";
+    }
     const PresetDefinition* preset = currentPreset(snapshot);
     if (preset == nullptr) {
       return "";
     }
 
     return preset->profile.mode == ProfileMode::Fixed ? "Mod fix" : "Mod fluctuat";
+  }
+
+  static const char* currentDetails(const LcdPresetSnapshot& snapshot) {
+    if (currentIsBack(snapshot)) {
+      return "";
+    }
+    const PresetDefinition* preset = currentPreset(snapshot);
+    if (preset == nullptr) {
+      return "";
+    }
+
+    static char line[32U];
+    const uint16_t durationHours = preset->profile.durationMinutes / 60U;
+    const uint16_t durationMinutes = preset->profile.durationMinutes % 60U;
+
+    if (preset->profile.mode == ProfileMode::Fixed) {
+      snprintf(line, sizeof(line), "%d\xDF""C %uh %um",
+               preset->profile.targetTempC,
+               durationHours, durationMinutes);
+    } else {
+      snprintf(line, sizeof(line), "%d-%d\xDF""C %uh %um",
+               preset->profile.lowTempC,
+               preset->profile.highTempC, durationHours, durationMinutes);
+    }
+
+    return line;
   }
 
   static void fillLine(char* line) {

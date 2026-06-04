@@ -64,7 +64,13 @@ void test_status_view_renders_romanian_4x20_status_lines() {
   view.render(validSnapshot());
 
   assertLineEquals(display, 0U, "Stare: INACTIV      ");
-  assertLineEquals(display, 1U, "T:57C    RH:43%     ");
+  TEST_ASSERT_EQUAL_CHAR('5', display.cells[1U][2U]);
+  TEST_ASSERT_EQUAL_CHAR('7', display.cells[1U][3U]);
+  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[1U][4U]);
+  TEST_ASSERT_EQUAL_CHAR('C', display.cells[1U][5U]);
+  TEST_ASSERT_EQUAL_CHAR(' ', display.cells[1U][6U]);
+  TEST_ASSERT_EQUAL_CHAR(' ', display.cells[1U][7U]);
+  TEST_ASSERT_EQUAL_CHAR(' ', display.cells[1U][8U]);
   assertLineEquals(display, 2U, "H:OFF     F:ON      ");
   TEST_ASSERT_TRUE(display.custom[3U][19U]);
   TEST_ASSERT_EQUAL_CHAR(static_cast<char>(LcdStatusView::HEARTBEAT_CHAR),
@@ -81,7 +87,10 @@ void test_status_view_renders_missing_sensor_values() {
 
   view.render(snapshot);
 
-  assertLineEquals(display, 1U, "T:--C    RH:--%     ");
+  TEST_ASSERT_EQUAL_CHAR('-', display.cells[1U][2U]);
+  TEST_ASSERT_EQUAL_CHAR('-', display.cells[1U][3U]);
+  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[1U][4U]);
+  TEST_ASSERT_EQUAL_CHAR('C', display.cells[1U][5U]);
   TEST_ASSERT_FALSE(display.custom[3U][19U]);
   TEST_ASSERT_EQUAL_CHAR(' ', display.cells[3U][19U]);
 }

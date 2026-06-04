@@ -23,7 +23,7 @@ struct LcdMenuSnapshot {
 };
 
 /**
- * @brief Renders a simple scrolling Romanian menu on the 4x20 LCD.
+ * @brief Renders a simple Romanian menu on the 4x20 LCD.
  */
 class LcdMenuView {
  public:
@@ -35,27 +35,27 @@ class LcdMenuView {
   explicit LcdMenuView(CharacterDisplay& display) : display_(display) {}
 
   /**
-   * @brief Renders the current menu selection and navigation hint.
+   * @brief Renders the current menu section and selection.
    *
    * @param snapshot Current menu content and selected index.
    */
   void render(const LcdMenuSnapshot& snapshot) {
     char line[LcdStatusView::COLUMNS + 1U] = {};
+    fillLine(line);
+    writeToken(line, "Meniu", 0U);
+    writeLine(0U, line, false);
+
     const size_t firstVisible = firstVisibleIndex(snapshot);
 
-    for (uint8_t row = 0U; row < 3U; row++) {
+    for (uint8_t row = 1U; row < 4U; row++) {
       fillLine(line);
-      const size_t itemIndex = firstVisible + row;
+      const size_t itemIndex = firstVisible + (row - 1U);
       if (itemIndex < snapshot.itemCount && snapshot.items != nullptr) {
         line[0] = itemIndex == snapshot.selectedIndex ? '>' : ' ';
         writeToken(line, snapshot.items[itemIndex], 1U);
       }
       writeLine(row, line, false);
     }
-
-    fillLine(line);
-    writeToken(line, "Apas=OK Tine=Inap", 0U);
-    writeLine(3U, line, snapshot.heartbeatOn);
   }
 
  private:

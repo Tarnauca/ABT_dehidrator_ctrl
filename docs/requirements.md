@@ -18,7 +18,7 @@ Status: draft baseline from discovery conversation. Requirement IDs are stable a
 - REQ-FUNC-005: The controller shall support pause and resume for active programs.
 - REQ-FUNC-006: The controller shall support normal user stop/cancel with confirmation.
 - REQ-FUNC-007: The controller shall clear resume state automatically after normal finish.
-- REQ-FUNC-008: The controller shall support duration input/display as `HH:MM` with maximum `99:00`.
+- REQ-FUNC-008: The controller shall support duration values up to 99 h 0 min. Internal and editable representations may use `HH:MM`, while compact LCD views may use `Xh Ym` when space is limited.
 - REQ-FUNC-009: Temperature settings shall use Celsius with 1 C step.
 - REQ-FUNC-010: In manual mode, the user may control heater operation only within safety constraints; if heater is requested ON, fan shall also be commanded ON.
 - REQ-FUNC-011: Pause shall command heater OFF and fan OFF immediately, suspend program timer/profile progression, and keep the active run resumable.
@@ -73,7 +73,12 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-UI-007: Fault alarm shall use buzzer, blinking LCD backlight, and a compact Romanian fault message until user acknowledgement.
 - REQ-UI-008: Encoder rotation shall navigate/change values.
 - REQ-UI-009: Encoder short press shall select/confirm.
-- REQ-UI-010: Encoder long press shall go back/cancel.
+- REQ-UI-010: Encoder long press has no required navigation role in the current scope and may remain unused or reserved for future behavior.
+- REQ-UI-011: Every menu-like LCD screen shall provide `Inapoi` as the last selectable entry.
+- REQ-UI-012: Selecting `Inapoi` shall navigate exactly one level up in the UI hierarchy.
+- REQ-UI-013: Menu-like LCD screens shall use the first line as the current section title and the remaining visible lines for selectable entries.
+- REQ-UI-014: Temperature displayed on the LCD shall use the `°C` suffix consistently where temperature is shown.
+- REQ-UI-015: Compact LCD duration display shall use the `Xh Ym` format where the UI shows preset summary values.
 
 ## Logging And Diagnostics Requirements
 
