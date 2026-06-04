@@ -56,7 +56,8 @@ void test_short_press_on_back_returns_to_menu() {
 
   TEST_ASSERT_TRUE(result.exitToMenu);
   TEST_ASSERT_FALSE(result.presetSelected);
-  TEST_ASSERT_NULL(controller.currentPreset());
+  TEST_ASSERT_EQUAL_UINT(0U, controller.selectedIndex());
+  TEST_ASSERT_EQUAL_STRING("mere", controller.currentPreset()->token);
 }
 
 void test_long_press_returns_to_menu() {

@@ -98,6 +98,7 @@ class PresetSelectController {
   PresetUiResult onShortPress() {
     PresetUiResult result;
     if (selectedIndex_ >= BACK_INDEX) {
+      selectedIndex_ = 0U;
       result.exitToMenu = true;
       return result;
     }
