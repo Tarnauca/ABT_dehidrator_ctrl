@@ -6,10 +6,13 @@
 #include "dehydrator/app/PeriodicTask.h"
 #include "dehydrator/config/HardwareConfig.h"
 #include "dehydrator/config/RuntimeConfig.h"
+#include "dehydrator/domain/Pt50SensorModel.h"
+#include "dehydrator/hardware/ArduinoAnalogInput.h"
 #include "dehydrator/interfaces/CharacterDisplay.h"
 #include "dehydrator/logging/LogDispatcher.h"
 #include "dehydrator/logging/LogFormatter.h"
 #include "dehydrator/logging/LogSink.h"
+#include "dehydrator/sensors/Pt50Reader.h"
 #include "dehydrator/ui/LcdStatusView.h"
 
 constexpr char LOG_TRUNCATED_EVENT[] = "WARN code=log_truncated source=event";
@@ -19,6 +22,8 @@ dehydrator::PeriodicTask ledTask(
     dehydrator::config::SCHEDULER.statusLedIntervalMs);
 dehydrator::PeriodicTask stateLogTask(
     dehydrator::config::SCHEDULER.stateLogIntervalMs);
+dehydrator::PeriodicTask sensorSampleTask(
+    dehydrator::config::SCHEDULER.sensorSampleIntervalMs);
 dehydrator::PeriodicTask lcdRefreshTask(
     dehydrator::config::SCHEDULER.lcdRefreshIntervalMs);
 dehydrator::PeriodicTask inputScanTask(
@@ -29,6 +34,7 @@ bool heartbeatOn = false;
 long lastEncoderPosition = 0L;
 uint32_t buttonPressedAtMs = 0UL;
 bool buttonPressed = false;
+dehydrator::Pt50Reading latestPt50;
 
 LiquidCrystal_I2C lcd(dehydrator::config::HARDWARE.lcdI2cAddress,
                       dehydrator::LcdStatusView::COLUMNS,
@@ -89,6 +95,10 @@ class ArduinoLcdCharacterDisplay final : public dehydrator::CharacterDisplay {
 
 ArduinoLcdCharacterDisplay lcdDisplay(lcd);
 dehydrator::LcdStatusView statusView(lcdDisplay);
+dehydrator::ArduinoAnalogInput analogInput;
+dehydrator::Pt50Reader pt50Reader(analogInput,
+                                  dehydrator::config::HARDWARE.pins.pt50Analog,
+                                  dehydrator::config::CALIBRATION);
 
 /**
  * @brief Arduino `Stream` adapter for the project log sink interface.
@@ -185,6 +195,19 @@ void updateLedTask(uint32_t nowMs) {
 }
 
 /**
+ * @brief Cooperative PT50 sampling task.
+ *
+ * @param nowMs Current firmware uptime in milliseconds.
+ */
+void updateSensorTask(uint32_t nowMs) {
+  if (!sensorSampleTask.shouldRun(nowMs)) {
+    return;
+  }
+
+  latestPt50 = pt50Reader.read();
+}
+
+/**
  * @brief Cooperative LCD status refresh task.
  *
  * @param nowMs Current firmware uptime in milliseconds.
@@ -197,8 +220,8 @@ void updateLcdTask(uint32_t nowMs) {
   heartbeatOn = !heartbeatOn;
   dehydrator::LcdStatusSnapshot snapshot;
   snapshot.stateLabel = "INACTIV";
-  snapshot.pt50TempC = 0;
-  snapshot.pt50Valid = false;
+  snapshot.pt50TempC = latestPt50.tempC;
+  snapshot.pt50Valid = latestPt50.valid;
   snapshot.rhPercent = 0U;
   snapshot.rhValid = false;
   snapshot.heaterOn = false;
@@ -249,8 +272,9 @@ void updateStateLogTask(uint32_t nowMs) {
   }
 
   char line[dehydrator::config::LOGGING.lineSize] = {};
-  if (dehydrator::LogFormatter::formatSchedulerState(line, sizeof(line), nowMs,
-                                                     ledOn)) {
+  if (dehydrator::LogFormatter::formatBringupState(
+          line, sizeof(line), nowMs, ledOn, latestPt50.valid,
+          latestPt50.tempC, latestPt50.adcCount)) {
     writeLogLine(line);
     return;
   }
@@ -301,6 +325,7 @@ void loop() {
   const uint32_t nowMs = millis();
 
   updateLedTask(nowMs);
+  updateSensorTask(nowMs);
   updateStateLogTask(nowMs);
   updateInputTask(nowMs);
   updateLcdTask(nowMs);

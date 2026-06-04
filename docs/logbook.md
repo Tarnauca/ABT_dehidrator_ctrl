@@ -1041,3 +1041,67 @@ are acceptable.
 - `docs/hardware.md`
 - `docs/user-ui-ro.md`
 - `docs/test-plan.md`
+
+### 2026-06-04 - PT50 Status Bring-Up
+
+**Context**
+After the LCD/encoder firmware was uploaded, the user confirmed that the status
+screen, heartbeat, and input events worked OK on the test device. The next
+useful hardware slice is to put a real PT50 ADC reading onto the LCD and
+structured serial state logs.
+
+**Trigger**
+The user said the bench test was OK, asked to commit and merge, and then
+proceed with the next step.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Created `feature/sensor-status-bringup`.
+- Added a concrete Arduino `analogRead()` adapter for the project
+  `AnalogInput` interface.
+- Added a cooperative 1-second PT50 sample task in the firmware shell.
+- Updated LCD status rendering to show the latest valid PT50 temperature.
+- Added compact bring-up state logs with PT50 temperature or `null` and raw ADC
+  count.
+- Added native log/config tests for the new state format and scheduler
+  intervals.
+- Restored the temporary LCD backlight pin to numeric `7U` because the shared
+  hardware config must not depend on Arduino-only `LED_BUILTIN` in native tests.
+- Updated backlog, hardware notes, test plan, and logbook.
+
+**Decisions**
+- Keep PT50 sampling separate from LCD refresh so ADC sampling, display updates,
+  and input scanning remain independent cooperative tasks.
+- Treat the Arduino analog adapter as implemented for bring-up, while keeping
+  divider wiring and calibration confirmation as a pending bench task before
+  heater-control use.
+- Leave AHT concrete integration for a later slice because the exact AHT module
+  and library still need confirmation.
+
+**Commits / Branches**
+- Branch: `feature/sensor-status-bringup`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Initial `platformio test -e native` run exposed the Arduino-only
+  `LED_BUILTIN` config issue; fixed by using numeric `7U`.
+- `platformio test -e native`: 138 tests passed.
+- `platformio run -e megaatmega2560`: success.
+- `platformio run -e megaatmega2560 -t upload`: success.
+- Short serial monitor capture showed expected bring-up records, including
+  `STATE app=bringup ... pt50=93 adc=414` and
+  `STATE app=bringup ... pt50=null adc=268`.
+- Source scan found no project use of Arduino `String`, `new`, `delete`,
+  `malloc`, or `free`.
+
+**Links**
+- `include/dehydrator/hardware/ArduinoAnalogInput.h`
+- `src/main.cpp`
+- `include/dehydrator/logging/LogFormatter.h`
+- `docs/backlog.md`
+- `docs/hardware.md`
+- `docs/test-plan.md`

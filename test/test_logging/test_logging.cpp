@@ -42,6 +42,28 @@ void test_format_scheduler_state_creates_parseable_line() {
                            line);
 }
 
+void test_format_bringup_state_includes_valid_pt50_fields() {
+  char line[96] = {};
+
+  const bool ok = LogFormatter::formatBringupState(line, sizeof(line), 5000U,
+                                                   true, true, 57, 512U);
+
+  TEST_ASSERT_TRUE(ok);
+  TEST_ASSERT_EQUAL_STRING(
+      "STATE app=bringup uptime_ms=5000 led=on pt50=57 adc=512", line);
+}
+
+void test_format_bringup_state_marks_invalid_pt50_as_null() {
+  char line[96] = {};
+
+  const bool ok = LogFormatter::formatBringupState(line, sizeof(line), 5000U,
+                                                   false, false, 0, 0U);
+
+  TEST_ASSERT_TRUE(ok);
+  TEST_ASSERT_EQUAL_STRING(
+      "STATE app=bringup uptime_ms=5000 led=off pt50=null adc=0", line);
+}
+
 void test_formatter_reports_truncated_line() {
   char line[8] = {};
 
@@ -104,6 +126,8 @@ void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_format_event_creates_parseable_line);
   RUN_TEST(test_format_scheduler_state_creates_parseable_line);
+  RUN_TEST(test_format_bringup_state_includes_valid_pt50_fields);
+  RUN_TEST(test_format_bringup_state_marks_invalid_pt50_as_null);
   RUN_TEST(test_formatter_reports_truncated_line);
   RUN_TEST(test_formatter_uses_stable_null_token);
   RUN_TEST(test_dispatcher_fans_out_to_all_sinks);

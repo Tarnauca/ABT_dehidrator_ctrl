@@ -83,7 +83,7 @@ Status values:
 | REQ-SAFE-010 | Unit/UI | Hard fault requires acknowledgement before new run | `test_run_state_machine` acknowledgement tests; UI flow still pending | Implemented |
 | REQ-SAFE-011 | Unit | Watchdog reset during run is non-resumable fault context | `test_fault_detector` watchdog-reset input covered; resume/persistence behavior pending | Implemented |
 | REQ-SAFE-014 | Unit | Startup self-check validates sensors/config/input/output-safe-state | `test_control_state_machine`, fakes | Planned |
-| REQ-HW-002 | Unit/Bench | PT50 is converted as the primary control temperature sensor | `test_pt50_sensor` conversion/reader tests; real divider bench check pending | Implemented |
+| REQ-HW-002 | Unit/Bench | PT50 is converted as the primary control temperature sensor | `test_pt50_sensor`; Arduino analog adapter builds; real divider/calibration bench check pending | Implemented |
 | REQ-HW-003 | Unit/Bench | AHT-like sensor provides secondary temperature/RH telemetry when available | `test_aht_reader`; concrete AHT library/bench check pending | Implemented |
 | REQ-HW-004 | Unit/Bench | Heater and fan relay outputs translate logical commands to pins | `test_relay_outputs`; relay bench check pending | Implemented |
 | REQ-HW-005 | Unit/Bench | Relay polarity is configurable | `test_relay_outputs` active-high/active-low tests; relay bench check pending | Implemented |

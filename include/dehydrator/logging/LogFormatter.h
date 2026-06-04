@@ -46,6 +46,37 @@ class LogFormatter {
                   static_cast<unsigned long>(uptimeMs), ledOn ? "on" : "off");
   }
 
+  /**
+   * @brief Formats the periodic bring-up state record with PT50 fields.
+   *
+   * @param buffer Destination character buffer.
+   * @param bufferSize Size of `buffer` in bytes.
+   * @param uptimeMs Current firmware uptime in milliseconds.
+   * @param ledOn Whether the built-in LED is currently on.
+   * @param pt50Valid Whether the PT50 reading is valid.
+   * @param pt50TempC Latest PT50 temperature in Celsius.
+   * @param pt50AdcCount Latest raw PT50 ADC count.
+   * @return true if the full line fit in the destination buffer.
+   */
+  static bool formatBringupState(char* buffer, size_t bufferSize,
+                                 uint32_t uptimeMs, bool ledOn,
+                                 bool pt50Valid, int16_t pt50TempC,
+                                 uint16_t pt50AdcCount) {
+    if (!pt50Valid) {
+      return format(buffer, bufferSize,
+                    "STATE app=bringup uptime_ms=%lu led=%s pt50=null adc=%u",
+                    static_cast<unsigned long>(uptimeMs),
+                    ledOn ? "on" : "off",
+                    static_cast<unsigned int>(pt50AdcCount));
+    }
+
+    return format(buffer, bufferSize,
+                  "STATE app=bringup uptime_ms=%lu led=%s pt50=%d adc=%u",
+                  static_cast<unsigned long>(uptimeMs), ledOn ? "on" : "off",
+                  static_cast<int>(pt50TempC),
+                  static_cast<unsigned int>(pt50AdcCount));
+  }
+
  private:
   /**
    * @brief Converts a nullable token pointer to a printable token.

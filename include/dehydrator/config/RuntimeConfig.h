@@ -22,6 +22,8 @@ struct SchedulerConfig {
   uint32_t statusLedIntervalMs;
   /** Periodic state log interval in milliseconds. */
   uint32_t stateLogIntervalMs;
+  /** Sensor sampling interval in milliseconds. */
+  uint32_t sensorSampleIntervalMs;
   /** LCD status refresh interval in milliseconds. */
   uint32_t lcdRefreshIntervalMs;
   /** Encoder/button sampling interval in milliseconds. */
@@ -129,6 +131,7 @@ constexpr SerialConfig SERIAL_PORTS = {
 constexpr SchedulerConfig SCHEDULER = {
     1000UL,
     5000UL,
+    1000UL,
     1000UL,
     20UL,
     2000UL,

@@ -17,6 +17,15 @@ void test_scheduler_state_log_interval_matches_requirement() {
                            dehydrator::config::SCHEDULER.stateLogIntervalMs);
 }
 
+void test_scheduler_sensor_and_lcd_intervals_match_bringup_needs() {
+  TEST_ASSERT_EQUAL_UINT32(1000UL,
+                           dehydrator::config::SCHEDULER.sensorSampleIntervalMs);
+  TEST_ASSERT_EQUAL_UINT32(1000UL,
+                           dehydrator::config::SCHEDULER.lcdRefreshIntervalMs);
+  TEST_ASSERT_EQUAL_UINT32(20UL,
+                           dehydrator::config::SCHEDULER.inputScanIntervalMs);
+}
+
 void test_hardware_uses_status_led_placeholder() {
   TEST_ASSERT_EQUAL_UINT8(13U, dehydrator::config::HARDWARE.pins.statusLed);
 }
@@ -89,6 +98,7 @@ void setup() {
   RUN_TEST(test_serial_defaults_to_required_baud_rate);
   RUN_TEST(test_logging_supports_two_initial_sinks);
   RUN_TEST(test_scheduler_state_log_interval_matches_requirement);
+  RUN_TEST(test_scheduler_sensor_and_lcd_intervals_match_bringup_needs);
   RUN_TEST(test_hardware_uses_status_led_placeholder);
   RUN_TEST(test_control_force_off_threshold_matches_requirement);
   RUN_TEST(test_control_minimum_relay_timing_matches_baseline);
