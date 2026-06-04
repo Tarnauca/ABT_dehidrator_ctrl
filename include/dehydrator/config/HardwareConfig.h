@@ -68,7 +68,8 @@ struct HardwareConfig {
  * @brief Default hardware placeholders for early firmware bring-up.
  *
  * Placeholder values must be reviewed before real heater/fan hardware is
- * connected. The current firmware only uses `statusLed`.
+ * connected. Heater and fan relay pins remain unassigned for safe bench
+ * bring-up; LCD, encoder, buzzer, and backlight use common temporary pins.
  */
 constexpr HardwareConfig HARDWARE = {
     {
@@ -76,11 +77,11 @@ constexpr HardwareConfig HARDWARE = {
         0U,    // pt50Analog: analog channel placeholder
         255U,  // heaterRelay: TBD
         255U,  // fanRelay: TBD
-        255U,  // lcdBacklight: TBD
-        255U,  // buzzer: TBD
-        255U,  // encoderA: TBD
-        255U,  // encoderB: TBD
-        255U,  // encoderButton: TBD
+        LED_BUILTIN,    // lcdBacklight: temporary bench pin
+        8U,    // buzzer: temporary bench pin
+        2U,    // encoderA: temporary interrupt-capable bench pin
+        3U,    // encoderB: temporary interrupt-capable bench pin
+        4U,    // encoderButton: temporary bench pin with INPUT_PULLUP
     },
     ActiveLevel::ActiveLow,
     ActiveLevel::ActiveLow,

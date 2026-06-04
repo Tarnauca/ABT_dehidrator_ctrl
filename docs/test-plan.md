@@ -87,11 +87,13 @@ Status values:
 | REQ-HW-003 | Unit/Bench | AHT-like sensor provides secondary temperature/RH telemetry when available | `test_aht_reader`; concrete AHT library/bench check pending | Implemented |
 | REQ-HW-004 | Unit/Bench | Heater and fan relay outputs translate logical commands to pins | `test_relay_outputs`; relay bench check pending | Implemented |
 | REQ-HW-005 | Unit/Bench | Relay polarity is configurable | `test_relay_outputs` active-high/active-low tests; relay bench check pending | Implemented |
+| REQ-HW-006 | Unit/Bench | LCD is 4x20 and driven through I2C backpack | `test_lcd_status_view`; Mega build with `LiquidCrystal_I2C`; LCD bench check pending | Implemented |
 | REQ-HW-007 | Unit/Bench | LCD backlight uses dedicated output pin | `test_alarm_outputs`; backlight FET bench check pending | Implemented |
+| REQ-HW-008 | Bench | Encoder and pushbutton provide user input events | Mega build with `Encoder` and `Bounce2`; serial event bench check pending | Implemented |
 | REQ-HW-009 | Unit/Bench | Piezo buzzer is used for finish/fault alarms | `test_alarm_outputs`; buzzer bench check pending | Implemented |
-| REQ-UI-004 | Unit/Bench | LCD shall show RH when AHT sensor is present and functional | `test_aht_reader` provides RH validity foundation; LCD integration pending | Planned |
+| REQ-UI-004 | Unit/Bench | LCD shall show RH when AHT sensor is present and functional | `test_aht_reader` plus `test_lcd_status_view`; real sensor integration pending | Implemented |
 | REQ-PERSIST-001 | Unit | Calibration defaults are explicit and later persistable | `test_config` PT50 calibration default tests; EEPROM persistence pending | Implemented |
-| REQ-UI-005 | Bench | Heartbeat visible bottom-right and runs in all states | LCD bench test | Planned |
+| REQ-UI-005 | Unit/Bench | Heartbeat visible bottom-right and runs in all states | `test_lcd_status_view`; LCD bench test pending | Implemented |
 | REQ-UI-006 | Unit/Bench | Finish alarm starts after cooldown | State machine plus buzzer/backlight bench check | Planned |
 | REQ-UI-007 | Unit/Bench | Fault alarm continues until acknowledgement | State machine plus buzzer/backlight bench check | Planned |
 | REQ-LOG-004 | Unit | Events, parameters, outputs, warnings, faults are logged | `FakeLogSink` | Planned |

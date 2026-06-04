@@ -14,16 +14,16 @@ Status: draft. LCD labels are Romanian, ASCII-only by default, and must fit a 4x
 
 ## Draft Status Screen
 
-Example only:
+Initial implemented bring-up screen:
 
 ```text
-Mod: Fix    T:57C
-RH:42%      H:OFF
-Fan:ON   R:08:15
-Stare: Ruleaza     <3
+Stare: INACTIV
+T:--C    RH:--%
+H:OFF     F:OFF
+                   <3
 ```
 
-The heartbeat occupies the bottom-right character. Exact symbol depends on custom character support.
+The heartbeat occupies the bottom-right character as a custom LCD glyph. Sensor values are shown as `--` until real readings are connected to the status snapshot.
 
 ## Draft Fault Screen
 

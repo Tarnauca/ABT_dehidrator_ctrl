@@ -1,6 +1,6 @@
 # Hardware
 
-Status: draft baseline. Pin assignments are TBD until wiring is finalized.
+Status: draft baseline. Heater/fan pin assignments are TBD until wiring is finalized. UI pins use temporary bench defaults.
 
 ## Target
 
@@ -11,15 +11,15 @@ Status: draft baseline. Pin assignments are TBD until wiring is finalized.
 
 | Signal | Purpose | Mega2560 Pin | Active Level | Notes |
 | --- | --- | --- | --- | --- |
-| PT50 analog | Primary temperature control sensor | TBD analog | N/A | Voltage divider into ADC, supplied from VCC |
-| AHT-like sensor SDA/SCL | Secondary temp/RH telemetry | TBD I2C | N/A | Warning only if unavailable |
+| PT50 analog | Primary temperature control sensor | A0 placeholder | N/A | Voltage divider into ADC, supplied from VCC |
+| AHT-like sensor SDA/SCL | Secondary temp/RH telemetry | Mega I2C SDA/SCL | N/A | Warning only if unavailable |
 | Heater relay | Heater control | TBD | Configurable | Mechanical relay, on/off only |
 | Fan relay | Fan control | TBD | Configurable | Mechanical relay, on/off only |
-| LCD I2C | 4x20 display | TBD I2C | N/A | I2C-to-parallel backpack |
-| Encoder A/B | Navigation/change values | TBD | TBD | Debounced in firmware |
-| Encoder button | Select/back/cancel | TBD | TBD | Short/long press; stuck detection |
-| Piezo buzzer | Finish/fault alarm | TBD | TBD | No routine button beep |
-| Backlight FET | LCD backlight blink/control | TBD | TBD | Dedicated MCU output |
+| LCD I2C | 4x20 display | Mega I2C SDA/SCL | N/A | `LiquidCrystal_I2C`, default address `0x27` |
+| Encoder A/B | Navigation/change values | D2/D3 temporary | Pull-up/input library dependent | `Encoder` library |
+| Encoder button | Select/back/cancel | D4 temporary | Active low with `INPUT_PULLUP` | `Bounce2`; short/long press events |
+| Piezo buzzer | Finish/fault alarm | D8 temporary | Configurable, default active high | No routine button beep |
+| Backlight FET | LCD backlight blink/control | D7 temporary | Configurable, default active high | Dedicated MCU output |
 | USB Serial | Debug log | USB | N/A | 115200 8N1 |
 | Secondary Serial | Mirrored telemetry log | TBD HW serial | N/A | 115200 8N1, output-only, possible IrDA |
 
@@ -53,3 +53,32 @@ The firmware contains a relay output adapter with configurable active-high or ac
 The firmware also contains a buzzer/backlight alarm output adapter with configurable active-high or active-low polarity. It preloads inactive output levels during startup and ignores placeholder pins until real wiring is assigned.
 
 Product-minded recommendation: use independent hardware thermal protection in the heater power path.
+
+## UI Bring-Up Notes
+
+The firmware now includes a first hardware bring-up screen for the 4x20 LCD.
+It uses `LiquidCrystal_I2C` for the HD44780 I2C backpack, a project-owned
+`CharacterDisplay` interface, and a testable `LcdStatusView` renderer. The
+current screen is intentionally minimal:
+
+```text
+Stare: INACTIV
+T:--C    RH:--%
+H:OFF     F:OFF
+                   <heartbeat>
+```
+
+The heartbeat is a custom LCD character in the bottom-right cell. The renderer
+redraws fixed-width lines so shorter values do not leave stale characters.
+
+Encoder rotation is read through the proven `Encoder` library and the
+pushbutton is debounced through `Bounce2`. In this slice, input events are only
+logged:
+
+- `EVENT type=input detail=encoder_cw`
+- `EVENT type=input detail=encoder_ccw`
+- `EVENT type=input detail=button_short`
+- `EVENT type=input detail=button_long`
+
+The default UI pin assignments are temporary bench values and should be edited
+in `include/dehydrator/config/HardwareConfig.h` to match the real wiring.
