@@ -30,6 +30,8 @@ No normal runtime task should block for more than 100 ms.
 ## Runtime State Model
 
 `ControlStateMachine` is the authoritative owner of the high-level run state.
+It starts in `Boot`, runs a startup `SelfCheck`, and then transitions to the
+normal idle/run lifecycle.
 
 Initial states:
 
@@ -71,6 +73,7 @@ Pure logic must not include Arduino-only headers unless a specific exception is 
 Pure logic modules:
 
 - `ControlStateMachine`: run states, pause/resume, finish, stop, fault transitions.
+- `ControlStateMachine`: boot/self-check/resume-offer and the normal run lifecycle.
 - `ProfileEngine`: fixed and fluctuating temperature targets over time.
 - `TemperatureControl`: hysteresis and relay minimum timing decisions.
 - `FaultDetector`: primary thermistor validity, over-temperature, no-rise, stuck-heater, stuck-input checks.
@@ -124,6 +127,7 @@ Hard faults override relay minimum ON/OFF timing and force heater/fan OFF immedi
 
 - Primary thermistor validity and filtered temperature.
 - Secondary temp/RH sensor availability and optional temperature/RH.
+- Startup configuration validity and commanded output-safe-state checks.
 - Current heater/fan commands.
 - Previous heater/fan command history.
 - Accumulated heater ON command time.

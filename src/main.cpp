@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "dehydrator/app/EncoderStepFilter.h"
+#include "dehydrator/domain/ControlStateMachine.h"
 #include "dehydrator/app/PresetRunController.h"
 #include "dehydrator/app/PeriodicTask.h"
 #include "dehydrator/config/HardwareConfig.h"
@@ -56,6 +57,7 @@ bool buttonPressed = false;
 dehydrator::NtcReading latestNtc;
 dehydrator::TempRhReading latestTempRh;
 dehydrator::EncoderStepFilter encoderStepFilter(4);
+dehydrator::ControlStateMachine controlStateMachine;
 dehydrator::PresetRunController presetRunController;
 dehydrator::OutputCommand activeOutputCommand;
 
@@ -637,6 +639,27 @@ void setup() {
   relayOutputs.begin();
   lastEncoderPosition = rotaryEncoder.read();
   encoderStepFilter.reset(lastEncoderPosition);
+
+  latestNtc = ntcReader.read();
+  latestTempRh = tempRhReader.read();
+
+  controlStateMachine.enterBoot();
+  logEvent("run_state", controlStateMachine.stateToken());
+
+  dehydrator::ControlStartupInput startupInput;
+  startupInput.configValid = true;
+  startupInput.outputsSafe = true;
+  startupInput.primarySensorValid = latestNtc.valid;
+  startupInput.buttonSafe = !buttonPressed;
+  startupInput.watchdogResetDuringRun = false;
+  startupInput.interruptedRunAvailable = false;
+
+  const dehydrator::ControlStartupResult startupResult =
+      controlStateMachine.completeSelfCheck(startupInput);
+  logEvent("run_state", controlStateMachine.stateToken());
+  if (!startupResult.passed && startupResult.faultToken != nullptr) {
+    logEvent("fault", startupResult.faultToken);
+  }
 
   writeLogLine("EVENT type=boot detail=scheduler_shell");
 }

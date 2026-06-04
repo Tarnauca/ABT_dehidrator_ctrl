@@ -46,6 +46,7 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 - [x] Implement hysteresis heater control.
 - [x] Implement safety/fault detector.
 - [x] Implement run state machine.
+- [x] Implement startup self-check and boot state handling.
 - [x] Add unit tests for each module.
 
 ## Phase 6: Hardware Adapters

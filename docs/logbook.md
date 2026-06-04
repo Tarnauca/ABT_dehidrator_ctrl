@@ -1558,3 +1558,50 @@ primary sensor supports NTC, preferably with configurable nominal resistance.
 - `include/dehydrator/logging/LogFormatter.h`
 - `docs/requirements.md`
 - `docs/hardware.md`
+
+---
+
+## Startup self-check and boot state handling
+
+**Trigger**
+The backlog item for REQ-SAFE-014 was selected next, with the goal of making
+startup safety explicit instead of leaving `Boot`, `SelfCheck`, and related
+states as unused labels.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added a pure `ControlStateMachine` for boot, self-check, resume-offer, idle,
+  and fault startup handling.
+- Defined startup inputs for configuration validity, output safe state,
+  primary NTC validity, encoder/button safety, watchdog-reset context, and
+  interrupted-run availability.
+- Wired the boot sequence in `main.cpp` to sample the sensors once at startup,
+  run the startup check, and log the boot/self-check state tokens.
+- Added native tests for startup pass, startup fault causes, resume-offer
+  dismissal, and fault acknowledgement.
+- Updated the backlog and test plan to reflect that REQ-SAFE-014 is now
+  implemented.
+
+**Decisions**
+- Keep startup validation pure and allocation-free so it remains easy to test
+  without hardware.
+- Treat secondary temp/RH presence as a later extension point; the first
+  self-check pass focuses on mandatory safety conditions.
+
+**Commits / Branches**
+- Branch: `feature/startup-self-check`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Pending after native tests and Mega2560 build are run.
+
+**Links**
+- `include/dehydrator/domain/ControlStateMachine.h`
+- `test/test_control_state_machine/test_control_state_machine.cpp`
+- `src/main.cpp`
+- `docs/backlog.md`
+- `docs/test-plan.md`
