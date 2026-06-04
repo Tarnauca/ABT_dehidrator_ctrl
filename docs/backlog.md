@@ -64,6 +64,7 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 
 - [ ] Document Romanian 4x20 menu flow.
 - [x] Implement initial status screen with bottom-right heartbeat.
+- [x] Implement initial encoder-driven menu shell.
 - [ ] Implement preset selection and run configuration.
 - [ ] Add built-in presets after source values are confirmed.
 

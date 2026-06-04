@@ -92,6 +92,9 @@ Status values:
 | REQ-HW-008 | Bench | Encoder and pushbutton provide user input events | Mega build with `Encoder` and `Bounce2`; serial event bench check pending | Implemented |
 | REQ-HW-009 | Unit/Bench | Piezo buzzer is used for finish/fault alarms | `test_alarm_outputs`; buzzer bench check pending | Implemented |
 | REQ-UI-004 | Unit/Bench | LCD shall show RH when AHT sensor is present and functional | `test_aht_reader` plus firmware integration with concrete AHT adapter; real sensor bench check pending | Implemented |
+| REQ-UI-008 | Unit/Bench | Encoder rotation navigates menu items | `test_menu_controller`, `test_lcd_menu_view`; bench encoder/menu check pending | Implemented |
+| REQ-UI-009 | Unit/Bench | Encoder short press selects or confirms | `test_menu_controller`; bench button/menu check pending | Implemented |
+| REQ-UI-010 | Unit/Bench | Encoder long press goes back or cancels | `test_menu_controller`; bench long-press check pending | Implemented |
 | REQ-PERSIST-001 | Unit | Calibration defaults are explicit and later persistable | `test_config` PT50 calibration default tests; EEPROM persistence pending | Implemented |
 | REQ-UI-005 | Unit/Bench | Heartbeat visible bottom-right and runs in all states | `test_lcd_status_view`; LCD bench test pending | Implemented |
 | REQ-UI-006 | Unit/Bench | Finish alarm starts after cooldown | State machine plus buzzer/backlight bench check | Planned |
