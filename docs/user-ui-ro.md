@@ -92,7 +92,13 @@ Current bring-up behavior:
 - Select `Pornire preset` from the menu to open the preset screen.
 - Encoder rotation moves between built-in starter presets.
 - Short press confirms the selected preset and starts the associated run.
+- If another preset run is already active, confirming a new preset opens a
+  `Confirmare` screen with `Nu` / `Da`.
+- `Nu` returns to preset selection without changing the active run.
+- `Da` stops the current run and starts the newly selected preset.
 - The last selectable row is `Inapoi`, which returns to the menu.
+- If the user exits with `Inapoi`, the next entry into the preset screen starts
+  again from the first real preset, not from `Inapoi`.
 
 Current preset layout:
 
@@ -110,6 +116,14 @@ After a preset starts successfully, the firmware returns to the status screen
 and the displayed state changes from `INACTIV` to the active run lifecycle
 label.
 
+Replacement confirmation layout:
+
+```text
+Confirmare
+Inlocuire program?
+>Nu    Da
+```
+
 ## Implemented Manual Mode Shell
 
 Current bring-up behavior:
@@ -118,6 +132,8 @@ Current bring-up behavior:
 - Encoder rotation switches between `Fan`, `Heat`, and `Inapoi`.
 - Short press toggles the selected output.
 - `Inapoi` is always the last selectable entry and returns to the menu.
+- If the user exits with `Inapoi`, the next entry into manual mode starts again
+  from `Fan`, not from `Inapoi`.
 - Turning `Heat` ON also forces `Fan` ON.
 - Turning `Fan` OFF also forces `Heat` OFF.
 

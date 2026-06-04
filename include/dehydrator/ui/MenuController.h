@@ -152,6 +152,19 @@ class MenuController {
   size_t selectedIndex() const { return selectedIndex_; }
 
   /**
+   * @brief Forces the controller into the menu-screen mode.
+   */
+  void enterMenu() { screen_ = UiScreen::Menu; }
+
+  /**
+   * @brief Forces the controller back to the status-screen mode.
+   *
+   * This keeps the controller synchronized when application wiring leaves the
+   * menu to another screen without selecting the built-in `Inapoi` entry.
+   */
+  void returnToStatus() { screen_ = UiScreen::Status; }
+
+  /**
    * @brief Returns the built-in menu item labels.
    *
    * @return Pointer to the fixed menu item array.

@@ -89,6 +89,33 @@ void test_short_press_on_inapoi_closes_menu() {
                     static_cast<int>(controller.screen()));
 }
 
+void test_return_to_status_resynchronizes_menu_state() {
+  MenuController controller;
+  controller.onShortPress();
+  controller.onRotate(1);
+
+  controller.returnToStatus();
+
+  TEST_ASSERT_EQUAL(static_cast<int>(UiScreen::Status),
+                    static_cast<int>(controller.screen()));
+
+  const UiResult result = controller.onShortPress();
+  TEST_ASSERT_EQUAL(static_cast<int>(UiAction::OpenMenu),
+                    static_cast<int>(result.action));
+}
+
+void test_enter_menu_resynchronizes_menu_state() {
+  MenuController controller;
+
+  controller.enterMenu();
+
+  TEST_ASSERT_EQUAL(static_cast<int>(UiScreen::Menu),
+                    static_cast<int>(controller.screen()));
+  const UiResult result = controller.onRotate(1);
+  TEST_ASSERT_EQUAL(static_cast<int>(UiAction::MoveSelection),
+                    static_cast<int>(result.action));
+}
+
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_short_press_opens_menu_from_status);
@@ -97,6 +124,8 @@ void setup() {
   RUN_TEST(test_rotation_stops_at_start_of_menu);
   RUN_TEST(test_short_press_on_menu_selects_current_item);
   RUN_TEST(test_short_press_on_inapoi_closes_menu);
+  RUN_TEST(test_return_to_status_resynchronizes_menu_state);
+  RUN_TEST(test_enter_menu_resynchronizes_menu_state);
   UNITY_END();
 }
 

@@ -1646,6 +1646,86 @@ boot, not only the final `passed` or `fault` outcome.
 
 ---
 
+## Preset stop menu wiring fix
+
+**Trigger**
+During bench use, the user observed that selecting `Oprire` while a preset run
+was active did not actually stop the run.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added a `stopConfirmed()` path to `PresetRunController` so the preset shell
+  can apply the existing run-state-machine stop behavior.
+- Wired the `Oprire` menu item in `main.cpp` to call the preset stop path,
+  force output refresh, and return to the status screen.
+- Added a native unit test proving that an active preset run returns to `Idle`
+  with outputs off after a confirmed stop.
+
+**Decisions**
+- Reuse the existing `RunStateMachine::stopConfirmed()` behavior instead of
+  inventing a second stop path.
+- Treat the current `Oprire` selection as the existing explicit confirmation
+  point in the present UI, since there is not yet a separate confirmation
+  dialog flow.
+
+**Commits / Branches**
+- Branch: `fix/preset-stop-menu-action`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Pending after native tests and Mega2560 build are rerun.
+
+**Links**
+- `include/dehydrator/app/PresetRunController.h`
+- `src/main.cpp`
+- `test/test_preset_run_controller/test_preset_run_controller.cpp`
+
+---
+
+## Preset replacement confirmation
+
+**Trigger**
+The user requested that selecting another preset while a program is already
+running should ask for confirmation instead of replacing it immediately.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added a dedicated yes/no confirmation controller for replacing an active run.
+- Added a dedicated LCD confirmation screen with Romanian text.
+- Updated the preset-selection flow so a running preset now opens the
+  confirmation screen before stop-and-restart behavior is allowed.
+- Kept `Nu` as the default selected answer so replacement requires an explicit
+  user action.
+- Added native tests for the confirmation controller and confirmation LCD view.
+
+**Decisions**
+- Use a separate confirmation screen instead of overloading the preset screen,
+  because it keeps the replacement decision explicit and less error-prone.
+- Treat `Nu` as the safe default selection when the confirmation screen opens.
+
+**Commits / Branches**
+- Branch: `fix/preset-stop-menu-action`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Pending after native tests and Mega2560 build are rerun.
+
+**Links**
+- `include/dehydrator/ui/ConfirmReplaceRunController.h`
+- `include/dehydrator/ui/LcdConfirmReplaceRunView.h`
+- `src/main.cpp`
+- `docs/user-ui-ro.md`
+
+---
+
 ## Terminal boot splash banner
 
 **Trigger**

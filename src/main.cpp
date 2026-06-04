@@ -24,9 +24,11 @@
 #include "dehydrator/sensors/NtcReader.h"
 #include "dehydrator/presets/PresetCatalog.h"
 #include "dehydrator/ui/LcdManualView.h"
+#include "dehydrator/ui/LcdConfirmReplaceRunView.h"
 #include "dehydrator/ui/LcdPresetView.h"
 #include "dehydrator/ui/LcdMenuView.h"
 #include "dehydrator/ui/LcdStatusView.h"
+#include "dehydrator/ui/ConfirmReplaceRunController.h"
 #include "dehydrator/ui/ManualModeController.h"
 #include "dehydrator/ui/PresetSelectController.h"
 #include "dehydrator/ui/MenuController.h"
@@ -66,6 +68,7 @@ enum class BringupScreen {
   Menu,
   Manual,
   Preset,
+  ConfirmReplaceRun,
 };
 
 BringupScreen currentScreen = BringupScreen::Status;
@@ -169,6 +172,8 @@ dehydrator::TempRhReader tempRhReader(tempRhDriver,
 dehydrator::MenuController menuController;
 dehydrator::ManualModeController manualModeController;
 dehydrator::PresetSelectController presetSelectController;
+dehydrator::ConfirmReplaceRunController confirmReplaceRunController;
+const dehydrator::PresetDefinition* pendingPresetSelection = nullptr;
 
 /**
  * @brief Arduino `Stream` adapter for the project log sink interface.
@@ -201,6 +206,7 @@ dehydrator::LogDispatcher logger(logSinks,
 dehydrator::LcdMenuView menuView(lcdDisplay);
 dehydrator::LcdManualView manualView(lcdDisplay);
 dehydrator::LcdPresetView presetView(lcdDisplay);
+dehydrator::LcdConfirmReplaceRunView confirmReplaceRunView(lcdDisplay);
 
 /**
  * @brief Returns whether a pin has been assigned in hardware configuration.
@@ -358,6 +364,25 @@ void logPresetResult(const dehydrator::PresetUiResult& result) {
 }
 
 /**
+ * @brief Logs replace-run confirmation UI transitions.
+ *
+ * @param result Result produced by the confirm-replace-run controller.
+ */
+void logConfirmReplaceRunResult(
+    const dehydrator::ConfirmReplaceRunResult& result) {
+  if (result.selectionChanged) {
+    logEvent("ui", confirmReplaceRunController.confirmSelected() ? "confirm_da"
+                                                                 : "confirm_nu");
+  }
+
+  if (result.confirmed) {
+    logEvent("run_replace", "confirmed");
+  } else if (result.cancelled) {
+    logEvent("run_replace", "cancelled");
+  }
+}
+
+/**
  * @brief Logs lifecycle state changes for the active preset-run shell.
  *
  * @param previous Previous lifecycle state token.
@@ -460,6 +485,15 @@ void updateLcdTask(uint32_t nowMs) {
     return;
   }
 
+  if (currentScreen == BringupScreen::ConfirmReplaceRun) {
+    dehydrator::LcdConfirmReplaceRunSnapshot confirmSnapshot;
+    confirmSnapshot.confirmSelected =
+        confirmReplaceRunController.confirmSelected();
+    confirmSnapshot.heartbeatOn = heartbeatOn;
+    confirmReplaceRunView.render(confirmSnapshot);
+    return;
+  }
+
   if (currentScreen == BringupScreen::Menu) {
     dehydrator::LcdMenuSnapshot menuSnapshot;
     menuSnapshot.items = dehydrator::MenuController::items();
@@ -498,6 +532,8 @@ void updateInputTask(uint32_t nowMs) {
     logEvent("input", delta > 0 ? "encoder_cw" : "encoder_ccw");
     if (currentScreen == BringupScreen::Manual) {
       logManualResult(manualModeController.onRotate(delta));
+    } else if (currentScreen == BringupScreen::ConfirmReplaceRun) {
+      logConfirmReplaceRunResult(confirmReplaceRunController.onRotate(delta));
     } else if (currentScreen == BringupScreen::Preset) {
       logPresetResult(presetSelectController.onRotate(delta));
     } else if (currentScreen == BringupScreen::Menu) {
@@ -521,12 +557,14 @@ void updateInputTask(uint32_t nowMs) {
         const dehydrator::ManualUiResult result = manualModeController.onLongPress();
         logManualResult(result);
         if (result.exitToMenu) {
+          menuController.enterMenu();
           currentScreen = BringupScreen::Menu;
         }
       } else if (currentScreen == BringupScreen::Preset) {
         const dehydrator::PresetUiResult result = presetSelectController.onLongPress();
         logPresetResult(result);
         if (result.exitToMenu) {
+          menuController.enterMenu();
           currentScreen = BringupScreen::Menu;
         }
       } else if (currentScreen == BringupScreen::Menu) {
@@ -540,7 +578,33 @@ void updateInputTask(uint32_t nowMs) {
       const dehydrator::ManualUiResult result = manualModeController.onShortPress();
       logManualResult(result);
       if (result.exitToMenu) {
+        menuController.enterMenu();
         currentScreen = BringupScreen::Menu;
+      }
+      return;
+    }
+
+    if (currentScreen == BringupScreen::ConfirmReplaceRun) {
+      const dehydrator::ConfirmReplaceRunResult result =
+          confirmReplaceRunController.onShortPress();
+      logConfirmReplaceRunResult(result);
+      if (result.confirmed && pendingPresetSelection != nullptr) {
+        if (presetRunController.stopConfirmed() &&
+            presetRunController.startPreset(*pendingPresetSelection)) {
+          activeOutputCommand = presetRunController.outputCommand();
+          relayOutputs.apply(activeOutputCommand);
+          logEvent("preset_start", pendingPresetSelection->token);
+          logEvent("run_state", presetRunController.stateToken());
+          pendingPresetSelection = nullptr;
+          currentScreen = BringupScreen::Status;
+        } else {
+          logEvent("preset_start", "rejected");
+          pendingPresetSelection = nullptr;
+          currentScreen = BringupScreen::Status;
+        }
+      } else {
+        pendingPresetSelection = nullptr;
+        currentScreen = BringupScreen::Preset;
       }
       return;
     }
@@ -551,16 +615,27 @@ void updateInputTask(uint32_t nowMs) {
       if (result.presetSelected) {
         const dehydrator::PresetDefinition* preset =
             presetSelectController.currentPreset();
-        if (preset != nullptr && presetRunController.startPreset(*preset)) {
-          activeOutputCommand = presetRunController.outputCommand();
-          relayOutputs.apply(activeOutputCommand);
-          logEvent("preset_start", preset->token);
-          logEvent("run_state", presetRunController.stateToken());
-          currentScreen = BringupScreen::Status;
-        } else {
-          logEvent("preset_start", "rejected");
+        if (preset != nullptr) {
+          if (presetRunController.snapshot().state == dehydrator::RunState::Idle) {
+            if (presetRunController.startPreset(*preset)) {
+              activeOutputCommand = presetRunController.outputCommand();
+              relayOutputs.apply(activeOutputCommand);
+              logEvent("preset_start", preset->token);
+              logEvent("run_state", presetRunController.stateToken());
+              menuController.returnToStatus();
+              currentScreen = BringupScreen::Status;
+            } else {
+              logEvent("preset_start", "rejected");
+            }
+          } else {
+            pendingPresetSelection = preset;
+            confirmReplaceRunController.reset();
+            logEvent("run_replace", "prompt");
+            currentScreen = BringupScreen::ConfirmReplaceRun;
+          }
         }
       } else if (result.exitToMenu) {
+        menuController.enterMenu();
         currentScreen = BringupScreen::Menu;
       }
       return;
@@ -576,6 +651,7 @@ void updateInputTask(uint32_t nowMs) {
         activeOutputCommand = presetRunController.outputCommand();
         relayOutputs.apply(activeOutputCommand);
         logEvent("run_ack", "finished");
+        menuController.returnToStatus();
       }
       return;
     }
@@ -594,14 +670,29 @@ void updateInputTask(uint32_t nowMs) {
     if (result.action == dehydrator::UiAction::SelectItem &&
         menuController.currentToken() != nullptr &&
         strcmp(menuController.currentToken(), "mod_manual") == 0) {
+      menuController.returnToStatus();
       currentScreen = BringupScreen::Manual;
       logEvent("ui", "manual_open");
     } else if (result.action == dehydrator::UiAction::SelectItem &&
                menuController.currentToken() != nullptr &&
                strcmp(menuController.currentToken(), "pornire_preset") == 0) {
+      menuController.returnToStatus();
       currentScreen = BringupScreen::Preset;
       logEvent("ui", "preset_open");
+    } else if (result.action == dehydrator::UiAction::SelectItem &&
+               menuController.currentToken() != nullptr &&
+               strcmp(menuController.currentToken(), "oprire") == 0) {
+      if (presetRunController.stopConfirmed()) {
+        activeOutputCommand = presetRunController.outputCommand();
+        relayOutputs.apply(activeOutputCommand);
+        logEvent("run_stop", "confirmed");
+      } else {
+        logEvent("run_stop", "rejected");
+      }
+      menuController.returnToStatus();
+      currentScreen = BringupScreen::Status;
     } else if (result.action == dehydrator::UiAction::CloseMenu) {
+      menuController.returnToStatus();
       currentScreen = BringupScreen::Status;
     }
   }

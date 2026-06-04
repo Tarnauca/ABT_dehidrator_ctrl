@@ -91,6 +91,7 @@ class ManualModeController {
    */
   ManualUiResult onShortPress() {
     if (selectedField_ == ManualField::Back) {
+      selectedField_ = ManualField::Fan;
       ManualUiResult result;
       result.exitToMenu = true;
       return result;

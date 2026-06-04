@@ -58,6 +58,8 @@ void test_short_press_on_back_requests_exit_to_menu() {
   const auto result = controller.onShortPress();
 
   TEST_ASSERT_TRUE(result.exitToMenu);
+  TEST_ASSERT_EQUAL(static_cast<int>(ManualField::Fan),
+                    static_cast<int>(controller.selectedField()));
 }
 
 void test_long_press_requests_exit_to_menu() {
