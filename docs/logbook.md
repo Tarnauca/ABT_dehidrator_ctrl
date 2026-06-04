@@ -972,3 +972,72 @@ The user said "do the AHT part now".
 - `docs/backlog.md`
 - `docs/hardware.md`
 - `docs/test-plan.md`
+
+### 2026-06-02 - LCD And Encoder Bring-Up
+
+**Context**
+The user wants to deploy to the real Mega test device and check that the
+existing cooperative logic does not block. They clarified that no heater or fan
+is connected to the current test device, so bench risk is low for this slice.
+They also approved using proven libraries, specifically `LiquidCrystal_I2C`,
+instead of reimplementing common hardware drivers.
+
+**Trigger**
+The user asked what to do next and suggested adding LCD and encoder adapters for
+real-device deployment. After the recommendation, the user said proven libraries
+are acceptable.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Created `feature/lcd-encoder-bringup`.
+- Added Mega-only PlatformIO dependencies for `LiquidCrystal_I2C`, `Encoder`,
+  and `Bounce2`.
+- Added a project `CharacterDisplay` interface and a testable `LcdStatusView`
+  for the initial Romanian 4x20 status screen.
+- Added a bottom-right custom heartbeat glyph.
+- Wired the Mega firmware to initialize the LCD, refresh the status screen
+  cooperatively, scan encoder/button input cooperatively, and log input events.
+- Added temporary bench pin defaults for encoder, buzzer, and LCD backlight
+  while leaving heater/fan relays unassigned.
+- Updated backlog, hardware notes, UI draft, test plan, and logbook.
+
+**Decisions**
+- Use proven Arduino libraries for physical LCD, encoder, and button debounce
+  behavior, while keeping the project-owned display renderer testable without
+  Arduino headers.
+- Keep the first LCD screen minimal and status-focused; full menu and preset
+  configuration remain separate Phase 7 work.
+- Keep heater/fan relay pins unassigned during this bring-up because the test
+  device has no heater/fan connected and wiring is not finalized.
+- Use temporary UI bench pins in centralized hardware configuration so real
+  wiring changes require one small config edit later.
+
+**Commits / Branches**
+- Branch: `feature/lcd-encoder-bringup`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 135 tests passed.
+- `platformio run -e megaatmega2560`: success.
+- `platformio run -e megaatmega2560 -t upload`: success after closing the
+  serial monitor that was holding the port.
+- User bench check: LCD status screen, heartbeat, and encoder/button serial
+  events worked OK on the connected test device.
+- Source scan found no project use of Arduino `String`, `new`, `delete`,
+  `malloc`, or `free`.
+
+**Links**
+- `platformio.ini`
+- `src/main.cpp`
+- `include/dehydrator/interfaces/CharacterDisplay.h`
+- `include/dehydrator/ui/LcdStatusView.h`
+- `test/test_lcd_status_view/test_lcd_status_view.cpp`
+- `include/dehydrator/config/HardwareConfig.h`
+- `docs/backlog.md`
+- `docs/hardware.md`
+- `docs/user-ui-ro.md`
+- `docs/test-plan.md`

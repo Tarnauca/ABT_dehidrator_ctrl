@@ -56,12 +56,12 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 - [ ] Add concrete Arduino AHT sensor adapter after library/device is confirmed.
 - [x] Add relay output adapter with configurable polarity.
 - [x] Add buzzer and backlight alarm output adapter.
-- [ ] Add LCD and encoder adapters.
+- [x] Add LCD and encoder bring-up adapters.
 
 ## Phase 7: UI And Presets
 
 - [ ] Document Romanian 4x20 menu flow.
-- [ ] Implement status screen with bottom-right heartbeat.
+- [x] Implement initial status screen with bottom-right heartbeat.
 - [ ] Implement preset selection and run configuration.
 - [ ] Add built-in presets after source values are confirmed.
 
