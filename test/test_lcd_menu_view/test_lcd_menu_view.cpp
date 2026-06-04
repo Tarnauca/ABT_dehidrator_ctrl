@@ -72,14 +72,14 @@ void test_menu_view_renders_first_items_and_hint() {
   assertLineEquals(display, 0U, "Meniu               ");
   assertLineEquals(display, 1U, ">Pornire preset     ");
   assertLineEquals(display, 2U, " Mod manual         ");
-  assertLineEquals(display, 3U, " Setari             ");
+  assertLineEquals(display, 3U, " Testare            ");
 }
 
 void test_menu_view_scrolls_when_selection_moves_down() {
   FakeDisplay display;
   LcdMenuView view(display);
 
-  view.render(snapshotForIndex(3U, false));
+  view.render(snapshotForIndex(4U, false));
 
   assertLineEquals(display, 0U, "Meniu               ");
   assertLineEquals(display, 1U, ">Reluare program    ");
@@ -91,7 +91,7 @@ void test_menu_view_keeps_last_item_on_first_line() {
   FakeDisplay display;
   LcdMenuView view(display);
 
-  view.render(snapshotForIndex(4U, false));
+  view.render(snapshotForIndex(5U, false));
 
   assertLineEquals(display, 0U, "Meniu               ");
   assertLineEquals(display, 1U, ">Oprire             ");

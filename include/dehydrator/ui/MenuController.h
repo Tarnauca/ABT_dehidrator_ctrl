@@ -64,7 +64,7 @@ class MenuController {
   /**
    * @brief Number of built-in bring-up menu items.
    */
-  static constexpr size_t ITEM_COUNT = 6U;
+  static constexpr size_t ITEM_COUNT = 7U;
 
   /**
    * @brief Creates a menu controller starting on the status screen.
@@ -173,6 +173,7 @@ class MenuController {
     static const char* const kItems[ITEM_COUNT] = {
         "Pornire preset",
         "Mod manual",
+        "Testare",
         "Setari",
         "Reluare program",
         "Oprire",
@@ -190,6 +191,7 @@ class MenuController {
     static const char* const kTokens[ITEM_COUNT] = {
         "pornire_preset",
         "mod_manual",
+        "testare",
         "setari",
         "reluare_program",
         "oprire",

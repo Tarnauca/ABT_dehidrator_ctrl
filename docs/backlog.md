@@ -67,13 +67,14 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 - [x] Implement initial status screen with bottom-right heartbeat.
 - [x] Implement initial encoder-driven menu shell.
 - [x] Implement initial manual mode screen shell.
+- [x] Split the original manual shell into `Mod manual` program setup and `Testare` direct-output bring-up.
 - [x] Implement preset selection and run configuration shell.
 - [x] Wire preset selection into the real run lifecycle and status screen.
 - [ ] Add built-in presets after source values are confirmed.
 
 ## Phase 8: Verification And Safety Review
 
-- [ ] Run unit tests.
+- [x] Run unit tests.
 - [ ] Run PlatformIO build.
 - [ ] Create manual bench test checklist.
 - [ ] Review risks and safety behavior before real heater testing.

@@ -57,6 +57,7 @@ Apasa pt. OK
 
 - `Pornire preset`
 - `Mod manual`
+- `Testare`
 - `Setari`
 - `Reluare program`
 - `Oprire`
@@ -79,7 +80,7 @@ Current menu layout:
 Meniu
 >Pornire preset
  Mod manual
- Setari
+ Testare
 ```
 
 The menu does not wrap around at the ends. The selected item stays on the
@@ -124,23 +125,47 @@ Inlocuire program?
 >Nu    Da
 ```
 
-## Implemented Manual Mode Shell
+## Implemented Manual Program Shell
 
 Current bring-up behavior:
 
-- Select `Mod manual` from the menu to open the manual screen.
-- Encoder rotation switches between `Fan`, `Heat`, and `Inapoi`.
-- Short press toggles the selected output.
+- Select `Mod manual` from the menu to open the manual program screen.
+- Encoder rotation navigates between `Temp`, `Dur`, `F:Nu/Da`, `Start`, and `Inapoi`.
+- Short press on `Temp`, `Dur`, or `F:Nu/Da` enters or leaves edit mode.
+- While a field is in edit mode, encoder rotation changes its value.
+- Short press on `Start` starts the configured manual program.
+- If another run is already active, starting a manual program uses the same
+  `Confirmare` screen as preset replacement.
 - `Inapoi` is always the last selectable entry and returns to the menu.
 - If the user exits with `Inapoi`, the next entry into manual mode starts again
-  from `Fan`, not from `Inapoi`.
-- Turning `Heat` ON also forces `Fan` ON.
-- Turning `Fan` OFF also forces `Heat` OFF.
+  from `Temp`, not from `Inapoi`.
 
 Current manual layout:
 
 ```text
 Mod manual
+>Temp:57°C
+ Dur:8h 0m
+ F:Nu Start Inapoi
+```
+
+## Implemented Test Shell
+
+Current bring-up behavior:
+
+- Select `Testare` from the menu to open the direct output test screen.
+- Encoder rotation switches between `Fan`, `Heat`, and `Inapoi`.
+- Short press toggles the selected output.
+- `Inapoi` is always the last selectable entry and returns to the menu.
+- If the user exits with `Inapoi`, the next entry into test mode starts again
+  from `Fan`, not from `Inapoi`.
+- Turning `Heat` ON also forces `Fan` ON.
+- Turning `Fan` OFF also forces `Heat` OFF.
+
+Current test layout:
+
+```text
+Testare
 >Fan: OFF
  Heat: OFF
  Inapoi

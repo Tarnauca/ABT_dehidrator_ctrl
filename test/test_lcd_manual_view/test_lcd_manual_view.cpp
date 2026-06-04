@@ -64,7 +64,7 @@ void test_manual_view_renders_fan_selected() {
 
   view.render(snapshot);
 
-  assertLineEquals(display, 0U, "Mod manual          ");
+  assertLineEquals(display, 0U, "Testare             ");
   assertLineEquals(display, 1U, ">Fan: ON            ");
   assertLineEquals(display, 2U, " Heat: OFF          ");
   assertLinePrefixEquals(display, 3U, " Inapoi", 7U);

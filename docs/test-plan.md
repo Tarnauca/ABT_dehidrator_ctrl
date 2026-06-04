@@ -100,10 +100,11 @@ Status values:
 | REQ-UI-013 | Unit/Bench | Menu-like screens use line 1 as section title and lower lines for items | `test_lcd_menu_view`, `test_lcd_preset_view`, `test_lcd_manual_view`; LCD bench check pending | Implemented |
 | REQ-UI-014 | Unit/Bench | LCD temperatures use `°C` consistently | `test_lcd_status_view`, `test_lcd_preset_view`; LCD bench check pending | Implemented |
 | REQ-UI-015 | Unit/Bench | Preset summary durations use `Xh Ym` format | `test_lcd_preset_view`; LCD bench check pending | Implemented |
-| REQ-FUNC-001 | Unit/Bench | Manual mode supports direct on/off control shell | `test_manual_mode_controller`, `test_lcd_manual_view`; bench manual-mode check pending | Implemented |
+| REQ-FUNC-001 | Unit/Bench | Test mode supports direct on/off control shell | `test_manual_mode_controller`, `test_lcd_manual_view`; bench test-mode check pending | Implemented |
 | REQ-FUNC-004 | Unit/Bench | Built-in preset selection shell is available from the menu | `test_preset_select_controller`, `test_lcd_preset_view`; bench preset check pending | Implemented |
 | REQ-FUNC-016 | Unit/Bench | Confirming a preset starts the associated run profile from idle | `test_preset_run_controller`; preset start bench check pending | Implemented |
-| REQ-FUNC-010 | Unit/Bench | Manual heat request forces fan ON within safety constraints | `test_manual_mode_controller`; bench manual toggle check pending | Implemented |
+| REQ-FUNC-010 | Unit/Bench | Test-mode heat request forces fan ON within safety constraints | `test_manual_mode_controller`; bench test-mode toggle check pending | Implemented |
+| REQ-FUNC-017 | Unit/Bench | Manual program mode supports editable temperature, duration, and fixed/fluctuating selection | `test_manual_program_controller`, `test_lcd_manual_program_view`; bench manual-program check pending | Implemented |
 | REQ-UI-016 | Unit/Bench | Status screen reflects Romanian lifecycle labels during a preset run | `test_lcd_status_view`, `test_preset_run_controller`; LCD bench check pending | Implemented |
 | REQ-UI-017 | Unit/Bench | Finished state can be acknowledged from the status screen with short press | `test_preset_run_controller`; status acknowledgement bench check pending | Implemented |
 | REQ-PERSIST-001 | Unit | Calibration defaults are explicit and later persistable | `test_config` thermistor calibration default tests; EEPROM persistence pending | Implemented |

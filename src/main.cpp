@@ -25,10 +25,12 @@
 #include "dehydrator/presets/PresetCatalog.h"
 #include "dehydrator/ui/LcdManualView.h"
 #include "dehydrator/ui/LcdConfirmReplaceRunView.h"
+#include "dehydrator/ui/LcdManualProgramView.h"
 #include "dehydrator/ui/LcdPresetView.h"
 #include "dehydrator/ui/LcdMenuView.h"
 #include "dehydrator/ui/LcdStatusView.h"
 #include "dehydrator/ui/ConfirmReplaceRunController.h"
+#include "dehydrator/ui/ManualProgramController.h"
 #include "dehydrator/ui/ManualModeController.h"
 #include "dehydrator/ui/PresetSelectController.h"
 #include "dehydrator/ui/MenuController.h"
@@ -66,7 +68,8 @@ dehydrator::OutputCommand activeOutputCommand;
 enum class BringupScreen {
   Status,
   Menu,
-  Manual,
+  Test,
+  ManualProgram,
   Preset,
   ConfirmReplaceRun,
 };
@@ -171,9 +174,11 @@ dehydrator::TempRhReader tempRhReader(tempRhDriver,
                                       dehydrator::config::CALIBRATION);
 dehydrator::MenuController menuController;
 dehydrator::ManualModeController manualModeController;
+dehydrator::ManualProgramController manualProgramController;
 dehydrator::PresetSelectController presetSelectController;
 dehydrator::ConfirmReplaceRunController confirmReplaceRunController;
 const dehydrator::PresetDefinition* pendingPresetSelection = nullptr;
+bool pendingManualProgramStart = false;
 
 /**
  * @brief Arduino `Stream` adapter for the project log sink interface.
@@ -205,6 +210,7 @@ dehydrator::LogDispatcher logger(logSinks,
                                  dehydrator::config::LOGGING.sinkCapacity);
 dehydrator::LcdMenuView menuView(lcdDisplay);
 dehydrator::LcdManualView manualView(lcdDisplay);
+dehydrator::LcdManualProgramView manualProgramView(lcdDisplay);
 dehydrator::LcdPresetView presetView(lcdDisplay);
 dehydrator::LcdConfirmReplaceRunView confirmReplaceRunView(lcdDisplay);
 
@@ -340,6 +346,45 @@ void logManualResult(const dehydrator::ManualUiResult& result) {
   }
 
   if (result.exitToMenu) {
+    logEvent("ui", "test_close");
+  }
+}
+
+/**
+ * @brief Logs manual-program UI transitions and edits.
+ *
+ * @param result Result produced by the manual program controller.
+ */
+void logManualProgramResult(const dehydrator::ManualProgramUiResult& result) {
+  if (result.selectionChanged) {
+    switch (manualProgramController.selectedField()) {
+      case dehydrator::ManualProgramField::Temperature:
+        logEvent("ui", "manual_temp");
+        return;
+      case dehydrator::ManualProgramField::Duration:
+        logEvent("ui", "manual_duration");
+        return;
+      case dehydrator::ManualProgramField::Fluctuating:
+        logEvent("ui", "manual_fluct");
+        return;
+      case dehydrator::ManualProgramField::Start:
+        logEvent("ui", "manual_start");
+        return;
+      case dehydrator::ManualProgramField::Back:
+        logEvent("ui", "manual_back");
+        return;
+    }
+  }
+
+  if (result.valueChanged) {
+    logEvent("param", "manual_changed");
+  }
+
+  if (result.startRequested) {
+    logEvent("run_manual", "requested");
+  }
+
+  if (result.exitToMenu) {
     logEvent("ui", "manual_close");
   }
 }
@@ -466,12 +511,25 @@ void updateLcdTask(uint32_t nowMs) {
   }
 
   heartbeatOn = !heartbeatOn;
-  if (currentScreen == BringupScreen::Manual) {
+  if (currentScreen == BringupScreen::Test) {
     dehydrator::LcdManualSnapshot manualSnapshot;
     manualSnapshot.selectedField = manualModeController.selectedField();
     manualSnapshot.command = manualModeController.command();
     manualSnapshot.heartbeatOn = heartbeatOn;
     manualView.render(manualSnapshot);
+    return;
+  }
+
+  if (currentScreen == BringupScreen::ManualProgram) {
+    dehydrator::LcdManualProgramSnapshot manualProgramSnapshot;
+    manualProgramSnapshot.selectedField = manualProgramController.selectedField();
+    manualProgramSnapshot.editing = manualProgramController.editing();
+    manualProgramSnapshot.targetTempC = manualProgramController.targetTempC();
+    manualProgramSnapshot.durationMinutes =
+        manualProgramController.durationMinutes();
+    manualProgramSnapshot.fluctuating = manualProgramController.fluctuating();
+    manualProgramSnapshot.heartbeatOn = heartbeatOn;
+    manualProgramView.render(manualProgramSnapshot);
     return;
   }
 
@@ -530,8 +588,10 @@ void updateInputTask(uint32_t nowMs) {
   const int8_t delta = encoderStepFilter.update(position);
   if (delta != 0) {
     logEvent("input", delta > 0 ? "encoder_cw" : "encoder_ccw");
-    if (currentScreen == BringupScreen::Manual) {
+    if (currentScreen == BringupScreen::Test) {
       logManualResult(manualModeController.onRotate(delta));
+    } else if (currentScreen == BringupScreen::ManualProgram) {
+      logManualProgramResult(manualProgramController.onRotate(delta));
     } else if (currentScreen == BringupScreen::ConfirmReplaceRun) {
       logConfirmReplaceRunResult(confirmReplaceRunController.onRotate(delta));
     } else if (currentScreen == BringupScreen::Preset) {
@@ -553,13 +613,15 @@ void updateInputTask(uint32_t nowMs) {
     buttonPressed = false;
     if (pressedMs >= 1000UL) {
       logEvent("input", "button_long");
-      if (currentScreen == BringupScreen::Manual) {
+      if (currentScreen == BringupScreen::Test) {
         const dehydrator::ManualUiResult result = manualModeController.onLongPress();
         logManualResult(result);
         if (result.exitToMenu) {
           menuController.enterMenu();
           currentScreen = BringupScreen::Menu;
         }
+      } else if (currentScreen == BringupScreen::ManualProgram) {
+        return;
       } else if (currentScreen == BringupScreen::Preset) {
         const dehydrator::PresetUiResult result = presetSelectController.onLongPress();
         logPresetResult(result);
@@ -574,10 +636,41 @@ void updateInputTask(uint32_t nowMs) {
     }
 
     logEvent("input", "button_short");
-    if (currentScreen == BringupScreen::Manual) {
+    if (currentScreen == BringupScreen::Test) {
       const dehydrator::ManualUiResult result = manualModeController.onShortPress();
       logManualResult(result);
       if (result.exitToMenu) {
+        menuController.enterMenu();
+        currentScreen = BringupScreen::Menu;
+      }
+      return;
+    }
+
+    if (currentScreen == BringupScreen::ManualProgram) {
+      const dehydrator::ManualProgramUiResult result =
+          manualProgramController.onShortPress();
+      logManualProgramResult(result);
+      if (result.startRequested) {
+        const dehydrator::ProfileConfig profile = manualProgramController.profile();
+        if (presetRunController.snapshot().state == dehydrator::RunState::Idle) {
+          if (presetRunController.startProfile(profile, "manual")) {
+            activeOutputCommand = presetRunController.outputCommand();
+            relayOutputs.apply(activeOutputCommand);
+            logEvent("run_manual", "started");
+            logEvent("run_state", presetRunController.stateToken());
+            menuController.returnToStatus();
+            currentScreen = BringupScreen::Status;
+          } else {
+            logEvent("run_manual", "rejected");
+          }
+        } else {
+          pendingPresetSelection = nullptr;
+          pendingManualProgramStart = true;
+          confirmReplaceRunController.reset();
+          logEvent("run_replace", "prompt");
+          currentScreen = BringupScreen::ConfirmReplaceRun;
+        }
+      } else if (result.exitToMenu) {
         menuController.enterMenu();
         currentScreen = BringupScreen::Menu;
       }
@@ -596,15 +689,36 @@ void updateInputTask(uint32_t nowMs) {
           logEvent("preset_start", pendingPresetSelection->token);
           logEvent("run_state", presetRunController.stateToken());
           pendingPresetSelection = nullptr;
+          pendingManualProgramStart = false;
           currentScreen = BringupScreen::Status;
         } else {
           logEvent("preset_start", "rejected");
           pendingPresetSelection = nullptr;
+          pendingManualProgramStart = false;
+          currentScreen = BringupScreen::Status;
+        }
+      } else if (result.confirmed && pendingManualProgramStart) {
+        if (presetRunController.stopConfirmed() &&
+            presetRunController.startProfile(manualProgramController.profile(),
+                                            "manual")) {
+          activeOutputCommand = presetRunController.outputCommand();
+          relayOutputs.apply(activeOutputCommand);
+          logEvent("run_manual", "started");
+          logEvent("run_state", presetRunController.stateToken());
+          pendingManualProgramStart = false;
+          currentScreen = BringupScreen::Status;
+        } else {
+          logEvent("run_manual", "rejected");
+          pendingManualProgramStart = false;
           currentScreen = BringupScreen::Status;
         }
       } else {
+        const bool restoreManualProgram = pendingManualProgramStart;
         pendingPresetSelection = nullptr;
-        currentScreen = BringupScreen::Preset;
+        pendingManualProgramStart = false;
+        currentScreen =
+            restoreManualProgram ? BringupScreen::ManualProgram
+                                 : BringupScreen::Preset;
       }
       return;
     }
@@ -629,6 +743,7 @@ void updateInputTask(uint32_t nowMs) {
             }
           } else {
             pendingPresetSelection = preset;
+            pendingManualProgramStart = false;
             confirmReplaceRunController.reset();
             logEvent("run_replace", "prompt");
             currentScreen = BringupScreen::ConfirmReplaceRun;
@@ -671,8 +786,14 @@ void updateInputTask(uint32_t nowMs) {
         menuController.currentToken() != nullptr &&
         strcmp(menuController.currentToken(), "mod_manual") == 0) {
       menuController.returnToStatus();
-      currentScreen = BringupScreen::Manual;
+      currentScreen = BringupScreen::ManualProgram;
       logEvent("ui", "manual_open");
+    } else if (result.action == dehydrator::UiAction::SelectItem &&
+               menuController.currentToken() != nullptr &&
+               strcmp(menuController.currentToken(), "testare") == 0) {
+      menuController.returnToStatus();
+      currentScreen = BringupScreen::Test;
+      logEvent("ui", "test_open");
     } else if (result.action == dehydrator::UiAction::SelectItem &&
                menuController.currentToken() != nullptr &&
                strcmp(menuController.currentToken(), "pornire_preset") == 0) {
@@ -708,14 +829,12 @@ void updateStateLogTask(uint32_t nowMs) {
     return;
   }
 
-  const dehydrator::PresetDefinition* activePreset = presetRunController.activePreset();
   char line[dehydrator::config::LOGGING.lineSize] = {};
   if (dehydrator::LogFormatter::formatBringupState(
           line, sizeof(line), nowMs, ledOn, latestNtc.valid,
           latestNtc.tempC, latestNtc.adcCount, latestTempRh.valid,
           latestTempRh.tempC, latestTempRh.rhPercent,
-          presetRunController.stateToken(),
-          activePreset != nullptr ? activePreset->token : nullptr,
+          presetRunController.stateToken(), presetRunController.activeRunToken(),
           activeOutputCommand.heaterOn, activeOutputCommand.fanOn)) {
     writeLogLine(line);
     return;

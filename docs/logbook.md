@@ -51,6 +51,69 @@ What caused the action or decision.
 
 ## Entries
 
+### 2026-06-04 - Manual Program Mode And Test Shell Split
+
+**Context**
+The project already had a shell called `Mod manual`, but in practice it was a
+direct relay/output bring-up surface used more like a technician test screen
+than an end-user drying mode.
+
+**Trigger**
+The user clarified that this existing shell should stay in the project as
+`Testare`, while `Mod manual` should become a real configurable drying mode
+with editable duration, temperature, and fixed/fluctuating operation.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Kept the existing direct output shell and renamed its UI role to `Testare`.
+- Added a new manual program controller and LCD view for editable temperature,
+  duration, fluctuation selection, `Start`, and `Inapoi`.
+- Extended the main menu to expose both `Mod manual` and `Testare`.
+- Reused the existing preset-run controller by adding a generic profile-start
+  path for manual runs.
+- Reused the existing replacement confirmation flow when a manual program is
+  started while another run is already active.
+- Updated requirements, UI notes, test-plan coverage, backlog, and tests to
+  reflect the split.
+
+**Decisions**
+- The old direct-output shell remains intentionally available because it is
+  still useful for bench bring-up and diagnostics even if it is not the real
+  user-facing manual drying mode.
+- The first manual-program implementation uses a simple fluctuating algorithm:
+  selected average temperature, +/-5 C low/high band, and 20 min high/20 min
+  low phases.
+- Long press remains unused for navigation in the new manual program screen,
+  matching the broader UI rule that explicit `Inapoi` entries drive upward
+  navigation.
+
+**Commits / Branches**
+- Branch: `feat/manual-program-mode`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native` passed after updating the new LCD tests to
+  validate the HD44780 degree-symbol byte and the reserved heartbeat cell
+  correctly.
+- Mega2560 build verification is still pending in this turn because the
+  environment hit an execution/approval limit while trying to download the AVR
+  platform into the local `.pio-core` directory.
+
+**Links**
+- `include/dehydrator/ui/ManualProgramController.h`
+- `include/dehydrator/ui/LcdManualProgramView.h`
+- `include/dehydrator/ui/LcdManualView.h`
+- `include/dehydrator/app/PresetRunController.h`
+- `src/main.cpp`
+- `docs/requirements.md`
+- `docs/user-ui-ro.md`
+- `docs/test-plan.md`
+- `docs/backlog.md`
+
 ### 2026-06-04 - Menu Navigation Rules Made Durable
 
 **Context**
@@ -1721,6 +1784,52 @@ running should ask for confirmation instead of replacing it immediately.
 **Links**
 - `include/dehydrator/ui/ConfirmReplaceRunController.h`
 - `include/dehydrator/ui/LcdConfirmReplaceRunView.h`
+- `src/main.cpp`
+- `docs/user-ui-ro.md`
+
+---
+
+## Manual program mode and test-shell split
+
+**Trigger**
+The user clarified that the current `Mod manual` shell is really a bring-up
+test surface and should be kept as `Testare`, while `Mod manual` should become
+an actual program editor with temperature, duration, and fluctuating/fixed mode
+selection.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Kept the existing direct output shell and renamed its UI role to `Testare`.
+- Added a new manual program controller and LCD view for editable temperature,
+  duration, fluctuating flag, start, and back actions.
+- Reused the existing run lifecycle by allowing the run controller to start a
+  non-preset profile with a stable `manual` token.
+- Reused the existing replacement confirmation flow when a manual program is
+  started while another run is already active.
+- Updated menu structure, UI documentation, and test-plan traceability.
+
+**Decisions**
+- Use a simple initial fluctuating manual algorithm: selected temperature is the
+  average metadata, with a derived `-5°C / +5°C` range and `20 min / 20 min`
+  phase timing.
+- Keep that fluctuating derivation explicit in code for now rather than adding
+  more editable fields before the rest of the base workflow is finished.
+
+**Commits / Branches**
+- Branch: `feat/manual-program-mode`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Pending after native tests and Mega2560 build are rerun.
+
+**Links**
+- `include/dehydrator/ui/ManualProgramController.h`
+- `include/dehydrator/ui/LcdManualProgramView.h`
+- `include/dehydrator/app/PresetRunController.h`
 - `src/main.cpp`
 - `docs/user-ui-ro.md`
 
