@@ -82,7 +82,7 @@ Status values:
 | REQ-SAFE-009 | Unit/Bench | Hard fault forces heater/fan OFF immediately | `test_run_state_machine` output policy tests; relay bench check still pending | Implemented |
 | REQ-SAFE-010 | Unit/UI | Hard fault requires acknowledgement before new run | `test_run_state_machine` acknowledgement tests; UI flow still pending | Implemented |
 | REQ-SAFE-011 | Unit | Watchdog reset during run is non-resumable fault context | `test_fault_detector` watchdog-reset input covered; resume/persistence behavior pending | Implemented |
-| REQ-SAFE-014 | Unit | Startup self-check validates sensors/config/input/output-safe-state | `test_control_state_machine`, fakes | Planned |
+| REQ-SAFE-014 | Unit | Startup self-check validates sensors/config/input/output-safe-state | `test_control_state_machine`, fakes | Implemented |
 | REQ-HW-002 | Unit/Bench | NTC thermistor is converted as the primary control temperature sensor | `test_ntc_sensor`; Arduino analog adapter builds; real divider/calibration bench check pending | Implemented |
 | REQ-HW-003 | Unit/Bench | DHT22/AM2302-class sensor provides secondary temperature/RH telemetry when available | `test_temp_rh_reader`; concrete `DHT` adapter builds; bench check pending | Implemented |
 | REQ-HW-004 | Unit/Bench | Heater and fan relay outputs translate logical commands to pins | `test_relay_outputs`; relay bench check pending | Implemented |
