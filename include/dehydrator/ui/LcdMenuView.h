@@ -60,15 +60,11 @@ class LcdMenuView {
 
  private:
   static size_t firstVisibleIndex(const LcdMenuSnapshot& snapshot) {
-    if (snapshot.itemCount <= 3U || snapshot.selectedIndex < 2U) {
+    if (snapshot.itemCount == 0U || snapshot.selectedIndex >= snapshot.itemCount) {
       return 0U;
     }
 
-    if (snapshot.selectedIndex >= snapshot.itemCount - 1U) {
-      return snapshot.itemCount - 3U;
-    }
-
-    return snapshot.selectedIndex - 1U;
+    return snapshot.selectedIndex;
   }
 
   static void fillLine(char* line) {

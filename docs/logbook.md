@@ -1217,6 +1217,53 @@ The user said "let's proceed" after the concrete AHT bring-up was merged.
 - `src/main.cpp`
 - `docs/user-ui-ro.md`
 
+### 2026-06-04 - Menu Edges And No-Wrap Behavior
+
+**Context**
+The first menu shell was usable on hardware, but the centered scrolling and
+wraparound behavior felt chaotic when the list was short. The user wanted the
+active marker to stay on the first visible line and the menu to stop at the
+top and bottom instead of wrapping.
+
+**Trigger**
+The user reported that the rotary control itself was fine now and asked to
+proceed with the previous request about menu behavior.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Changed the menu controller so encoder rotation stops at the first and last
+  entries instead of wrapping around.
+- Changed the menu view so the selected item is always rendered on the first
+  visible line, with following entries below it.
+- Updated native tests to cover the no-wrap edge behavior and the first-line
+  rendering layout.
+- Updated the Romanian UI draft and backlog entry for the menu flow.
+
+**Decisions**
+- Prefer a stable first-line selection marker over centered scrolling for this
+  short menu.
+- Keep the navigation simple and predictable for the current 5-item list.
+
+**Commits / Branches**
+- Branch: `feature/menu-scroll-behavior`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Code patched locally.
+- PlatformIO test/build rerun was started but interrupted by the environment
+  cache permissions issue before completion.
+
+**Links**
+- `include/dehydrator/ui/MenuController.h`
+- `include/dehydrator/ui/LcdMenuView.h`
+- `test/test_menu_controller/test_test_menu_controller.cpp`
+- `test/test_lcd_menu_view/test_lcd_menu_view.cpp`
+- `docs/user-ui-ro.md`
+
 ### 2026-06-04 - Manual Mode Shell
 
 **Context**

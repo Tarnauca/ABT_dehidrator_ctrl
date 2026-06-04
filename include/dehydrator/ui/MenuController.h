@@ -109,13 +109,16 @@ class MenuController {
       return {};
     }
 
-    const int8_t direction = delta > 0 ? 1 : -1;
     size_t newIndex = selectedIndex_;
-    if (direction > 0) {
-      newIndex = (selectedIndex_ + 1U) % ITEM_COUNT;
-    } else if (selectedIndex_ == 0U) {
-      newIndex = ITEM_COUNT - 1U;
+    if (delta > 0) {
+      if (selectedIndex_ + 1U >= ITEM_COUNT) {
+        return {};
+      }
+      newIndex = selectedIndex_ + 1U;
     } else {
+      if (selectedIndex_ == 0U) {
+        return {};
+      }
       newIndex = selectedIndex_ - 1U;
     }
 

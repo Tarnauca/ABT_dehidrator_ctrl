@@ -31,14 +31,32 @@ void test_rotation_moves_selection_when_menu_is_open() {
   TEST_ASSERT_EQUAL_STRING("Mod manual", controller.currentItem());
 }
 
-void test_rotation_wraps_at_end_of_menu() {
+void test_rotation_stops_at_end_of_menu() {
   MenuController controller;
   controller.onShortPress();
-  controller.onRotate(-1);
+  controller.onRotate(1);
+  controller.onRotate(1);
+  controller.onRotate(1);
+  controller.onRotate(1);
 
-  TEST_ASSERT_EQUAL_UINT(MenuController::ITEM_COUNT - 1U,
-                         controller.selectedIndex());
+  const UiResult result = controller.onRotate(1);
+
+  TEST_ASSERT_EQUAL(static_cast<int>(UiAction::None),
+                    static_cast<int>(result.action));
+  TEST_ASSERT_EQUAL_UINT(MenuController::ITEM_COUNT - 1U, controller.selectedIndex());
   TEST_ASSERT_EQUAL_STRING("Oprire", controller.currentItem());
+}
+
+void test_rotation_stops_at_start_of_menu() {
+  MenuController controller;
+  controller.onShortPress();
+
+  const UiResult result = controller.onRotate(-1);
+
+  TEST_ASSERT_EQUAL(static_cast<int>(UiAction::None),
+                    static_cast<int>(result.action));
+  TEST_ASSERT_EQUAL_UINT(0U, controller.selectedIndex());
+  TEST_ASSERT_EQUAL_STRING("Pornire preset", controller.currentItem());
 }
 
 void test_short_press_on_menu_selects_current_item() {
@@ -69,7 +87,8 @@ void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_short_press_opens_menu_from_status);
   RUN_TEST(test_rotation_moves_selection_when_menu_is_open);
-  RUN_TEST(test_rotation_wraps_at_end_of_menu);
+  RUN_TEST(test_rotation_stops_at_end_of_menu);
+  RUN_TEST(test_rotation_stops_at_start_of_menu);
   RUN_TEST(test_short_press_on_menu_selects_current_item);
   RUN_TEST(test_long_press_closes_menu_back_to_status);
   UNITY_END();

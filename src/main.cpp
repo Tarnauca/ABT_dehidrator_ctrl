@@ -5,6 +5,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <string.h>
 
+#include "dehydrator/app/EncoderStepFilter.h"
 #include "dehydrator/app/PeriodicTask.h"
 #include "dehydrator/config/HardwareConfig.h"
 #include "dehydrator/config/RuntimeConfig.h"
@@ -46,6 +47,7 @@ uint32_t buttonPressedAtMs = 0UL;
 bool buttonPressed = false;
 dehydrator::Pt50Reading latestPt50;
 dehydrator::AhtReading latestAht;
+dehydrator::EncoderStepFilter encoderStepFilter(4);
 
 enum class BringupScreen {
   Status,
@@ -347,15 +349,14 @@ void updateInputTask(uint32_t nowMs) {
   }
 
   const long position = rotaryEncoder.read();
-  if (position != lastEncoderPosition) {
-    const int8_t delta = position > lastEncoderPosition ? 1 : -1;
+  const int8_t delta = encoderStepFilter.update(position);
+  if (delta != 0) {
     logEvent("input", delta > 0 ? "encoder_cw" : "encoder_ccw");
     if (currentScreen == BringupScreen::Manual) {
       logManualResult(manualModeController.onRotate(delta));
     } else if (currentScreen == BringupScreen::Menu) {
       logUiResult(menuController.onRotate(delta));
     }
-    lastEncoderPosition = position;
   }
 
   buttonDebouncer.update();
@@ -476,6 +477,7 @@ void setup() {
   lcd.clear();
   lcd.createChar(dehydrator::LcdStatusView::HEARTBEAT_CHAR, heartbeatGlyph);
   lastEncoderPosition = rotaryEncoder.read();
+  encoderStepFilter.reset(lastEncoderPosition);
 
   writeLogLine("EVENT type=boot detail=scheduler_shell");
 }

@@ -82,15 +82,27 @@ void test_menu_view_scrolls_when_selection_moves_down() {
 
   view.render(snapshotForIndex(3U, false));
 
-  assertLineEquals(display, 0U, " Setari             ");
-  assertLineEquals(display, 1U, ">Reluare program    ");
-  assertLineEquals(display, 2U, " Oprire             ");
+  assertLineEquals(display, 0U, ">Reluare program    ");
+  assertLineEquals(display, 1U, " Oprire             ");
+  assertLineEquals(display, 2U, "                    ");
+}
+
+void test_menu_view_keeps_last_item_on_first_line() {
+  FakeDisplay display;
+  LcdMenuView view(display);
+
+  view.render(snapshotForIndex(4U, false));
+
+  assertLineEquals(display, 0U, ">Oprire             ");
+  assertLineEquals(display, 1U, "                    ");
+  assertLineEquals(display, 2U, "                    ");
 }
 
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_menu_view_renders_first_items_and_hint);
   RUN_TEST(test_menu_view_scrolls_when_selection_moves_down);
+  RUN_TEST(test_menu_view_keeps_last_item_on_first_line);
   UNITY_END();
 }
 
