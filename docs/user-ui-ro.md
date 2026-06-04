@@ -71,3 +71,23 @@ Apas=OK Tine=Inap
 ```
 
 The last line still keeps the bottom-right heartbeat glyph.
+
+## Implemented Manual Mode Shell
+
+Current bring-up behavior:
+
+- Select `Mod manual` from the menu to open the manual screen.
+- Encoder rotation switches between `Fan` and `Heat`.
+- Short press toggles the selected output.
+- Long press returns to the menu.
+- Turning `Heat` ON also forces `Fan` ON.
+- Turning `Fan` OFF also forces `Heat` OFF.
+
+Current manual layout:
+
+```text
+Mod manual
+>Fan: OFF
+ Heat: OFF
+Apas=Sch Tine=Inap
+```

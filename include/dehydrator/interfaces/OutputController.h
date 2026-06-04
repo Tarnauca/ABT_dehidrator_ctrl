@@ -30,7 +30,7 @@ struct OutputCommand {
  * @param command Logical command requested by higher-level control logic.
  * @return Sanitized command with `heaterOn` forced false when `fanOn` is false.
  */
-constexpr OutputCommand sanitizeOutputCommand(OutputCommand command) {
+inline OutputCommand sanitizeOutputCommand(OutputCommand command) {
   if (!command.fanOn) {
     command.heaterOn = false;
   }

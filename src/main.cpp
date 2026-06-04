@@ -3,6 +3,7 @@
 #include <Bounce2.h>
 #include <Encoder.h>
 #include <LiquidCrystal_I2C.h>
+#include <string.h>
 
 #include "dehydrator/app/PeriodicTask.h"
 #include "dehydrator/config/HardwareConfig.h"
@@ -16,8 +17,10 @@
 #include "dehydrator/logging/LogSink.h"
 #include "dehydrator/sensors/AhtReader.h"
 #include "dehydrator/sensors/Pt50Reader.h"
+#include "dehydrator/ui/LcdManualView.h"
 #include "dehydrator/ui/LcdMenuView.h"
 #include "dehydrator/ui/LcdStatusView.h"
+#include "dehydrator/ui/ManualModeController.h"
 #include "dehydrator/ui/MenuController.h"
 
 constexpr char LOG_TRUNCATED_EVENT[] = "WARN code=log_truncated source=event";
@@ -43,6 +46,14 @@ uint32_t buttonPressedAtMs = 0UL;
 bool buttonPressed = false;
 dehydrator::Pt50Reading latestPt50;
 dehydrator::AhtReading latestAht;
+
+enum class BringupScreen {
+  Status,
+  Menu,
+  Manual,
+};
+
+BringupScreen currentScreen = BringupScreen::Status;
 
 LiquidCrystal_I2C lcd(dehydrator::config::HARDWARE.lcdI2cAddress,
                       dehydrator::LcdStatusView::COLUMNS,
@@ -110,6 +121,7 @@ dehydrator::Pt50Reader pt50Reader(analogInput,
                                   dehydrator::config::CALIBRATION);
 dehydrator::AhtReader ahtReader(ahtDriver, dehydrator::config::CALIBRATION);
 dehydrator::MenuController menuController;
+dehydrator::ManualModeController manualModeController;
 
 /**
  * @brief Arduino `Stream` adapter for the project log sink interface.
@@ -140,6 +152,7 @@ dehydrator::LogSink* logSinks[dehydrator::config::LOGGING.sinkCapacity] = {};
 dehydrator::LogDispatcher logger(logSinks,
                                  dehydrator::config::LOGGING.sinkCapacity);
 dehydrator::LcdMenuView menuView(lcdDisplay);
+dehydrator::LcdManualView manualView(lcdDisplay);
 
 /**
  * @brief Returns whether a pin has been assigned in hardware configuration.
@@ -217,6 +230,30 @@ void logUiResult(const dehydrator::UiResult& result) {
 }
 
 /**
+ * @brief Logs manual-mode UI transitions and output changes.
+ *
+ * @param result Result produced by the manual mode controller.
+ */
+void logManualResult(const dehydrator::ManualUiResult& result) {
+  if (result.selectionChanged) {
+    logEvent("ui", manualModeController.selectedField() ==
+                           dehydrator::ManualField::Fan
+                       ? "manual_fan"
+                       : "manual_heat");
+  }
+
+  if (result.outputChanged) {
+    const dehydrator::OutputCommand command = manualModeController.command();
+    logEvent("output", command.fanOn ? "fan_on" : "fan_off");
+    logEvent("output", command.heaterOn ? "heat_on" : "heat_off");
+  }
+
+  if (result.exitToMenu) {
+    logEvent("ui", "manual_close");
+  }
+}
+
+/**
  * @brief Cooperative LED task used by the scheduler shell.
  *
  * @param nowMs Current firmware uptime in milliseconds.
@@ -268,7 +305,16 @@ void updateLcdTask(uint32_t nowMs) {
   }
 
   heartbeatOn = !heartbeatOn;
-  if (menuController.screen() == dehydrator::UiScreen::Menu) {
+  if (currentScreen == BringupScreen::Manual) {
+    dehydrator::LcdManualSnapshot manualSnapshot;
+    manualSnapshot.selectedField = manualModeController.selectedField();
+    manualSnapshot.command = manualModeController.command();
+    manualSnapshot.heartbeatOn = heartbeatOn;
+    manualView.render(manualSnapshot);
+    return;
+  }
+
+  if (currentScreen == BringupScreen::Menu) {
     dehydrator::LcdMenuSnapshot menuSnapshot;
     menuSnapshot.items = dehydrator::MenuController::items();
     menuSnapshot.itemCount = dehydrator::MenuController::ITEM_COUNT;
@@ -284,8 +330,8 @@ void updateLcdTask(uint32_t nowMs) {
   snapshot.pt50Valid = latestPt50.valid;
   snapshot.rhPercent = latestAht.rhPercent;
   snapshot.rhValid = latestAht.valid;
-  snapshot.heaterOn = false;
-  snapshot.fanOn = false;
+  snapshot.heaterOn = manualModeController.command().heaterOn;
+  snapshot.fanOn = manualModeController.command().fanOn;
   snapshot.heartbeatOn = heartbeatOn;
   statusView.render(snapshot);
 }
@@ -304,7 +350,11 @@ void updateInputTask(uint32_t nowMs) {
   if (position != lastEncoderPosition) {
     const int8_t delta = position > lastEncoderPosition ? 1 : -1;
     logEvent("input", delta > 0 ? "encoder_cw" : "encoder_ccw");
-    logUiResult(menuController.onRotate(delta));
+    if (currentScreen == BringupScreen::Manual) {
+      logManualResult(manualModeController.onRotate(delta));
+    } else if (currentScreen == BringupScreen::Menu) {
+      logUiResult(menuController.onRotate(delta));
+    }
     lastEncoderPosition = position;
   }
 
@@ -320,12 +370,46 @@ void updateInputTask(uint32_t nowMs) {
     buttonPressed = false;
     if (pressedMs >= 1000UL) {
       logEvent("input", "button_long");
-      logUiResult(menuController.onLongPress());
+      if (currentScreen == BringupScreen::Manual) {
+        const dehydrator::ManualUiResult result = manualModeController.onLongPress();
+        logManualResult(result);
+        if (result.exitToMenu) {
+          currentScreen = BringupScreen::Menu;
+        }
+      } else {
+        const dehydrator::UiResult result = menuController.onLongPress();
+        logUiResult(result);
+        if (result.action == dehydrator::UiAction::CloseMenu) {
+          currentScreen = BringupScreen::Status;
+        }
+      }
       return;
     }
 
     logEvent("input", "button_short");
-    logUiResult(menuController.onShortPress());
+    if (currentScreen == BringupScreen::Manual) {
+      logManualResult(manualModeController.onShortPress());
+      return;
+    }
+
+    const dehydrator::UiResult result = menuController.onShortPress();
+    logUiResult(result);
+    if (result.action == dehydrator::UiAction::OpenMenu) {
+      currentScreen = BringupScreen::Menu;
+      return;
+    }
+
+    if (result.action == dehydrator::UiAction::SelectItem &&
+        menuController.currentToken() == nullptr) {
+      return;
+    }
+
+    if (result.action == dehydrator::UiAction::SelectItem &&
+        menuController.currentToken() != nullptr &&
+        strcmp(menuController.currentToken(), "mod_manual") == 0) {
+      currentScreen = BringupScreen::Manual;
+      logEvent("ui", "manual_open");
+    }
   }
 }
 
