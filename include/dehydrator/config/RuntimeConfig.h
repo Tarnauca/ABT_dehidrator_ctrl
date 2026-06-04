@@ -128,63 +128,63 @@ struct CalibrationConfig {
 
 /** Default serial configuration for USB debug and secondary telemetry. */
 constexpr SerialConfig SERIAL_PORTS = {
-    115200UL,
+    115200UL,  // baudRate
 };
 
 /** Default scheduler timings for the current firmware shell. */
 constexpr SchedulerConfig SCHEDULER = {
-    1000UL,
-    5000UL,
-    1000UL,
-    2000UL,
-    1000UL,
-    20UL,
-    2000UL,
+    1000UL,  // statusLedIntervalMs
+    5000UL,  // stateLogIntervalMs
+    1000UL,  // sensorSampleIntervalMs
+    2000UL,  // tempRhSampleIntervalMs
+    1000UL,  // lcdRefreshIntervalMs
+    20UL,    // inputScanIntervalMs
+    2000UL,  // serialStartupWaitMs
 };
 
 /** Default logging configuration for fixed-buffer mirrored logging. */
 constexpr LoggingConfig LOGGING = {
-    2U,
-    160U,
+    2U,    // sinkCapacity
+    160U,  // lineSize
 };
 
 /** Default control settings for simple relay hysteresis. */
 constexpr ControlConfig CONTROL = {
-    1,
-    10U,
-    10U,
-    75,
+    1,    // hysteresisC
+    10U,  // minHeaterOnSeconds
+    10U,  // minHeaterOffSeconds
+    75,   // heaterForceOffAboveTempC
 };
 
 /** Default safety thresholds agreed during requirements discovery. */
 constexpr SafetyConfig SAFETY = {
-    -20,
-    120,
-    80,
-    2,
-    5U * 60U,
-    2U * 60U,
-    3,
-    5U * 60U,
-    30U,
+    -20,         // ntcMinValidTempC
+    120,         // ntcMaxValidTempC
+    80,          // hardFaultTempC
+    2,           // noRiseMinIncreaseC
+    5U * 60U,    // noRiseWindowSeconds
+    2U * 60U,    // stuckHeaterGraceSeconds
+    3,           // stuckHeaterRiseC
+    5U * 60U,    // stuckHeaterWindowSeconds
+    30U,         // buttonStuckSeconds
 };
 
 /** Default primary thermistor conversion and calibration constants. */
 constexpr CalibrationConfig CALIBRATION = {
-    100000000,
-    100000000,
-    3950,
-    2500,
-    1023U,
-    DividerOrientation::FixedHighNtcLow,
-    0,
-    1000000,
-    -20,
-    120,
-    0,
-    0,
-    -40,
-    85,
+    100000000,                     // ntcFixedResistorMilliOhms
+    100000000,                     // ntcNominalMilliOhms
+    3950,                          // ntcBetaK
+    2500,                          // ntcNominalTempCentiC
+    1023U,                         // adcMaxCount
+    DividerOrientation::FixedHighNtcLow,  // ntcDividerOrientation
+    0,                             // ntcOffsetCentiC
+    1000000,                       // ntcScalePpm
+    -20,                           // ntcMinValidTempC
+    120,                           // ntcMaxValidTempC
+    0,                             // tempRhTempOffsetCentiC
+    0,                             // tempRhRhOffsetCentiPercent
+    -40,                           // tempRhMinValidTempC
+    85,                            // tempRhMaxValidTempC
 };
 
 }  // namespace config
