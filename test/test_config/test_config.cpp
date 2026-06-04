@@ -20,6 +20,8 @@ void test_scheduler_state_log_interval_matches_requirement() {
 void test_scheduler_sensor_and_lcd_intervals_match_bringup_needs() {
   TEST_ASSERT_EQUAL_UINT32(1000UL,
                            dehydrator::config::SCHEDULER.sensorSampleIntervalMs);
+  TEST_ASSERT_EQUAL_UINT32(2000UL,
+                           dehydrator::config::SCHEDULER.ahtSampleIntervalMs);
   TEST_ASSERT_EQUAL_UINT32(1000UL,
                            dehydrator::config::SCHEDULER.lcdRefreshIntervalMs);
   TEST_ASSERT_EQUAL_UINT32(20UL,

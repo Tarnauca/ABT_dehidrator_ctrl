@@ -24,6 +24,8 @@ struct SchedulerConfig {
   uint32_t stateLogIntervalMs;
   /** Sensor sampling interval in milliseconds. */
   uint32_t sensorSampleIntervalMs;
+  /** Secondary AHT sampling interval in milliseconds. */
+  uint32_t ahtSampleIntervalMs;
   /** LCD status refresh interval in milliseconds. */
   uint32_t lcdRefreshIntervalMs;
   /** Encoder/button sampling interval in milliseconds. */
@@ -132,6 +134,7 @@ constexpr SchedulerConfig SCHEDULER = {
     1000UL,
     5000UL,
     1000UL,
+    2000UL,
     1000UL,
     20UL,
     2000UL,
