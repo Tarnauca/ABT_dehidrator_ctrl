@@ -25,6 +25,16 @@ H:OFF     F:OFF
 
 The heartbeat occupies the bottom-right character as a custom LCD glyph. Sensor values are shown as `--` until real readings are connected to the status snapshot.
 
+Current implemented lifecycle labels on the status screen include:
+
+- `INACTIV`
+- `RULARE`
+- `RACIRE`
+- `FINALIZAT`
+
+When `FINALIZAT` is shown, a short press acknowledges the finished run and
+returns the controller to idle instead of opening the menu.
+
 ## Draft Fault Screen
 
 ```text
@@ -81,7 +91,7 @@ Current bring-up behavior:
 
 - Select `Pornire preset` from the menu to open the preset screen.
 - Encoder rotation moves between built-in starter presets.
-- Short press confirms the selected preset and logs the choice.
+- Short press confirms the selected preset and starts the associated run.
 - The last selectable row is `Inapoi`, which returns to the menu.
 
 Current preset layout:
@@ -95,6 +105,10 @@ Mod fluctuat
 
 The preset list currently contains starter values that can be replaced later
 when the product manual or bench calibration values are available.
+
+After a preset starts successfully, the firmware returns to the status screen
+and the displayed state changes from `INACTIV` to the active run lifecycle
+label.
 
 ## Implemented Manual Mode Shell
 

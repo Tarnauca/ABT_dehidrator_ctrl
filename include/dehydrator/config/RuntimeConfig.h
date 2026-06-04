@@ -143,7 +143,7 @@ constexpr SchedulerConfig SCHEDULER = {
 /** Default logging configuration for fixed-buffer mirrored logging. */
 constexpr LoggingConfig LOGGING = {
     2U,
-    96U,
+    160U,
 };
 
 /** Default control settings for simple relay hysteresis. */

@@ -95,10 +95,24 @@ void test_status_view_renders_missing_sensor_values() {
   TEST_ASSERT_EQUAL_CHAR(' ', display.cells[3U][19U]);
 }
 
+void test_status_view_renders_running_state_label() {
+  FakeDisplay display;
+  LcdStatusView view(display);
+  LcdStatusSnapshot snapshot = validSnapshot();
+  snapshot.stateLabel = "RULARE";
+  snapshot.heaterOn = true;
+
+  view.render(snapshot);
+
+  assertLineEquals(display, 0U, "Stare: RULARE       ");
+  assertLineEquals(display, 2U, "H:ON      F:ON      ");
+}
+
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_status_view_renders_romanian_4x20_status_lines);
   RUN_TEST(test_status_view_renders_missing_sensor_values);
+  RUN_TEST(test_status_view_renders_running_state_label);
   UNITY_END();
 }
 

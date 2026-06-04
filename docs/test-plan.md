@@ -102,7 +102,10 @@ Status values:
 | REQ-UI-015 | Unit/Bench | Preset summary durations use `Xh Ym` format | `test_lcd_preset_view`; LCD bench check pending | Implemented |
 | REQ-FUNC-001 | Unit/Bench | Manual mode supports direct on/off control shell | `test_manual_mode_controller`, `test_lcd_manual_view`; bench manual-mode check pending | Implemented |
 | REQ-FUNC-004 | Unit/Bench | Built-in preset selection shell is available from the menu | `test_preset_select_controller`, `test_lcd_preset_view`; bench preset check pending | Implemented |
+| REQ-FUNC-016 | Unit/Bench | Confirming a preset starts the associated run profile from idle | `test_preset_run_controller`; preset start bench check pending | Implemented |
 | REQ-FUNC-010 | Unit/Bench | Manual heat request forces fan ON within safety constraints | `test_manual_mode_controller`; bench manual toggle check pending | Implemented |
+| REQ-UI-016 | Unit/Bench | Status screen reflects Romanian lifecycle labels during a preset run | `test_lcd_status_view`, `test_preset_run_controller`; LCD bench check pending | Implemented |
+| REQ-UI-017 | Unit/Bench | Finished state can be acknowledged from the status screen with short press | `test_preset_run_controller`; status acknowledgement bench check pending | Implemented |
 | REQ-PERSIST-001 | Unit | Calibration defaults are explicit and later persistable | `test_config` PT50 calibration default tests; EEPROM persistence pending | Implemented |
 | REQ-UI-005 | Unit/Bench | Heartbeat visible bottom-right and runs in all states | `test_lcd_status_view`; LCD bench test pending | Implemented |
 | REQ-UI-006 | Unit/Bench | Finish alarm starts after cooldown | State machine plus buzzer/backlight bench check | Planned |

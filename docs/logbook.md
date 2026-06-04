@@ -101,6 +101,57 @@ were documented so later phases will build on the correct navigation model.
 - `docs/user-ui-ro.md`
 - `docs/hardware.md`
 
+### 2026-06-04 - Preset Selection Starts A Real Run
+
+**Context**
+The UI already had a preset-selection shell, but confirming a preset only
+logged the choice and returned to status. The lifecycle state machine,
+profile engine, and hysteresis controller already existed separately.
+
+**Trigger**
+After stabilizing menu navigation, the next requested phase was to connect
+`Pornire preset` to a real run path.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added a pure `PresetRunController` to bridge preset choice, run lifecycle,
+  profile target selection, and heater/fan command generation.
+- Wired `main.cpp` so preset confirmation starts a real run from idle.
+- Updated the status screen to show Romanian lifecycle labels from the active
+  run instead of the fixed `INACTIV` placeholder.
+- Added periodic run advancement and output application in the cooperative loop.
+- Extended periodic state logs with run state, active preset token, and logical
+  heater/fan status.
+- Added finish acknowledgement from the status screen with a short press.
+
+**Decisions**
+- This slice uses the existing pure `RunStateMachine`, `ProfileEngine`, and
+  `TemperatureControl` modules rather than creating a second simplified run path.
+- Relay outputs are applied through the existing adapter, while heater/fan pins
+  remain harmlessly unassigned on the current bench configuration.
+- The structured log line stayed compact by shortening heater/fan field names
+  to `h` and `f` instead of making the log buffer expansion do all the work.
+
+**Commits / Branches**
+- Branch: pending
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Added native tests for the preset-run controller.
+- Reworked logging tests to cover run-state fields in the periodic state line.
+- Mega2560 build was rechecked after AVR C++ compatibility fixes.
+
+**Links**
+- `include/dehydrator/app/PresetRunController.h`
+- `src/main.cpp`
+- `docs/requirements.md`
+- `docs/test-plan.md`
+- `docs/user-ui-ro.md`
+
 ### 2026-05-31 - Discovery And Agentic Workflow Baseline
 
 **Context**

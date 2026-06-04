@@ -208,7 +208,7 @@ class RunStateMachine {
    *
    * @return Output policy before lower-level temperature control is applied.
    */
-  constexpr RunOutputPolicy outputPolicy() const {
+  RunOutputPolicy outputPolicy() const {
     RunOutputPolicy policy;
 
     if (state_ == RunState::Running) {
@@ -230,7 +230,7 @@ class RunStateMachine {
    *
    * @return State, timers, and resumability flags.
    */
-  constexpr RunStateSnapshot snapshot() const {
+  RunStateSnapshot snapshot() const {
     RunStateSnapshot snapshot;
     snapshot.state = state_;
     snapshot.activeElapsedSeconds = activeElapsedSeconds_;

@@ -26,6 +26,7 @@ Status: draft baseline from discovery conversation. Requirement IDs are stable a
 - REQ-FUNC-013: Confirmed user stop/cancel shall command heater OFF and fan OFF immediately, shall not run cooldown, and shall clear or mark resume state non-resumable.
 - REQ-FUNC-014: Normal program finish shall command heater OFF, run fan for a fixed 3-minute cooldown, command fan OFF, then issue the finish alarm.
 - REQ-FUNC-015: The initial fluctuating mode algorithm shall alternate time-based low-temperature and high-temperature phases around the configured profile range. Default phase timing is TBD and shall be configurable in code.
+- REQ-FUNC-016: Selecting a built-in preset shall start the associated drying profile when the controller is idle and the preset profile is valid.
 
 ## Safety Requirements
 
@@ -79,6 +80,8 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-UI-013: Menu-like LCD screens shall use the first line as the current section title and the remaining visible lines for selectable entries.
 - REQ-UI-014: Temperature displayed on the LCD shall use the `°C` suffix consistently where temperature is shown.
 - REQ-UI-015: Compact LCD duration display shall use the `Xh Ym` format where the UI shows preset summary values.
+- REQ-UI-016: During an active preset run, the status screen shall show the current Romanian lifecycle label, including at least idle, running, finish cooldown, and finished states.
+- REQ-UI-017: When the finish alarm state is active on the status screen, a short press shall acknowledge completion and return the controller to idle.
 
 ## Logging And Diagnostics Requirements
 
