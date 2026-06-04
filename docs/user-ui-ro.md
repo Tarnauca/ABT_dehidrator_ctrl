@@ -51,3 +51,23 @@ Apasa pt. OK
 - `Reluare program`
 - `Oprire`
 - `Confirmi oprirea?`
+
+## Implemented Menu Shell
+
+Current bring-up behavior:
+
+- Short press from status opens the menu.
+- Encoder rotation moves the highlighted item.
+- Short press on a menu item logs the selection.
+- Long press returns to the status screen.
+
+Current menu layout:
+
+```text
+>Pornire preset
+ Mod manual
+ Setari
+Apas=OK Tine=Inap
+```
+
+The last line still keeps the bottom-right heartbeat glyph.

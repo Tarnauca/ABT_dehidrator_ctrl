@@ -1,0 +1,85 @@
+#include <unity.h>
+
+#include "dehydrator/ui/MenuController.h"
+
+using dehydrator::MenuController;
+using dehydrator::UiAction;
+using dehydrator::UiResult;
+using dehydrator::UiScreen;
+
+void test_short_press_opens_menu_from_status() {
+  MenuController controller;
+
+  const UiResult result = controller.onShortPress();
+
+  TEST_ASSERT_EQUAL(static_cast<int>(UiAction::OpenMenu),
+                    static_cast<int>(result.action));
+  TEST_ASSERT_EQUAL(static_cast<int>(UiScreen::Menu),
+                    static_cast<int>(controller.screen()));
+  TEST_ASSERT_EQUAL_UINT(0U, controller.selectedIndex());
+}
+
+void test_rotation_moves_selection_when_menu_is_open() {
+  MenuController controller;
+  controller.onShortPress();
+
+  const UiResult result = controller.onRotate(1);
+
+  TEST_ASSERT_EQUAL(static_cast<int>(UiAction::MoveSelection),
+                    static_cast<int>(result.action));
+  TEST_ASSERT_EQUAL_UINT(1U, controller.selectedIndex());
+  TEST_ASSERT_EQUAL_STRING("Mod manual", controller.currentItem());
+}
+
+void test_rotation_wraps_at_end_of_menu() {
+  MenuController controller;
+  controller.onShortPress();
+  controller.onRotate(-1);
+
+  TEST_ASSERT_EQUAL_UINT(MenuController::ITEM_COUNT - 1U,
+                         controller.selectedIndex());
+  TEST_ASSERT_EQUAL_STRING("Oprire", controller.currentItem());
+}
+
+void test_short_press_on_menu_selects_current_item() {
+  MenuController controller;
+  controller.onShortPress();
+  controller.onRotate(1);
+
+  const UiResult result = controller.onShortPress();
+
+  TEST_ASSERT_EQUAL(static_cast<int>(UiAction::SelectItem),
+                    static_cast<int>(result.action));
+  TEST_ASSERT_EQUAL_STRING("Mod manual", result.selectedItem);
+}
+
+void test_long_press_closes_menu_back_to_status() {
+  MenuController controller;
+  controller.onShortPress();
+
+  const UiResult result = controller.onLongPress();
+
+  TEST_ASSERT_EQUAL(static_cast<int>(UiAction::CloseMenu),
+                    static_cast<int>(result.action));
+  TEST_ASSERT_EQUAL(static_cast<int>(UiScreen::Status),
+                    static_cast<int>(controller.screen()));
+}
+
+void setup() {
+  UNITY_BEGIN();
+  RUN_TEST(test_short_press_opens_menu_from_status);
+  RUN_TEST(test_rotation_moves_selection_when_menu_is_open);
+  RUN_TEST(test_rotation_wraps_at_end_of_menu);
+  RUN_TEST(test_short_press_on_menu_selects_current_item);
+  RUN_TEST(test_long_press_closes_menu_back_to_status);
+  UNITY_END();
+}
+
+void loop() {}
+
+int main(int argc, char** argv) {
+  (void)argc;
+  (void)argv;
+  setup();
+  return 0;
+}

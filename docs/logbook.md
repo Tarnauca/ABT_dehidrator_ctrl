@@ -1163,3 +1163,56 @@ The user said calibration can wait and asked to proceed with AHT.
 - `include/dehydrator/sensors/AhtReader.h`
 - `src/main.cpp`
 - `platformio.ini`
+
+### 2026-06-04 - UI Menu Shell
+
+**Context**
+The LCD, encoder, PT50 path, and concrete AHT path are all alive on the bench.
+The next vertical slice is to give the encoder a visible UI job before wiring
+real dehydrator run configuration and presets.
+
+**Trigger**
+The user said "let's proceed" after the concrete AHT bring-up was merged.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Created `feature/ui-menu-shell`.
+- Added a pure `MenuController` for status/menu screen state, selection
+  movement, short-press selection, and long-press back behavior.
+- Added `LcdMenuView` for the Romanian 4x20 menu shell.
+- Wired `main.cpp` so short press opens the menu, encoder rotation moves the
+  highlighted item, short press logs selection, and long press returns to the
+  status screen.
+- Kept the bottom-right heartbeat active on the menu screen.
+- Updated backlog, UI notes, test plan, and logbook.
+
+**Decisions**
+- Keep this slice as a navigation shell only; selecting a menu item logs the
+  choice but does not yet launch full workflows.
+- Keep menu labels Romanian on the LCD but use separate underscore tokens in
+  logs so serial output remains stable and parseable.
+- Reuse the existing LCD renderer interface rather than adding Arduino LCD calls
+  directly to menu logic.
+
+**Commits / Branches**
+- Branch: `feature/ui-menu-shell`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 146 tests passed.
+- `platformio run -e megaatmega2560`: success.
+- `platformio run -e megaatmega2560 -t upload`: success.
+- Short serial monitor capture showed normal startup logs after flashing:
+  `aht_missing`, `boot`, and periodic `STATE app=bringup ...` records.
+- Menu-specific encoder/button interaction is implemented and covered by native
+  tests; manual bench exercise of menu navigation remains pending.
+
+**Links**
+- `include/dehydrator/ui/MenuController.h`
+- `include/dehydrator/ui/LcdMenuView.h`
+- `src/main.cpp`
+- `docs/user-ui-ro.md`

@@ -16,7 +16,9 @@
 #include "dehydrator/logging/LogSink.h"
 #include "dehydrator/sensors/AhtReader.h"
 #include "dehydrator/sensors/Pt50Reader.h"
+#include "dehydrator/ui/LcdMenuView.h"
 #include "dehydrator/ui/LcdStatusView.h"
+#include "dehydrator/ui/MenuController.h"
 
 constexpr char LOG_TRUNCATED_EVENT[] = "WARN code=log_truncated source=event";
 constexpr char LOG_TRUNCATED_STATE[] = "WARN code=log_truncated source=state";
@@ -107,6 +109,7 @@ dehydrator::Pt50Reader pt50Reader(analogInput,
                                   dehydrator::config::HARDWARE.pins.pt50Analog,
                                   dehydrator::config::CALIBRATION);
 dehydrator::AhtReader ahtReader(ahtDriver, dehydrator::config::CALIBRATION);
+dehydrator::MenuController menuController;
 
 /**
  * @brief Arduino `Stream` adapter for the project log sink interface.
@@ -136,6 +139,7 @@ ArduinoSerialLogSink telemetryLogSink(Serial1);
 dehydrator::LogSink* logSinks[dehydrator::config::LOGGING.sinkCapacity] = {};
 dehydrator::LogDispatcher logger(logSinks,
                                  dehydrator::config::LOGGING.sinkCapacity);
+dehydrator::LcdMenuView menuView(lcdDisplay);
 
 /**
  * @brief Returns whether a pin has been assigned in hardware configuration.
@@ -185,6 +189,31 @@ void logEvent(const char* type, const char* detail) {
   }
 
   writeLogLine(LOG_TRUNCATED_EVENT);
+}
+
+/**
+ * @brief Maps a UI action to a structured log event when needed.
+ *
+ * @param result Action produced by the menu controller.
+ */
+void logUiResult(const dehydrator::UiResult& result) {
+  switch (result.action) {
+    case dehydrator::UiAction::OpenMenu:
+      logEvent("ui", "menu_open");
+      return;
+    case dehydrator::UiAction::CloseMenu:
+      logEvent("ui", "menu_close");
+      return;
+    case dehydrator::UiAction::MoveSelection:
+      logEvent("ui", menuController.currentToken());
+      return;
+    case dehydrator::UiAction::SelectItem:
+      logEvent("menu_select", menuController.currentToken());
+      return;
+    case dehydrator::UiAction::None:
+    default:
+      return;
+  }
 }
 
 /**
@@ -239,6 +268,16 @@ void updateLcdTask(uint32_t nowMs) {
   }
 
   heartbeatOn = !heartbeatOn;
+  if (menuController.screen() == dehydrator::UiScreen::Menu) {
+    dehydrator::LcdMenuSnapshot menuSnapshot;
+    menuSnapshot.items = dehydrator::MenuController::items();
+    menuSnapshot.itemCount = dehydrator::MenuController::ITEM_COUNT;
+    menuSnapshot.selectedIndex = menuController.selectedIndex();
+    menuSnapshot.heartbeatOn = heartbeatOn;
+    menuView.render(menuSnapshot);
+    return;
+  }
+
   dehydrator::LcdStatusSnapshot snapshot;
   snapshot.stateLabel = "INACTIV";
   snapshot.pt50TempC = latestPt50.tempC;
@@ -263,8 +302,9 @@ void updateInputTask(uint32_t nowMs) {
 
   const long position = rotaryEncoder.read();
   if (position != lastEncoderPosition) {
-    logEvent("input", position > lastEncoderPosition ? "encoder_cw"
-                                                      : "encoder_ccw");
+    const int8_t delta = position > lastEncoderPosition ? 1 : -1;
+    logEvent("input", delta > 0 ? "encoder_cw" : "encoder_ccw");
+    logUiResult(menuController.onRotate(delta));
     lastEncoderPosition = position;
   }
 
@@ -278,7 +318,14 @@ void updateInputTask(uint32_t nowMs) {
   if (buttonDebouncer.rose()) {
     const uint32_t pressedMs = nowMs - buttonPressedAtMs;
     buttonPressed = false;
-    logEvent("input", pressedMs >= 1000UL ? "button_long" : "button_short");
+    if (pressedMs >= 1000UL) {
+      logEvent("input", "button_long");
+      logUiResult(menuController.onLongPress());
+      return;
+    }
+
+    logEvent("input", "button_short");
+    logUiResult(menuController.onShortPress());
   }
 }
 
