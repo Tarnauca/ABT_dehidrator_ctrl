@@ -75,6 +75,27 @@ The last line still keeps the bottom-right heartbeat glyph.
 The menu does not wrap around at the ends. The selected item stays on the
 first visible line, with the remaining visible items listed below it.
 
+## Implemented Preset Selection Shell
+
+Current bring-up behavior:
+
+- Select `Pornire preset` from the menu to open the preset screen.
+- Encoder rotation moves between built-in starter presets.
+- Short press confirms the selected preset and logs the choice.
+- Long press returns to the menu.
+
+Current preset layout:
+
+```text
+Pornire preset
+>Mere
+Mod fluctuat
+Apas=OK Tine=Inap
+```
+
+The preset list currently contains starter values that can be replaced later
+when the product manual or bench calibration values are available.
+
 ## Implemented Manual Mode Shell
 
 Current bring-up behavior:

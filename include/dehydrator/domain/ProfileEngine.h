@@ -35,6 +35,32 @@ struct ProfileConfig {
   uint16_t highPhaseMinutes = 0;
   /** Fluctuating-mode low phase duration in minutes. */
   uint16_t lowPhaseMinutes = 0;
+
+  /**
+   * @brief Creates a profile configuration.
+   *
+   * @param modeValue Profile mode to evaluate.
+   * @param targetTempCValue Fixed target temperature or fluctuating average metadata.
+   * @param lowTempCValue Fluctuating-mode low phase target temperature.
+   * @param highTempCValue Fluctuating-mode high phase target temperature.
+   * @param durationMinutesValue Total active profile duration in minutes.
+   * @param highPhaseMinutesValue Fluctuating-mode high phase duration.
+   * @param lowPhaseMinutesValue Fluctuating-mode low phase duration.
+   */
+  constexpr ProfileConfig(ProfileMode modeValue = ProfileMode::Fixed,
+                          int16_t targetTempCValue = 0,
+                          int16_t lowTempCValue = 0,
+                          int16_t highTempCValue = 0,
+                          uint16_t durationMinutesValue = 0,
+                          uint16_t highPhaseMinutesValue = 0,
+                          uint16_t lowPhaseMinutesValue = 0)
+      : mode(modeValue),
+        targetTempC(targetTempCValue),
+        lowTempC(lowTempCValue),
+        highTempC(highTempCValue),
+        durationMinutes(durationMinutesValue),
+        highPhaseMinutes(highPhaseMinutesValue),
+        lowPhaseMinutes(lowPhaseMinutesValue) {}
 };
 
 /**
@@ -107,19 +133,17 @@ class ProfileEngine {
    * @return true when duration and temperature settings are usable.
    */
   static constexpr bool isValid(const ProfileConfig& config) {
-    if (config.durationMinutes == 0U ||
-        config.durationMinutes > MAX_DURATION_MINUTES) {
-      return false;
-    }
-
-    if (config.mode == ProfileMode::Fixed) {
-      return isAllowedTemp(config.targetTempC);
-    }
-
-    return isAllowedTemp(config.targetTempC) &&
-           isAllowedTemp(config.lowTempC) && isAllowedTemp(config.highTempC) &&
-           config.lowTempC <= config.highTempC &&
-           config.highPhaseMinutes > 0U && config.lowPhaseMinutes > 0U;
+    return config.durationMinutes > 0U &&
+           config.durationMinutes <= MAX_DURATION_MINUTES &&
+           ((config.mode == ProfileMode::Fixed &&
+             isAllowedTemp(config.targetTempC)) ||
+            (config.mode == ProfileMode::Fluctuating &&
+             isAllowedTemp(config.targetTempC) &&
+             isAllowedTemp(config.lowTempC) &&
+             isAllowedTemp(config.highTempC) &&
+             config.lowTempC <= config.highTempC &&
+             config.highPhaseMinutes > 0U &&
+             config.lowPhaseMinutes > 0U));
   }
 
  private:

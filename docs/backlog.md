@@ -66,7 +66,7 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 - [x] Implement initial status screen with bottom-right heartbeat.
 - [x] Implement initial encoder-driven menu shell.
 - [x] Implement initial manual mode screen shell.
-- [ ] Implement preset selection and run configuration.
+- [x] Implement preset selection and run configuration shell.
 - [ ] Add built-in presets after source values are confirmed.
 
 ## Phase 8: Verification And Safety Review
