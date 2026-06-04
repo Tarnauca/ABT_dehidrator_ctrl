@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 namespace dehydrator {
 
@@ -63,7 +64,7 @@ class MenuController {
   /**
    * @brief Number of built-in bring-up menu items.
    */
-  static constexpr size_t ITEM_COUNT = 5U;
+  static constexpr size_t ITEM_COUNT = 6U;
 
   /**
    * @brief Creates a menu controller starting on the status screen.
@@ -81,21 +82,13 @@ class MenuController {
       return {UiAction::OpenMenu, nullptr};
     }
 
-    return {UiAction::SelectItem, currentItem()};
-  }
-
-  /**
-   * @brief Closes the menu when active.
-   *
-   * @return UI result describing whether the screen changed.
-   */
-  UiResult onLongPress() {
-    if (screen_ == UiScreen::Menu) {
+    if (selectedIndex_ < ITEM_COUNT &&
+        strcmp(currentToken(), "inapoi") == 0) {
       screen_ = UiScreen::Status;
       return {UiAction::CloseMenu, nullptr};
     }
 
-    return {};
+    return {UiAction::SelectItem, currentItem()};
   }
 
   /**
@@ -170,6 +163,7 @@ class MenuController {
         "Setari",
         "Reluare program",
         "Oprire",
+        "Inapoi",
     };
     return kItems;
   }
@@ -186,6 +180,7 @@ class MenuController {
         "setari",
         "reluare_program",
         "oprire",
+        "inapoi",
     };
     return kTokens;
   }

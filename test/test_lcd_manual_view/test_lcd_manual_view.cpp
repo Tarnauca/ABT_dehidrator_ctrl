@@ -67,7 +67,7 @@ void test_manual_view_renders_fan_selected() {
   assertLineEquals(display, 0U, "Mod manual          ");
   assertLineEquals(display, 1U, ">Fan: ON            ");
   assertLineEquals(display, 2U, " Heat: OFF          ");
-  assertLinePrefixEquals(display, 3U, "Apas=Sch Tine=Inap", 18U);
+  assertLinePrefixEquals(display, 3U, " Inapoi", 7U);
   TEST_ASSERT_TRUE(display.custom[3U][19U]);
 }
 
@@ -85,10 +85,24 @@ void test_manual_view_renders_heater_selected() {
   assertLineEquals(display, 2U, ">Heat: ON           ");
 }
 
+void test_manual_view_renders_back_selected() {
+  FakeDisplay display;
+  LcdManualView view(display);
+  LcdManualSnapshot snapshot;
+  snapshot.selectedField = ManualField::Back;
+  snapshot.command.fanOn = false;
+  snapshot.command.heaterOn = false;
+
+  view.render(snapshot);
+
+  assertLinePrefixEquals(display, 3U, ">Inapoi", 7U);
+}
+
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_manual_view_renders_fan_selected);
   RUN_TEST(test_manual_view_renders_heater_selected);
+  RUN_TEST(test_manual_view_renders_back_selected);
   UNITY_END();
 }
 

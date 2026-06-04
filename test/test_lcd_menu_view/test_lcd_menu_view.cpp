@@ -69,11 +69,10 @@ void test_menu_view_renders_first_items_and_hint() {
 
   view.render(snapshotForIndex(0U, true));
 
-  assertLineEquals(display, 0U, ">Pornire preset     ");
-  assertLineEquals(display, 1U, " Mod manual         ");
-  assertLineEquals(display, 2U, " Setari             ");
-  assertLinePrefixEquals(display, 3U, "Apas=OK Tine=Inap", 17U);
-  TEST_ASSERT_TRUE(display.custom[3U][19U]);
+  assertLineEquals(display, 0U, "Meniu               ");
+  assertLineEquals(display, 1U, ">Pornire preset     ");
+  assertLineEquals(display, 2U, " Mod manual         ");
+  assertLineEquals(display, 3U, " Setari             ");
 }
 
 void test_menu_view_scrolls_when_selection_moves_down() {
@@ -82,9 +81,10 @@ void test_menu_view_scrolls_when_selection_moves_down() {
 
   view.render(snapshotForIndex(3U, false));
 
-  assertLineEquals(display, 0U, ">Reluare program    ");
-  assertLineEquals(display, 1U, " Oprire             ");
-  assertLineEquals(display, 2U, "                    ");
+  assertLineEquals(display, 0U, "Meniu               ");
+  assertLineEquals(display, 1U, ">Reluare program    ");
+  assertLineEquals(display, 2U, " Oprire             ");
+  assertLineEquals(display, 3U, " Inapoi             ");
 }
 
 void test_menu_view_keeps_last_item_on_first_line() {
@@ -93,9 +93,10 @@ void test_menu_view_keeps_last_item_on_first_line() {
 
   view.render(snapshotForIndex(4U, false));
 
-  assertLineEquals(display, 0U, ">Oprire             ");
-  assertLineEquals(display, 1U, "                    ");
-  assertLineEquals(display, 2U, "                    ");
+  assertLineEquals(display, 0U, "Meniu               ");
+  assertLineEquals(display, 1U, ">Oprire             ");
+  assertLineEquals(display, 2U, " Inapoi             ");
+  assertLineEquals(display, 3U, "                    ");
 }
 
 void setup() {

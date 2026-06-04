@@ -51,6 +51,56 @@ What caused the action or decision.
 
 ## Entries
 
+### 2026-06-04 - Menu Navigation Rules Made Durable
+
+**Context**
+The UI/menu bring-up had evolved through bench testing. The code already used
+explicit `Inapoi` entries in the main menu, preset screen, and manual mode, but
+some higher-level docs still described long-press back/cancel behavior from an
+older draft.
+
+**Trigger**
+The user asked to make sure the updated menu behavior and related requirements
+were documented so later phases will build on the correct navigation model.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Updated requirements to define `Inapoi` as the final entry on every menu-like
+  LCD screen.
+- Documented that selecting `Inapoi` returns exactly one level up.
+- Updated LCD/UI notes so the title stays on the first line and menu entries
+  occupy lines two through four.
+- Clarified that long press currently has no required navigation role.
+- Updated the test plan so menu-navigation verification follows the implemented
+  short-press and `Inapoi` rules.
+- Adjusted hardware notes to describe the encoder button behavior consistently.
+
+**Decisions**
+- The project now treats explicit `Inapoi` navigation as a durable UI rule, not
+  just an implementation detail.
+- Compact LCD preset summaries use `Xh Ym`, while the underlying duration model
+  may still use `HH:MM` where a structured editable value is more natural.
+- LCD temperatures should always render with `°C` where temperature is shown.
+
+**Commits / Branches**
+- Branch: `main` worktree, not yet committed
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- No code change in this documentation pass.
+- Existing automated coverage for menu, preset, manual, and LCD formatting
+  remains the current verification base.
+
+**Links**
+- `docs/requirements.md`
+- `docs/test-plan.md`
+- `docs/user-ui-ro.md`
+- `docs/hardware.md`
+
 ### 2026-05-31 - Discovery And Agentic Workflow Baseline
 
 **Context**

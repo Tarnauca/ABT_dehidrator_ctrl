@@ -18,7 +18,7 @@ Initial implemented bring-up screen:
 
 ```text
 Stare: INACTIV
-T:--C    RH:--%
+T:--°C   RH:--%
 H:OFF     F:OFF
                    <3
 ```
@@ -50,30 +50,30 @@ Apasa pt. OK
 - `Setari`
 - `Reluare program`
 - `Oprire`
-- `Confirmi oprirea?`
+- `Inapoi`
 
 ## Implemented Menu Shell
 
 Current bring-up behavior:
 
 - Short press from status opens the menu.
-- Encoder rotation moves the highlighted item.
+- First line shows the current section title.
+- Encoder rotation moves the highlighted item on the second, third, and fourth lines.
 - Short press on a menu item logs the selection.
-- Long press returns to the status screen.
+- The last selectable entry is always `Inapoi`.
+- Selecting `Inapoi` returns exactly one level up in the UI hierarchy.
 
 Current menu layout:
 
 ```text
+Meniu
 >Pornire preset
  Mod manual
  Setari
-Apas=OK Tine=Inap
 ```
 
-The last line still keeps the bottom-right heartbeat glyph.
-
 The menu does not wrap around at the ends. The selected item stays on the
-first visible line, with the remaining visible items listed below it.
+second line, with the remaining visible items listed below it.
 
 ## Implemented Preset Selection Shell
 
@@ -82,7 +82,7 @@ Current bring-up behavior:
 - Select `Pornire preset` from the menu to open the preset screen.
 - Encoder rotation moves between built-in starter presets.
 - Short press confirms the selected preset and logs the choice.
-- Long press returns to the menu.
+- The last selectable row is `Inapoi`, which returns to the menu.
 
 Current preset layout:
 
@@ -90,7 +90,7 @@ Current preset layout:
 Pornire preset
 >Mere
 Mod fluctuat
-Apas=OK Tine=Inap
+50-65°C 10h 0m
 ```
 
 The preset list currently contains starter values that can be replaced later
@@ -101,9 +101,9 @@ when the product manual or bench calibration values are available.
 Current bring-up behavior:
 
 - Select `Mod manual` from the menu to open the manual screen.
-- Encoder rotation switches between `Fan` and `Heat`.
+- Encoder rotation switches between `Fan`, `Heat`, and `Inapoi`.
 - Short press toggles the selected output.
-- Long press returns to the menu.
+- `Inapoi` is always the last selectable entry and returns to the menu.
 - Turning `Heat` ON also forces `Fan` ON.
 - Turning `Fan` OFF also forces `Heat` OFF.
 
@@ -113,5 +113,5 @@ Current manual layout:
 Mod manual
 >Fan: OFF
  Heat: OFF
-Apas=Sch Tine=Inap
+ Inapoi
 ```

@@ -59,7 +59,8 @@ class LcdManualView {
     writeLine(2U, line, false);
 
     fillLine(line);
-    writeToken(line, "Apas=Sch Tine=Inap", 0U);
+    line[0] = snapshot.selectedField == ManualField::Back ? '>' : ' ';
+    writeToken(line, "Inapoi", 1U);
     writeLine(3U, line, snapshot.heartbeatOn);
   }
 

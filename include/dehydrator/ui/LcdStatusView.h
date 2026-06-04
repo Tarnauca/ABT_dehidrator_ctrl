@@ -102,13 +102,14 @@ class LcdStatusView {
 
   static void writeTemperatureAndHumidity(char* line,
                                           const LcdStatusSnapshot& snapshot) {
-    char value[8] = {};
+    char value[16] = {};
     writeToken(line, "T:", 0U);
     if (snapshot.pt50Valid) {
-      snprintf(value, sizeof(value), "%dC", static_cast<int>(snapshot.pt50TempC));
+      snprintf(value, sizeof(value), "%d\xDF""C",
+               static_cast<int>(snapshot.pt50TempC));
       writeToken(line, value, 2U);
     } else {
-      writeToken(line, "--C", 2U);
+      writeToken(line, "--\xDF""C", 2U);
     }
 
     writeToken(line, "RH:", 9U);

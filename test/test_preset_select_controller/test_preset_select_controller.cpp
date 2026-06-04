@@ -25,9 +25,15 @@ void test_rotation_stops_at_ends() {
   controller.onRotate(1);
   controller.onRotate(1);
 
+  const auto back = controller.onRotate(1);
+  TEST_ASSERT_TRUE(back.selectionChanged);
+  TEST_ASSERT_EQUAL_UINT(PresetSelectController::BACK_INDEX,
+                         controller.selectedIndex());
+
   const auto end = controller.onRotate(1);
   TEST_ASSERT_FALSE(end.selectionChanged);
-  TEST_ASSERT_EQUAL_UINT(3U, controller.selectedIndex());
+  TEST_ASSERT_EQUAL_UINT(PresetSelectController::BACK_INDEX,
+                         controller.selectedIndex());
 }
 
 void test_short_press_confirms_selected_preset() {
@@ -37,6 +43,20 @@ void test_short_press_confirms_selected_preset() {
 
   TEST_ASSERT_TRUE(result.presetSelected);
   TEST_ASSERT_EQUAL_STRING("mere", controller.currentPreset()->token);
+}
+
+void test_short_press_on_back_returns_to_menu() {
+  PresetSelectController controller;
+  controller.onRotate(1);
+  controller.onRotate(1);
+  controller.onRotate(1);
+  controller.onRotate(1);
+
+  const auto result = controller.onShortPress();
+
+  TEST_ASSERT_TRUE(result.exitToMenu);
+  TEST_ASSERT_FALSE(result.presetSelected);
+  TEST_ASSERT_NULL(controller.currentPreset());
 }
 
 void test_long_press_returns_to_menu() {
@@ -52,6 +72,7 @@ void setup() {
   RUN_TEST(test_rotation_moves_between_presets);
   RUN_TEST(test_rotation_stops_at_ends);
   RUN_TEST(test_short_press_confirms_selected_preset);
+  RUN_TEST(test_short_press_on_back_returns_to_menu);
   RUN_TEST(test_long_press_returns_to_menu);
   UNITY_END();
 }

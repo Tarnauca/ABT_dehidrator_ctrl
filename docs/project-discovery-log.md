@@ -144,9 +144,10 @@ The user wants to develop a food dehydrator controller and learn agentic softwar
     - optional AHT offsets,
     - visible in debug,
     - UI calibration can wait.
-62. Duration format:
-    - input/display as `HH:MM`,
-    - max `99:00`.
+62. Duration values:
+    - support up to 99 h 0 min,
+    - editable/structured forms may use `HH:MM`,
+    - compact LCD summaries may use `Xh Ym`.
 63. Humidity is reporting only in current scope.
 64. AHT failure is warning only; drying can continue without RH.
 65. RH should be shown on LCD if AHT sensor is present/functional.
@@ -200,7 +201,8 @@ The user wants to develop a food dehydrator controller and learn agentic softwar
 86. Encoder behavior:
     - rotate to navigate/change value,
     - short press select/confirm,
-    - long press back/cancel.
+    - menu-like screens should provide `Inapoi` as the last entry for one-level-up navigation,
+    - long press is currently reserved and not required for navigation.
 87. No dedicated emergency-stop shortcut is required.
 88. Normal stop/cancel during run requires confirmation.
 89. Normal stop/cancel has no cooldown.

@@ -268,11 +268,11 @@ void logManualResult(const dehydrator::ManualUiResult& result) {
  */
 void logPresetResult(const dehydrator::PresetUiResult& result) {
   if (result.selectionChanged) {
-    logEvent("ui", presetSelectController.currentPreset()->token);
+    logEvent("ui", presetSelectController.currentToken());
   }
 
   if (result.presetSelected) {
-    logEvent("preset_select", presetSelectController.currentPreset()->token);
+    logEvent("preset_select", presetSelectController.currentToken());
   }
 
   if (result.exitToMenu) {
@@ -420,19 +420,19 @@ void updateInputTask(uint32_t nowMs) {
         if (result.exitToMenu) {
           currentScreen = BringupScreen::Menu;
         }
-      } else {
-        const dehydrator::UiResult result = menuController.onLongPress();
-        logUiResult(result);
-        if (result.action == dehydrator::UiAction::CloseMenu) {
-          currentScreen = BringupScreen::Status;
-        }
+      } else if (currentScreen == BringupScreen::Menu) {
+        return;
       }
       return;
     }
 
     logEvent("input", "button_short");
     if (currentScreen == BringupScreen::Manual) {
-      logManualResult(manualModeController.onShortPress());
+      const dehydrator::ManualUiResult result = manualModeController.onShortPress();
+      logManualResult(result);
+      if (result.exitToMenu) {
+        currentScreen = BringupScreen::Menu;
+      }
       return;
     }
 
@@ -440,8 +440,10 @@ void updateInputTask(uint32_t nowMs) {
       const dehydrator::PresetUiResult result = presetSelectController.onShortPress();
       logPresetResult(result);
       if (result.presetSelected) {
-        logEvent("preset_start", presetSelectController.currentPreset()->token);
+        logEvent("preset_start", presetSelectController.currentToken());
         currentScreen = BringupScreen::Status;
+      } else if (result.exitToMenu) {
+        currentScreen = BringupScreen::Menu;
       }
       return;
     }
@@ -468,6 +470,8 @@ void updateInputTask(uint32_t nowMs) {
                strcmp(menuController.currentToken(), "pornire_preset") == 0) {
       currentScreen = BringupScreen::Preset;
       logEvent("ui", "preset_open");
+    } else if (result.action == dehydrator::UiAction::CloseMenu) {
+      currentScreen = BringupScreen::Status;
     }
   }
 }

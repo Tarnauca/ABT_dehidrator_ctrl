@@ -26,6 +26,11 @@ struct PresetUiResult {
 class PresetSelectController {
  public:
   /**
+   * @brief Index of the synthetic back entry after the last preset.
+   */
+  static constexpr size_t BACK_INDEX = PresetCatalog::PRESET_COUNT;
+
+  /**
    * @brief Returns the currently selected preset index.
    *
    * @return Zero-based preset index.
@@ -38,7 +43,23 @@ class PresetSelectController {
    * @return Pointer to the preset definition.
    */
   const PresetDefinition* currentPreset() const {
+    if (selectedIndex_ >= PresetCatalog::PRESET_COUNT) {
+      return nullptr;
+    }
     return &PresetCatalog::items()[selectedIndex_];
+  }
+
+  /**
+   * @brief Returns a stable token for the current selection.
+   *
+   * @return Preset token for real presets, or `inapoi` for the back entry.
+   */
+  const char* currentToken() const {
+    if (selectedIndex_ >= BACK_INDEX) {
+      return "inapoi";
+    }
+
+    return currentPreset()->token;
   }
 
   /**
@@ -53,7 +74,7 @@ class PresetSelectController {
     }
 
     if (delta > 0) {
-      if (selectedIndex_ + 1U >= PresetCatalog::PRESET_COUNT) {
+      if (selectedIndex_ + 1U > BACK_INDEX) {
         return {};
       }
       selectedIndex_++;
@@ -76,12 +97,17 @@ class PresetSelectController {
    */
   PresetUiResult onShortPress() {
     PresetUiResult result;
+    if (selectedIndex_ >= BACK_INDEX) {
+      result.exitToMenu = true;
+      return result;
+    }
+
     result.presetSelected = true;
     return result;
   }
 
   /**
-   * @brief Handles a long press by returning to the menu.
+   * @brief Handles a long press with currently reserved behavior.
    *
    * @return Result requesting a return to the menu.
    */
