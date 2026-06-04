@@ -11,7 +11,7 @@ Status: draft baseline. Heater/fan pin assignments are TBD until wiring is final
 
 | Signal | Purpose | Mega2560 Pin | Active Level | Notes |
 | --- | --- | --- | --- | --- |
-| PT50 analog | Primary temperature control sensor | A0 placeholder | N/A | Voltage divider into ADC, supplied from VCC |
+| NTC analog | Primary temperature control sensor | A0 placeholder | N/A | Voltage divider into ADC, supplied from VCC |
 | DHT22/AM2302 data | Secondary temp/RH telemetry | TBD digital pin | N/A | Single-wire style data pin, warning only if unavailable |
 | Heater relay | Heater control | TBD | Configurable | Mechanical relay, on/off only |
 | Fan relay | Fan control | TBD | Configurable | Mechanical relay, on/off only |
@@ -25,24 +25,25 @@ Status: draft baseline. Heater/fan pin assignments are TBD until wiring is final
 
 ## Sensor Notes
 
-PT50 is the primary control sensor. It is currently expected to be measured through a voltage divider into an analog input using MCU VCC as supply/reference.
+The primary control sensor is an NTC thermistor. It is currently expected to be measured through a voltage divider into an analog input using MCU VCC as supply/reference.
 
-The firmware contains a ratiometric PT50 conversion model with configurable divider orientation, fixed resistor value, PT50 nominal resistance, alpha, offset, scale, and plausible temperature range. Default values are placeholders and must be reviewed against the real divider before heater testing:
+The firmware contains a ratiometric thermistor conversion model with configurable divider orientation, fixed resistor value, thermistor nominal resistance, Beta coefficient, nominal temperature, offset, scale, and plausible temperature range. Default values are placeholders and must be reviewed against the real divider before heater testing:
 
-- fixed resistor: 100 ohm,
-- PT50 nominal resistance: 50 ohm at 0 C,
-- alpha: 3850 ppm/C,
+- fixed resistor: 100 kohm,
+- thermistor nominal resistance: configurable, default 100 kohm at 25 C,
+- Beta: 3950 K,
+- nominal temperature: 25 C,
 - ADC range: 0..1023,
-- default divider orientation: fixed resistor high side, PT50 low side,
-- plausible converted PT50 range: -20 C..120 C.
+- default divider orientation: fixed resistor high side, thermistor low side,
+- plausible converted primary temperature range: -20 C..120 C.
 
-The firmware contains a project-owned `AnalogInput` interface, a PT50 reader
-that consumes raw ADC counts through that interface, and a concrete Arduino
-`analogRead()` adapter for hardware bring-up. The default analog channel is A0
-placeholder. Real divider wiring and calibration still need bench confirmation
-before the PT50 value is used for heater decisions.
+The firmware contains a project-owned `AnalogInput` interface, a thermistor
+reader that consumes raw ADC counts through that interface, and a concrete
+Arduino `analogRead()` adapter for hardware bring-up. The default analog channel
+is A0 placeholder. Real divider wiring and calibration still need bench
+confirmation before the primary temperature value is used for heater decisions.
 
-Product-minded recommendation: consider a precision reference, calibration procedure, ratiometric review, or RTD interface IC for improved measurement accuracy.
+Product-minded recommendation: consider a precision reference, calibration procedure, or dedicated thermistor interface IC for improved measurement accuracy.
 
 The DHT22/AM2302-class sensor provides secondary temperature and RH. Its failure is a warning only and must not stop drying unless a future feature depends on RH.
 

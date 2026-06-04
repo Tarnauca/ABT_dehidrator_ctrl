@@ -16,7 +16,7 @@ Target pure C++ modules where practical:
 
 - `test_control_state_machine`: `Boot`, `SelfCheck`, `Idle`, `ResumeOffer`, `Running`, `Paused`, `Stopping`, `FinishCooldown`, `FinishedAlarm`, and `Fault` transitions.
 - `test_temperature_control`: hysteresis, relay minimum ON/OFF timing, heater forced OFF above 75 C, hard fault behavior handoff.
-- `test_fault_detector`: PT50 invalid, over-temperature, no-temperature-rise, heater-stuck-ON, stuck button, watchdog reset.
+- `test_fault_detector`: primary thermistor invalid, over-temperature, no-temperature-rise, heater-stuck-ON, stuck button, watchdog reset.
 - `test_profile_engine`: fixed target and fluctuating low/high phase target generation.
 - `test_run_timer`: duration limits up to 99 h 0 min, pause/resume, finish timing, and 3-minute finish cooldown timing.
 - `test_log_formatter`: stable English event/state/warning/fault records that are human-readable and parseable.
@@ -28,7 +28,7 @@ Target pure C++ modules where practical:
 Native tests should use simple fakes:
 
 - `FakeClock`: deterministic `millis()`-style time control.
-- `FakeSensorReader`: PT50/secondary temp-RH values, validity flags, RH availability.
+- `FakeSensorReader`: primary thermistor/secondary temp-RH values, validity flags, RH availability.
 - `FakeOutputController`: captures logical heater/fan/backlight/buzzer commands.
 - `FakePersistentStore`: captures config, resume state, reset cause, and diagnostic writes.
 - `FakeLogSink`: captures formatted log lines for exact or parseable checks.
@@ -44,7 +44,7 @@ Use fake sensors, fake outputs, and fake clock to simulate:
 - Pause/resume.
 - Normal finish and 3-minute cooldown.
 - User stop/cancel.
-- PT50 invalid fault.
+- Primary thermistor invalid fault.
 - Over-temperature fault at 80 C.
 - No-temperature-rise fault.
 - Heater-stuck-ON fault.
@@ -75,7 +75,7 @@ Status values:
 | REQ-SAFE-002 | Unit | Heater may remain governed at 75 C but is forced OFF at 76 C | `test_temperature_control` boundary tests | Passing |
 | REQ-SAFE-003 | Unit | Hard fault at 80 C and above | `test_fault_detector` over-temperature boundary tests | Passing |
 | REQ-SAFE-004 | Unit/Bench | Heater command cannot be ON while fan command is OFF | Temperature-control policy tests passing; command sanitizer exists; relay adapter bench check still pending | Implemented |
-| REQ-SAFE-005 | Unit | PT50 invalid triggers hard fault | `test_fault_detector` validity and plausible-range tests | Passing |
+| REQ-SAFE-005 | Unit | Primary thermistor invalid triggers hard fault | `test_fault_detector` validity and plausible-range tests | Passing |
 | REQ-SAFE-006 | Unit | No 2 C rise within 5 min accumulated heater ON time triggers hard fault | `test_fault_detector` accumulated heater-ON timing tests | Passing |
 | REQ-SAFE-007 | Unit | After 2 min grace, 3 C rise over 5 min heater OFF triggers stuck-ON fault | `test_fault_detector` heater-OFF grace and rise tests | Passing |
 | REQ-SAFE-008 | Unit | Button active for 30 s triggers hard fault | `test_fault_detector` stuck-button timing tests | Passing |
@@ -83,7 +83,7 @@ Status values:
 | REQ-SAFE-010 | Unit/UI | Hard fault requires acknowledgement before new run | `test_run_state_machine` acknowledgement tests; UI flow still pending | Implemented |
 | REQ-SAFE-011 | Unit | Watchdog reset during run is non-resumable fault context | `test_fault_detector` watchdog-reset input covered; resume/persistence behavior pending | Implemented |
 | REQ-SAFE-014 | Unit | Startup self-check validates sensors/config/input/output-safe-state | `test_control_state_machine`, fakes | Planned |
-| REQ-HW-002 | Unit/Bench | PT50 is converted as the primary control temperature sensor | `test_pt50_sensor`; Arduino analog adapter builds; real divider/calibration bench check pending | Implemented |
+| REQ-HW-002 | Unit/Bench | NTC thermistor is converted as the primary control temperature sensor | `test_ntc_sensor`; Arduino analog adapter builds; real divider/calibration bench check pending | Implemented |
 | REQ-HW-003 | Unit/Bench | DHT22/AM2302-class sensor provides secondary temperature/RH telemetry when available | `test_temp_rh_reader`; concrete `DHT` adapter builds; bench check pending | Implemented |
 | REQ-HW-004 | Unit/Bench | Heater and fan relay outputs translate logical commands to pins | `test_relay_outputs`; relay bench check pending | Implemented |
 | REQ-HW-005 | Unit/Bench | Relay polarity is configurable | `test_relay_outputs` active-high/active-low tests; relay bench check pending | Implemented |
@@ -106,7 +106,7 @@ Status values:
 | REQ-FUNC-010 | Unit/Bench | Manual heat request forces fan ON within safety constraints | `test_manual_mode_controller`; bench manual toggle check pending | Implemented |
 | REQ-UI-016 | Unit/Bench | Status screen reflects Romanian lifecycle labels during a preset run | `test_lcd_status_view`, `test_preset_run_controller`; LCD bench check pending | Implemented |
 | REQ-UI-017 | Unit/Bench | Finished state can be acknowledged from the status screen with short press | `test_preset_run_controller`; status acknowledgement bench check pending | Implemented |
-| REQ-PERSIST-001 | Unit | Calibration defaults are explicit and later persistable | `test_config` PT50 calibration default tests; EEPROM persistence pending | Implemented |
+| REQ-PERSIST-001 | Unit | Calibration defaults are explicit and later persistable | `test_config` thermistor calibration default tests; EEPROM persistence pending | Implemented |
 | REQ-UI-005 | Unit/Bench | Heartbeat visible bottom-right and runs in all states | `test_lcd_status_view`; LCD bench test pending | Implemented |
 | REQ-UI-006 | Unit/Bench | Finish alarm starts after cooldown | State machine plus buzzer/backlight bench check | Planned |
 | REQ-UI-007 | Unit/Bench | Fault alarm continues until acknowledgement | State machine plus buzzer/backlight bench check | Planned |
@@ -127,7 +127,7 @@ Before connecting real heater power:
 - Verify buzzer and backlight FET.
 - Verify LCD 4x20 layout and heartbeat.
 - Verify encoder rotation, short press, `Inapoi` navigation, and stuck-button detection.
-- Verify PT50 analog readings and calibration visibility.
+- Verify primary thermistor analog readings and calibration visibility.
 - Verify DHT22/AM2302 temperature/RH reporting and warning on disconnect.
 - Verify serial logs on USB and secondary serial.
 - Verify secondary serial is output-only in current firmware scope.

@@ -31,7 +31,7 @@ Review safety behavior, fault handling, and risk mitigations for the dehydrator 
 - Are outputs OFF on startup and hard fault?
 - Is heater impossible without fan command ON?
 - Are over-temperature layers preserved?
-- Are PT50 invalid and watchdog reset handled safely?
+- Are primary thermistor invalid and watchdog reset handled safely?
 - Are relay stuck and no-temp-rise faults covered?
 - Is EEPROM resume safe after reset/fault?
 

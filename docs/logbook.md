@@ -225,7 +225,7 @@ reuse them, and how agentic mode development works.
 **Decisions**
 - Use Arduino Mega2560, not Uno/Nano.
 - Use PlatformIO.
-- Treat PT50 as the primary control temperature sensor.
+- Treat NTC as the primary control temperature sensor.
 - Use AHT-like sensor for secondary temp/RH telemetry and warning-only failure.
 - Use Romanian LCD UI, English logs/code/docs.
 - Use branch/commit workflow.
@@ -765,7 +765,7 @@ The user approved proceeding to the next phase after the profile engine merge.
 
 **Context**
 After the run state machine was merged, Phase 5 still needed the heater control
-logic that turns profile targets and PT50 readings into a logical heater
+logic that turns profile targets and NTC readings into a logical heater
 request.
 
 **Trigger**
@@ -838,11 +838,11 @@ temperature control.
 
 **Actions**
 - Created `feature/fault-detector`.
-- Added `SafetyConfig` defaults for PT50 plausible range, 80 C hard fault,
+- Added `SafetyConfig` defaults for NTC plausible range, 80 C hard fault,
   no-temperature-rise timing, suspected stuck-heater timing, and stuck-button
   timing.
 - Added `FaultDetector`, a pure C++ latched hard-fault detector.
-- Added native Unity tests for PT50 invalid/out-of-range, 80 C over-temperature,
+- Added native Unity tests for NTC invalid/out-of-range, 80 C over-temperature,
   no-rise fault timing, stuck-heater grace/rise timing, stuck button, watchdog
   reset during run, first-fault latching, and reset behavior.
 - Added config tests for the agreed safety thresholds.
@@ -885,28 +885,28 @@ temperature control.
 - `docs/test-plan.md`
 - `docs/reviews/safety-reviewer-fault-detector-001.md`
 
-### 2026-06-02 - PT50 Calibration And Reader
+### 2026-06-02 - NTC Calibration And Reader
 
 **Context**
-Phase 5 core logic was complete. Phase 6 started with the primary PT50 sensor
+Phase 5 core logic was complete. Phase 6 started with the primary NTC sensor
 path because it feeds control and safety logic.
 
 **Trigger**
 The user asked to proceed after Codex recommended starting Phase 6 with the
-PT50 analog reader and calibration model.
+NTC analog reader and calibration model.
 
 **Participants**
 - User
 - Codex
 
 **Actions**
-- Created `feature/pt50-calibration-reader`.
-- Added `CalibrationConfig` defaults for PT50 divider conversion, offset,
+- Created `feature/ntc-calibration-reader`.
+- Added `CalibrationConfig` defaults for NTC divider conversion, offset,
   scale, ADC range, and plausible temperature range.
-- Added `Pt50SensorModel`, a pure ratiometric ADC-to-temperature converter.
+- Added `NtcSensorModel`, a pure ratiometric ADC-to-temperature converter.
 - Added `AnalogInput`, a project-owned interface for raw ADC access.
-- Added `Pt50Reader`, a thin wrapper that reads an ADC channel through
-  `AnalogInput` and applies the PT50 model.
+- Added `NtcReader`, a thin wrapper that reads an ADC channel through
+  `AnalogInput` and applies the NTC model.
 - Added native Unity tests for 0 C and 100 C conversion, calibration offset and
   scale, invalid ADC endpoints, plausible-range rejection, divider orientation,
   and reader channel usage.
@@ -915,11 +915,11 @@ PT50 analog reader and calibration model.
 - Updated hardware notes, backlog, and test-plan traceability.
 
 **Agent Calls**
-- Test Engineer reviewed PT50 conversion and reader behavior, focusing on ADC
+- Test Engineer reviewed NTC conversion and reader behavior, focusing on ADC
   math, divider assumptions, overflow, validity handling, tests, and docs.
 
 **Decisions**
-- Keep PT50 conversion ratiometric because the divider is supplied from the same
+- Keep NTC conversion ratiometric because the divider is supplied from the same
   VCC used as ADC reference.
 - Make divider orientation configurable because final wiring has not been
   confirmed.
@@ -928,13 +928,13 @@ PT50 analog reader and calibration model.
 - Validate plausible temperature in a wide integer type before assigning the
   final `int16_t` temperature so near-rail ADC values cannot wrap into a
   valid-looking reading.
-- Treat the 100 ohm fixed resistor and default divider orientation as
+- Treat the 100 kohm fixed resistor and default divider orientation as
   placeholders that must be checked before real heater testing.
 - Keep the concrete Arduino `analogRead()` adapter as a separate backlog item
   until wiring is confirmed.
 
 **Commits / Branches**
-- Branch: `feature/pt50-calibration-reader`
+- Branch: `feature/ntc-calibration-reader`
 - Commit: pending
 - Merge commit: pending
 
@@ -943,26 +943,26 @@ PT50 analog reader and calibration model.
 - `platformio run -e megaatmega2560`: success.
 
 **Links**
-- `include/dehydrator/domain/Pt50SensorModel.h`
-- `include/dehydrator/sensors/Pt50Reader.h`
+- `include/dehydrator/domain/NtcSensorModel.h`
+- `include/dehydrator/sensors/NtcReader.h`
 - `include/dehydrator/interfaces/AnalogInput.h`
 - `include/dehydrator/config/RuntimeConfig.h`
-- `test/test_pt50_sensor/test_pt50_sensor.cpp`
+- `test/test_ntc_sensor/test_ntc_sensor.cpp`
 - `test/test_config/test_config.cpp`
 - `docs/hardware.md`
 - `docs/backlog.md`
 - `docs/test-plan.md`
-- `docs/reviews/test-engineer-pt50-reader-001.md`
+- `docs/reviews/test-engineer-ntc-reader-001.md`
 
 ### 2026-06-02 - Relay Output Adapter
 
 **Context**
-Phase 6 hardware-adapter work had the PT50 interface-based reader merged. The
-concrete PT50 Arduino adapter remains pending until wiring is confirmed, so the
+Phase 6 hardware-adapter work had the NTC interface-based reader merged. The
+concrete NTC Arduino adapter remains pending until wiring is confirmed, so the
 next well-defined hardware slice was relay output handling.
 
 **Trigger**
-The user asked to proceed with the next phase after the PT50 branch was merged.
+The user asked to proceed with the next phase after the NTC branch was merged.
 
 **Participants**
 - User
@@ -1188,12 +1188,12 @@ are acceptable.
 - `docs/user-ui-ro.md`
 - `docs/test-plan.md`
 
-### 2026-06-04 - PT50 Status Bring-Up
+### 2026-06-04 - NTC Status Bring-Up
 
 **Context**
 After the LCD/encoder firmware was uploaded, the user confirmed that the status
 screen, heartbeat, and input events worked OK on the test device. The next
-useful hardware slice is to put a real PT50 ADC reading onto the LCD and
+useful hardware slice is to put a real NTC ADC reading onto the LCD and
 structured serial state logs.
 
 **Trigger**
@@ -1208,9 +1208,9 @@ proceed with the next step.
 - Created `feature/sensor-status-bringup`.
 - Added a concrete Arduino `analogRead()` adapter for the project
   `AnalogInput` interface.
-- Added a cooperative 1-second PT50 sample task in the firmware shell.
-- Updated LCD status rendering to show the latest valid PT50 temperature.
-- Added compact bring-up state logs with PT50 temperature or `null` and raw ADC
+- Added a cooperative 1-second NTC sample task in the firmware shell.
+- Updated LCD status rendering to show the latest valid NTC temperature.
+- Added compact bring-up state logs with NTC temperature or `null` and raw ADC
   count.
 - Added native log/config tests for the new state format and scheduler
   intervals.
@@ -1219,7 +1219,7 @@ proceed with the next step.
 - Updated backlog, hardware notes, test plan, and logbook.
 
 **Decisions**
-- Keep PT50 sampling separate from LCD refresh so ADC sampling, display updates,
+- Keep NTC sampling separate from LCD refresh so ADC sampling, display updates,
   and input scanning remain independent cooperative tasks.
 - Treat the Arduino analog adapter as implemented for bring-up, while keeping
   divider wiring and calibration confirmation as a pending bench task before
@@ -1239,8 +1239,8 @@ proceed with the next step.
 - `platformio run -e megaatmega2560`: success.
 - `platformio run -e megaatmega2560 -t upload`: success.
 - Short serial monitor capture showed expected bring-up records, including
-  `STATE app=bringup ... pt50=93 adc=414` and
-  `STATE app=bringup ... pt50=null adc=268`.
+  `STATE app=bringup ... ntc=93 adc=414` and
+  `STATE app=bringup ... ntc=null adc=268`.
 - Source scan found no project use of Arduino `String`, `new`, `delete`,
   `malloc`, or `free`.
 
@@ -1255,7 +1255,7 @@ proceed with the next step.
 ### 2026-06-04 - Concrete AHT Bring-Up
 
 **Context**
-PT50 calibration is postponed because the required hardware is not yet
+NTC calibration is postponed because the required hardware is not yet
 available. The next useful hardware step is to stop treating AHT as an abstract
 interface only and wire a real Arduino library into the existing LCD and log
 pipeline.
@@ -1272,7 +1272,7 @@ The user said calibration can wait and asked to proceed with AHT.
 - Chose `Adafruit_AHTX0` as the concrete Arduino AHT20/AHT21 bring-up library.
 - Added an Arduino AHT sensor driver that implements the project
   `AhtSensorDriver` interface.
-- Added a 2-second AHT sample task beside the existing 1-second PT50 task.
+- Added a 2-second AHT sample task beside the existing 1-second NTC task.
 - Wired RH into the LCD status snapshot.
 - Extended the periodic bring-up state log to include AHT temperature and RH or
   stable `null` tokens when unavailable.
@@ -1313,7 +1313,7 @@ The user said calibration can wait and asked to proceed with AHT.
 ### 2026-06-04 - UI Menu Shell
 
 **Context**
-The LCD, encoder, PT50 path, and concrete AHT path are all alive on the bench.
+The LCD, encoder, NTC path, and concrete AHT path are all alive on the bench.
 The next vertical slice is to give the encoder a visible UI job before wiring
 real dehydrator run configuration and presets.
 
@@ -1511,3 +1511,50 @@ The user said "let's go" after the menu shell was merged.
 - `include/dehydrator/ui/LcdManualView.h`
 - `src/main.cpp`
 - `docs/user-ui-ro.md`
+
+### 2026-06-04 - Primary Thermistor Migration
+
+**Context**
+The primary temperature hardware changed again: the controller should now read
+an NTC thermistor instead of the earlier NTC-oriented model. The user also
+asked for the nominal value to remain configurable so the same code can support
+different NTC parts.
+
+**Trigger**
+The user reported the hardware change and asked to modify the project so the
+primary sensor supports NTC, preferably with configurable nominal resistance.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Updated the primary sensor conversion model to use an NTC Beta equation with
+  configurable nominal resistance, Beta coefficient, and nominal temperature.
+- Kept the divider-based ADC conversion and calibration offsets/scaling so the
+  model still works with the existing analog input abstraction.
+- Aligned active requirements, hardware notes, risks, backlog, and safety
+  reviewer guidance to the new primary NTC thermistor baseline.
+- Updated the structured bring-up log field label from `ntc` to `ntc` so the
+  serial output no longer refers to the old sensor type.
+
+**Decisions**
+- Keep the configurable nominal resistance and Beta coefficient in the runtime
+  calibration block so the same firmware can support different NTC families.
+- Treat the rename as an active baseline change in docs and logs, while leaving
+  older historical entries untouched.
+
+**Commits / Branches**
+- Branch: working tree only so far
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Pending after the code and documentation pass is complete.
+
+**Links**
+- `include/dehydrator/domain/NtcSensorModel.h`
+- `include/dehydrator/config/RuntimeConfig.h`
+- `include/dehydrator/logging/LogFormatter.h`
+- `docs/requirements.md`
+- `docs/hardware.md`

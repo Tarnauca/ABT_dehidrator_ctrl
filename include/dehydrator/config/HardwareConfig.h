@@ -28,8 +28,8 @@ enum class ActiveLevel {
 struct HardwarePins {
   /** Built-in LED used by the current scheduler shell. */
   uint8_t statusLed;
-  /** Analog input for the PT50 voltage divider. */
-  uint8_t pt50Analog;
+  /** Analog input for the primary NTC voltage divider. */
+  uint8_t ntcAnalog;
   /** Heater relay output pin placeholder. */
   uint8_t heaterRelay;
   /** Fan relay output pin placeholder. */
@@ -76,7 +76,7 @@ struct HardwareConfig {
 constexpr HardwareConfig HARDWARE = {
     {
         13U,   // statusLed
-        0U,    // pt50Analog: analog channel placeholder
+        0U,    // ntcAnalog: analog channel placeholder for the NTC divider
         28U,  // heaterRelay: TBD
         32U,  // fanRelay: TBD
         7U,    // lcdBacklight: temporary bench pin

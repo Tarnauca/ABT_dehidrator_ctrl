@@ -12,7 +12,7 @@ This gives several benefits:
 - Future hardware adapter constructors can receive coherent configuration
   groups instead of long lists of unrelated parameters.
 - Wiring changes have one obvious place to inspect.
-- The code scales better as more signals are added: PT50 analog input, heater
+- The code scales better as more signals are added: primary thermistor analog input, heater
   relay, fan relay, LCD backlight, buzzer, encoder A/B/button, and future
   diagnostic pins.
 

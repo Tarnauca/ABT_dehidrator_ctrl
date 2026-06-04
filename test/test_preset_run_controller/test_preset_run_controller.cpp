@@ -33,7 +33,7 @@ void test_running_update_uses_temperature_control_to_turn_heater_on() {
   TEST_ASSERT_EQUAL_INT(65, controller.lastTargetTempC());
 }
 
-void test_invalid_pt50_keeps_heater_off_while_run_continues() {
+void test_invalid_ntc_keeps_heater_off_while_run_continues() {
   PresetRunController controller;
   TEST_ASSERT_TRUE(controller.startPreset(PresetCatalog::items()[2]));
 
@@ -68,7 +68,7 @@ int main() {
   UNITY_BEGIN();
   RUN_TEST(test_start_preset_enters_running_state_and_enables_fan);
   RUN_TEST(test_running_update_uses_temperature_control_to_turn_heater_on);
-  RUN_TEST(test_invalid_pt50_keeps_heater_off_while_run_continues);
+  RUN_TEST(test_invalid_ntc_keeps_heater_off_while_run_continues);
   RUN_TEST(test_finish_alarm_can_be_acknowledged_back_to_idle);
   return UNITY_END();
 }

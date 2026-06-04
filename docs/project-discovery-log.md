@@ -12,7 +12,7 @@ The user wants to develop a food dehydrator controller and learn agentic softwar
 2. Toolchain is PlatformIO.
 3. Existing environment is a working devcontainer in WSL. PlatformIO can build/upload a basic blink project. Serial port is attached to the devcontainer. SSH agent is available from WSL inside the container, and Git commits can be made from the container.
 4. Initial hardware:
-   - PT50 as primary temperature sensor.
+   - NTC as primary temperature sensor.
    - AHT21-like temperature/RH sensor as secondary sensor.
    - Heater and fan controlled by existing relays, on/off only.
    - 4x20 LCD over typical I2C-to-parallel interface.
@@ -53,11 +53,11 @@ The user wants to develop a food dehydrator controller and learn agentic softwar
     - fan OFF immediately,
     - timer/profile suspended,
     - resume continues same profile from paused point.
-19. PT50 is the primary control sensor. AHT temperature/RH is secondary telemetry and plausibility checking.
-20. PT50/AHT temperature mismatch is warning only, not fault.
+19. NTC is the primary control sensor. AHT temperature/RH is secondary telemetry and plausibility checking.
+20. NTC/AHT temperature mismatch is warning only, not fault.
 21. Hard faults:
-    - PT50 missing/invalid/out of range,
-    - measured PT50 at/above 80 C,
+    - NTC missing/invalid/out of range,
+    - measured NTC at/above 80 C,
     - temperature not rising while heater ON,
     - encoder/button stuck,
     - suspected heater stuck ON,
@@ -137,10 +137,10 @@ The user wants to develop a food dehydrator controller and learn agentic softwar
 56. Buzzer is only for finish/fault alarms, not routine button feedback.
 57. LCD backlight is controlled through a FET on a separate MCU pin.
 58. Relay polarity should be configurable.
-59. PT50 is voltage-divider based into analog input, supplied from MCU VCC with no dedicated reference.
-60. Product-minded recommendation: consider better reference, calibration procedure, or RTD interface IC for more accurate PT50 measurement.
+59. NTC is voltage-divider based into analog input, supplied from MCU VCC with no dedicated reference.
+60. Product-minded recommendation: consider better reference, calibration procedure, or RTD interface IC for more accurate NTC measurement.
 61. Calibration is needed:
-    - PT50 offset/scale,
+    - NTC offset/scale,
     - optional AHT offsets,
     - visible in debug,
     - UI calibration can wait.
@@ -152,7 +152,7 @@ The user wants to develop a food dehydrator controller and learn agentic softwar
 64. AHT failure is warning only; drying can continue without RH.
 65. RH should be shown on LCD if AHT sensor is present/functional.
 66. Manual mode still enforces all safety limits.
-67. Startup self-checks should include outputs OFF first, PT50 plausibility, AHT availability, config validation/defaulting, stuck input detection, interrupted run detection, and explicit confirmation before resume/start.
+67. Startup self-checks should include outputs OFF first, NTC plausibility, AHT availability, config validation/defaulting, stuck input detection, interrupted run detection, and explicit confirmation before resume/start.
 68. Serial lifecycle events should be logged:
     - boot,
     - self-check,
@@ -211,10 +211,10 @@ The user wants to develop a food dehydrator controller and learn agentic softwar
     - every event, parameter change, and output change is logged,
     - temperature status is only periodic.
 92. Timing defaults:
-    - PT50/control 1 s,
+    - NTC/control 1 s,
     - AHT 2 s,
     - serial status 5 s.
-93. PT50 readings should use simple averaging/filtering and reject impossible/out-of-range values.
+93. NTC readings should use simple averaging/filtering and reject impossible/out-of-range values.
 94. Raw ADC is verbose/debug only.
 95. Serial command interface is deferred; baseline is logs only.
 96. Relay protection:
@@ -228,7 +228,7 @@ The user wants to develop a food dehydrator controller and learn agentic softwar
 98. No-temperature-rise fault:
     - 2 C rise expected within 5 min while heater ON.
 99. Heater stuck ON fault:
-    - PT50 rises 3 C over 5 min while heater command is OFF.
+    - NTC rises 3 C over 5 min while heater command is OFF.
 100. Pushbutton stuck threshold:
     - active continuously for 30 s is hard fault.
 101. Watchdog should be enabled after basic firmware is stable.

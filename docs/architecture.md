@@ -73,14 +73,14 @@ Pure logic modules:
 - `ControlStateMachine`: run states, pause/resume, finish, stop, fault transitions.
 - `ProfileEngine`: fixed and fluctuating temperature targets over time.
 - `TemperatureControl`: hysteresis and relay minimum timing decisions.
-- `FaultDetector`: PT50 validity, over-temperature, no-rise, stuck-heater, stuck-input checks.
+- `FaultDetector`: primary thermistor validity, over-temperature, no-rise, stuck-heater, stuck-input checks.
 - `RunTimer`: elapsed/remaining time and pause behavior.
 - `LogFormatter`: stable structured serial lines.
 - `LogDispatcher`: fan-out to USB debug and secondary telemetry sinks without dynamic allocation.
 
 Hardware-facing adapters:
 
-- `Pt50AnalogSensor`.
+- `NtcAnalogSensor`.
 - `TempRhSensorAdapter`.
 - `RelayOutputs`.
 - `LcdDisplay`.
@@ -122,7 +122,7 @@ Hard faults override relay minimum ON/OFF timing and force heater/fan OFF immedi
 
 `FaultDetector` should operate on explicit inputs:
 
-- PT50 validity and filtered temperature.
+- Primary thermistor validity and filtered temperature.
 - Secondary temp/RH sensor availability and optional temperature/RH.
 - Current heater/fan commands.
 - Previous heater/fan command history.
@@ -151,7 +151,7 @@ Proposed configuration ownership:
 - `UiConfig`: LCD dimensions, heartbeat interval, alarm blink timing.
 - `LoggingConfig`: periodic state interval, verbose/raw ADC enable flag.
 - `PersistenceConfig`: EEPROM schema version, checkpoint interval, validation settings.
-- `CalibrationConfig`: default PT50 and secondary temp/RH calibration constants.
+- `CalibrationConfig`: default primary thermistor and secondary temp/RH calibration constants.
 - `PresetCatalog`: built-in drying presets.
 
 ## Interfaces
@@ -172,7 +172,7 @@ class PersistentStore;
 Initial responsibilities:
 
 - `Clock`: provides `millis()`-style monotonic time to pure logic and tests.
-- `SensorReader`: provides latest PT50/secondary temp-RH readings and validity flags.
+- `SensorReader`: provides latest primary thermistor/secondary temp-RH readings and validity flags.
 - `OutputController`: accepts logical heater/fan/backlight/buzzer commands.
 - `LogSink`: writes already-formatted log lines to one destination.
 - `Display`: writes LCD view updates without exposing LCD library details to domain logic.

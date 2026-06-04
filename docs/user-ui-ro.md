@@ -39,7 +39,7 @@ returns the controller to idle instead of opening the menu.
 
 ```text
 EROARE
-Senzor PT50
+Senzor NTC
 Iesiri oprite
 Apasa pt. confirm.
 ```

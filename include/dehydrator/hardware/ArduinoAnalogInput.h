@@ -10,7 +10,7 @@ namespace dehydrator {
 /**
  * @brief Arduino `analogRead()` adapter for the project analog input interface.
  *
- * The adapter is intentionally thin: calibration, plausibility checks, and PT50
+ * The adapter is intentionally thin: calibration, plausibility checks, and NTC
  * conversion remain in testable domain/sensor code.
  */
 class ArduinoAnalogInput final : public AnalogInput {

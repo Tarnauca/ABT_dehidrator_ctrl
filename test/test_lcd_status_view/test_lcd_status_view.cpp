@@ -47,8 +47,8 @@ void assertLineEquals(const FakeDisplay& display, uint8_t row,
 LcdStatusSnapshot validSnapshot() {
   LcdStatusSnapshot snapshot;
   snapshot.stateLabel = "INACTIV";
-  snapshot.pt50TempC = 57;
-  snapshot.pt50Valid = true;
+  snapshot.ntcTempC = 57;
+  snapshot.ntcValid = true;
   snapshot.rhPercent = 43U;
   snapshot.rhValid = true;
   snapshot.heaterOn = false;
@@ -81,7 +81,7 @@ void test_status_view_renders_missing_sensor_values() {
   FakeDisplay display;
   LcdStatusView view(display);
   LcdStatusSnapshot snapshot = validSnapshot();
-  snapshot.pt50Valid = false;
+  snapshot.ntcValid = false;
   snapshot.rhValid = false;
   snapshot.heartbeatOn = false;
 

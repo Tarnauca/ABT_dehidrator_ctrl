@@ -10,7 +10,7 @@
 #include "dehydrator/app/PeriodicTask.h"
 #include "dehydrator/config/HardwareConfig.h"
 #include "dehydrator/config/RuntimeConfig.h"
-#include "dehydrator/domain/Pt50SensorModel.h"
+#include "dehydrator/domain/NtcSensorModel.h"
 #include "dehydrator/hardware/RelayOutputs.h"
 #include "dehydrator/hardware/ArduinoAnalogInput.h"
 #include "dehydrator/hardware/ArduinoDhtSensorDriver.h"
@@ -20,7 +20,7 @@
 #include "dehydrator/logging/LogFormatter.h"
 #include "dehydrator/logging/LogSink.h"
 #include "dehydrator/sensors/TempRhReader.h"
-#include "dehydrator/sensors/Pt50Reader.h"
+#include "dehydrator/sensors/NtcReader.h"
 #include "dehydrator/presets/PresetCatalog.h"
 #include "dehydrator/ui/LcdManualView.h"
 #include "dehydrator/ui/LcdPresetView.h"
@@ -53,7 +53,7 @@ bool heartbeatOn = false;
 long lastEncoderPosition = 0L;
 uint32_t buttonPressedAtMs = 0UL;
 bool buttonPressed = false;
-dehydrator::Pt50Reading latestPt50;
+dehydrator::NtcReading latestNtc;
 dehydrator::TempRhReading latestTempRh;
 dehydrator::EncoderStepFilter encoderStepFilter(4);
 dehydrator::PresetRunController presetRunController;
@@ -159,9 +159,9 @@ dehydrator::LcdStatusView statusView(lcdDisplay);
 dehydrator::ArduinoAnalogInput analogInput;
 dehydrator::ArduinoDhtSensorDriver tempRhDriver(
     dehydrator::config::HARDWARE.pins.tempRhData);
-dehydrator::Pt50Reader pt50Reader(analogInput,
-                                  dehydrator::config::HARDWARE.pins.pt50Analog,
-                                  dehydrator::config::CALIBRATION);
+dehydrator::NtcReader ntcReader(
+    analogInput, dehydrator::config::HARDWARE.pins.ntcAnalog,
+    dehydrator::config::CALIBRATION);
 dehydrator::TempRhReader tempRhReader(tempRhDriver,
                                       dehydrator::config::CALIBRATION);
 dehydrator::MenuController menuController;
@@ -348,7 +348,7 @@ void updateLedTask(uint32_t nowMs) {
 }
 
 /**
- * @brief Cooperative PT50 sampling task.
+ * @brief Cooperative primary thermistor sampling task.
  *
  * @param nowMs Current firmware uptime in milliseconds.
  */
@@ -357,7 +357,7 @@ void updateSensorTask(uint32_t nowMs) {
     return;
   }
 
-  latestPt50 = pt50Reader.read();
+  latestNtc = ntcReader.read();
 }
 
 /**
@@ -384,7 +384,7 @@ void updateRunControlTask(uint32_t nowMs) {
   }
 
   const char* previousState = presetRunController.stateToken();
-  presetRunController.update(1U, latestPt50.valid, latestPt50.tempC);
+  presetRunController.update(1U, latestNtc.valid, latestNtc.tempC);
   logRunStateChange(previousState, presetRunController.stateToken());
 
   activeOutputCommand = presetRunController.outputCommand();
@@ -433,8 +433,8 @@ void updateLcdTask(uint32_t nowMs) {
 
   dehydrator::LcdStatusSnapshot snapshot;
   snapshot.stateLabel = presetRunController.stateLabelRo();
-  snapshot.pt50TempC = latestPt50.tempC;
-  snapshot.pt50Valid = latestPt50.valid;
+  snapshot.ntcTempC = latestNtc.tempC;
+  snapshot.ntcValid = latestNtc.valid;
   snapshot.rhPercent = latestTempRh.rhPercent;
   snapshot.rhValid = latestTempRh.valid;
   snapshot.heaterOn = activeOutputCommand.heaterOn;
@@ -581,8 +581,8 @@ void updateStateLogTask(uint32_t nowMs) {
   const dehydrator::PresetDefinition* activePreset = presetRunController.activePreset();
   char line[dehydrator::config::LOGGING.lineSize] = {};
   if (dehydrator::LogFormatter::formatBringupState(
-          line, sizeof(line), nowMs, ledOn, latestPt50.valid,
-          latestPt50.tempC, latestPt50.adcCount, latestTempRh.valid,
+          line, sizeof(line), nowMs, ledOn, latestNtc.valid,
+          latestNtc.tempC, latestNtc.adcCount, latestTempRh.valid,
           latestTempRh.tempC, latestTempRh.rhPercent,
           presetRunController.stateToken(),
           activePreset != nullptr ? activePreset->token : nullptr,

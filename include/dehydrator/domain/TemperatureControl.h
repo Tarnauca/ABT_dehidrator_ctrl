@@ -11,7 +11,7 @@ namespace dehydrator {
  * @brief Inputs needed for one temperature-control evaluation.
  */
 struct TemperatureControlInput {
-  /** Primary PT50 temperature in integer Celsius. */
+  /** Primary thermistor temperature in integer Celsius. */
   int16_t currentTempC = 0;
   /** Current profile target temperature in integer Celsius. */
   int16_t targetTempC = 0;
@@ -27,7 +27,7 @@ struct TemperatureControlInput {
 struct TemperatureControlOutput {
   /** Logical heater command before hardware relay polarity is applied. */
   bool heaterOn = false;
-  /** True when heater was forced off because PT50 temperature exceeded limit. */
+  /** True when heater was forced off because primary thermistor temperature exceeded limit. */
   bool forcedOffByTemperature = false;
   /** True when heater was blocked because fan/control permission was missing. */
   bool blockedByRunPolicy = false;

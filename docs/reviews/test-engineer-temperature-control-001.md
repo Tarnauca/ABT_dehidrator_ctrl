@@ -50,7 +50,7 @@ Resolution:
 
 ### Low: over-temperature reason was hidden when run policy also blocked heat
 
-When fan/control permission blocked heat and PT50 temperature was above the
+When fan/control permission blocked heat and NTC temperature was above the
 force-off threshold, the first implementation reported only the policy block.
 
 Resolution:

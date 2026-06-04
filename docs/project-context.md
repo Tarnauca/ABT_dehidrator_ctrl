@@ -17,8 +17,8 @@ The device must work safely. Software safety is important, but product-minded re
 
 ## Hardware Baseline
 
-- Primary temperature sensor: PT50 through voltage divider into analog input.
-- PT50 supply/reference: MCU VCC, no dedicated voltage reference currently.
+- Primary temperature sensor: NTC thermistor through voltage divider into analog input.
+- Thermistor supply/reference: MCU VCC, no dedicated voltage reference currently.
 - Secondary sensor: DHT22/AM2302-class temperature/RH sensor.
 - Heater control: relay, on/off only.
 - Fan control: relay, on/off only.
@@ -45,13 +45,13 @@ Product-minded recommendation: use an independent thermal fuse, thermal cutoff, 
 ## Control And Safety Baseline
 
 - User setpoints are limited to 75 C.
-- If PT50 temperature exceeds 75 C, heater must be commanded OFF.
-- Hard over-temperature fault threshold is 80 C measured by PT50.
+- If primary thermistor temperature exceeds 75 C, heater must be commanded OFF.
+- Hard over-temperature fault threshold is 80 C measured by the primary thermistor.
 - No heater operation is allowed unless fan is commanded ON.
 - Heater control uses simple hysteresis and relay minimum on/off timing.
 - Heater relay minimum ON/OFF time: 10 s.
 - Fan relay minimum ON/OFF time: 10 s, except hard fault or explicit stop may force OFF immediately.
-- PT50/control update interval: 1 s.
+- Primary thermistor/control update interval: 1 s.
 - Secondary temp/RH sensor update interval: 2 s.
 - Periodic serial state log interval: 5 s.
 - Finish cooldown: heater OFF, fan ON for 3 minutes, then fan OFF and finish alarm.
@@ -64,17 +64,17 @@ Product-minded recommendation: use an independent thermal fuse, thermal cutoff, 
 
 Hard faults:
 
-- PT50 missing, invalid, or out of range.
-- PT50 temperature at or above 80 C.
+- Primary thermistor missing, invalid, or out of range.
+- Primary thermistor temperature at or above 80 C.
 - Temperature does not rise by at least 2 C within 5 min of accumulated heater ON command time.
-- Suspected heater stuck ON: after a 2 min post-heater-off grace period, PT50 rises by 3 C over 5 min while heater command is OFF.
+- Suspected heater stuck ON: after a 2 min post-heater-off grace period, primary thermistor rises by 3 C over 5 min while heater command is OFF.
 - Pushbutton stuck active for 30 s.
 - Watchdog reset during an active run.
 
 Warnings:
 
 - Secondary temp/RH sensor unavailable.
-- PT50 and secondary temp/RH temperature mismatch.
+- Primary thermistor and secondary temp/RH temperature mismatch.
 - EEPROM/config invalid; defaults are loaded.
 - Encoder signal abnormal/chattering, unless later proven to be a hard blocking fault.
 

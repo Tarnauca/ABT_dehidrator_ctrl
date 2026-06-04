@@ -13,8 +13,8 @@ SafetyConfig safetyConfig() { return dehydrator::config::SAFETY; }
 
 FaultDetectorInput normalInput() {
   FaultDetectorInput input;
-  input.pt50Valid = true;
-  input.pt50TempC = 50;
+  input.ntcValid = true;
+  input.ntcTempC = 50;
   input.deltaSeconds = 1;
   return input;
 }
@@ -37,34 +37,34 @@ void test_normal_input_has_no_fault() {
   assertNoFault(detector.update(safetyConfig(), normalInput()));
 }
 
-void test_invalid_pt50_triggers_hard_fault() {
+void test_invalid_ntc_triggers_hard_fault() {
   FaultDetector detector;
   FaultDetectorInput input = normalInput();
-  input.pt50Valid = false;
+  input.ntcValid = false;
 
-  assertFault(detector.update(safetyConfig(), input), FaultCode::Pt50Invalid);
+  assertFault(detector.update(safetyConfig(), input), FaultCode::NtcInvalid);
 }
 
-void test_pt50_below_plausible_range_triggers_hard_fault() {
+void test_ntc_below_plausible_range_triggers_hard_fault() {
   FaultDetector detector;
   FaultDetectorInput input = normalInput();
-  input.pt50TempC = safetyConfig().pt50MinValidTempC - 1;
+  input.ntcTempC = safetyConfig().ntcMinValidTempC - 1;
 
-  assertFault(detector.update(safetyConfig(), input), FaultCode::Pt50Invalid);
+  assertFault(detector.update(safetyConfig(), input), FaultCode::NtcInvalid);
 }
 
-void test_pt50_above_plausible_range_triggers_hard_fault() {
+void test_ntc_above_plausible_range_triggers_hard_fault() {
   FaultDetector detector;
   FaultDetectorInput input = normalInput();
-  input.pt50TempC = safetyConfig().pt50MaxValidTempC + 1;
+  input.ntcTempC = safetyConfig().ntcMaxValidTempC + 1;
 
-  assertFault(detector.update(safetyConfig(), input), FaultCode::Pt50Invalid);
+  assertFault(detector.update(safetyConfig(), input), FaultCode::NtcInvalid);
 }
 
 void test_over_temperature_faults_at_80_degrees() {
   FaultDetector detector;
   FaultDetectorInput input = normalInput();
-  input.pt50TempC = safetyConfig().hardFaultTempC;
+  input.ntcTempC = safetyConfig().hardFaultTempC;
 
   assertFault(detector.update(safetyConfig(), input), FaultCode::OverTemperature);
 }
@@ -72,7 +72,7 @@ void test_over_temperature_faults_at_80_degrees() {
 void test_temperature_below_80_does_not_over_temperature_fault() {
   FaultDetector detector;
   FaultDetectorInput input = normalInput();
-  input.pt50TempC = safetyConfig().hardFaultTempC - 1;
+  input.ntcTempC = safetyConfig().hardFaultTempC - 1;
 
   assertNoFault(detector.update(safetyConfig(), input));
 }
@@ -81,7 +81,7 @@ void test_no_rise_fault_after_five_minutes_accumulated_heater_on() {
   FaultDetector detector;
   FaultDetectorInput input = normalInput();
   input.heaterCommandOn = true;
-  input.pt50TempC = 40;
+  input.ntcTempC = 40;
   input.deltaSeconds = safetyConfig().noRiseWindowSeconds;
 
   assertFault(detector.update(safetyConfig(), input),
@@ -92,7 +92,7 @@ void test_no_rise_does_not_fault_before_window() {
   FaultDetector detector;
   FaultDetectorInput input = normalInput();
   input.heaterCommandOn = true;
-  input.pt50TempC = 40;
+  input.ntcTempC = 40;
   input.deltaSeconds = safetyConfig().noRiseWindowSeconds - 1U;
 
   assertNoFault(detector.update(safetyConfig(), input));
@@ -102,11 +102,11 @@ void test_no_rise_timer_resets_after_required_temperature_rise() {
   FaultDetector detector;
   FaultDetectorInput input = normalInput();
   input.heaterCommandOn = true;
-  input.pt50TempC = 40;
+  input.ntcTempC = 40;
   input.deltaSeconds = safetyConfig().noRiseWindowSeconds - 1U;
   assertNoFault(detector.update(safetyConfig(), input));
 
-  input.pt50TempC = 42;
+  input.ntcTempC = 42;
   input.deltaSeconds = 1;
   assertNoFault(detector.update(safetyConfig(), input));
 
@@ -118,7 +118,7 @@ void test_no_rise_accumulates_heater_on_time_across_relay_cycles() {
   FaultDetector detector;
   FaultDetectorInput input = normalInput();
   input.heaterCommandOn = true;
-  input.pt50TempC = 40;
+  input.ntcTempC = 40;
   input.deltaSeconds = 150;
   assertNoFault(detector.update(safetyConfig(), input));
 
@@ -137,11 +137,11 @@ void test_stuck_heater_does_not_monitor_before_heater_was_on() {
   FaultDetector detector;
   FaultDetectorInput input = normalInput();
   input.heaterCommandOn = false;
-  input.pt50TempC = 50;
+  input.ntcTempC = 50;
   input.deltaSeconds = safetyConfig().stuckHeaterGraceSeconds;
   assertNoFault(detector.update(safetyConfig(), input));
 
-  input.pt50TempC = 60;
+  input.ntcTempC = 60;
   input.deltaSeconds = safetyConfig().stuckHeaterWindowSeconds;
   assertNoFault(detector.update(safetyConfig(), input));
 }
@@ -153,7 +153,7 @@ void test_stuck_heater_does_not_fault_during_grace_period() {
   assertNoFault(detector.update(safetyConfig(), input));
 
   input.heaterCommandOn = false;
-  input.pt50TempC = 50;
+  input.ntcTempC = 50;
   input.deltaSeconds = safetyConfig().stuckHeaterGraceSeconds - 1U;
 
   assertNoFault(detector.update(safetyConfig(), input));
@@ -166,11 +166,11 @@ void test_stuck_heater_faults_after_grace_when_temperature_rises() {
   assertNoFault(detector.update(safetyConfig(), input));
 
   input.heaterCommandOn = false;
-  input.pt50TempC = 50;
+  input.ntcTempC = 50;
   input.deltaSeconds = safetyConfig().stuckHeaterGraceSeconds;
   assertNoFault(detector.update(safetyConfig(), input));
 
-  input.pt50TempC = 53;
+  input.ntcTempC = 53;
   input.deltaSeconds = safetyConfig().stuckHeaterWindowSeconds;
 
   assertFault(detector.update(safetyConfig(), input),
@@ -184,12 +184,12 @@ void test_stuck_heater_monitoring_resets_when_heater_turns_on() {
   assertNoFault(detector.update(safetyConfig(), input));
 
   input.heaterCommandOn = false;
-  input.pt50TempC = 50;
+  input.ntcTempC = 50;
   input.deltaSeconds = safetyConfig().stuckHeaterGraceSeconds;
   assertNoFault(detector.update(safetyConfig(), input));
 
   input.heaterCommandOn = true;
-  input.pt50TempC = 53;
+  input.ntcTempC = 53;
   input.deltaSeconds = 1;
 
   assertNoFault(detector.update(safetyConfig(), input));
@@ -202,15 +202,15 @@ void test_stuck_heater_monitoring_rebaselines_after_window_without_fault() {
   assertNoFault(detector.update(safetyConfig(), input));
 
   input.heaterCommandOn = false;
-  input.pt50TempC = 50;
+  input.ntcTempC = 50;
   input.deltaSeconds = safetyConfig().stuckHeaterGraceSeconds;
   assertNoFault(detector.update(safetyConfig(), input));
 
-  input.pt50TempC = 52;
+  input.ntcTempC = 52;
   input.deltaSeconds = safetyConfig().stuckHeaterWindowSeconds;
   assertNoFault(detector.update(safetyConfig(), input));
 
-  input.pt50TempC = 55;
+  input.ntcTempC = 55;
   input.deltaSeconds = safetyConfig().stuckHeaterWindowSeconds;
   assertFault(detector.update(safetyConfig(), input),
               FaultCode::HeaterStuckOnSuspected);
@@ -253,12 +253,12 @@ void test_watchdog_reset_during_run_faults() {
 void test_first_fault_is_latched_until_reset() {
   FaultDetector detector;
   FaultDetectorInput input = normalInput();
-  input.pt50Valid = false;
-  assertFault(detector.update(safetyConfig(), input), FaultCode::Pt50Invalid);
+  input.ntcValid = false;
+  assertFault(detector.update(safetyConfig(), input), FaultCode::NtcInvalid);
 
   input = normalInput();
-  input.pt50TempC = safetyConfig().hardFaultTempC;
-  assertFault(detector.update(safetyConfig(), input), FaultCode::Pt50Invalid);
+  input.ntcTempC = safetyConfig().hardFaultTempC;
+  assertFault(detector.update(safetyConfig(), input), FaultCode::NtcInvalid);
 
   detector.reset();
   assertFault(detector.update(safetyConfig(), input), FaultCode::OverTemperature);
@@ -267,9 +267,9 @@ void test_first_fault_is_latched_until_reset() {
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_normal_input_has_no_fault);
-  RUN_TEST(test_invalid_pt50_triggers_hard_fault);
-  RUN_TEST(test_pt50_below_plausible_range_triggers_hard_fault);
-  RUN_TEST(test_pt50_above_plausible_range_triggers_hard_fault);
+  RUN_TEST(test_invalid_ntc_triggers_hard_fault);
+  RUN_TEST(test_ntc_below_plausible_range_triggers_hard_fault);
+  RUN_TEST(test_ntc_above_plausible_range_triggers_hard_fault);
   RUN_TEST(test_over_temperature_faults_at_80_degrees);
   RUN_TEST(test_temperature_below_80_does_not_over_temperature_fault);
   RUN_TEST(test_no_rise_fault_after_five_minutes_accumulated_heater_on);

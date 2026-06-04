@@ -62,10 +62,10 @@ struct ControlConfig {
  * @brief Safety thresholds for hard-fault detection.
  */
 struct SafetyConfig {
-  /** Lowest plausible PT50 reading accepted by the fault detector. */
-  int16_t pt50MinValidTempC;
-  /** Highest plausible PT50 reading accepted by the fault detector. */
-  int16_t pt50MaxValidTempC;
+  /** Lowest plausible primary thermistor reading accepted by the fault detector. */
+  int16_t ntcMinValidTempC;
+  /** Highest plausible primary thermistor reading accepted by the fault detector. */
+  int16_t ntcMaxValidTempC;
   /** Temperature at or above which an over-temperature hard fault occurs. */
   int16_t hardFaultTempC;
   /** Minimum required rise while heater is commanded ON. */
@@ -83,37 +83,39 @@ struct SafetyConfig {
 };
 
 /**
- * @brief Voltage-divider orientation for PT50 resistance calculation.
+ * @brief Voltage-divider orientation for primary thermistor resistance calculation.
  */
 enum class DividerOrientation {
-  /** Fixed resistor to VCC, PT50 to ground. ADC ratio rises with temperature. */
-  FixedHighPt50Low,
-  /** PT50 to VCC, fixed resistor to ground. ADC ratio falls with temperature. */
-  Pt50HighFixedLow,
+  /** Fixed resistor to VCC, thermistor to ground. ADC ratio rises with temperature. */
+  FixedHighNtcLow,
+  /** Thermistor to VCC, fixed resistor to ground. ADC ratio falls with temperature. */
+  NtcHighFixedLow,
 };
 
 /**
- * @brief Calibration constants for PT50 ADC conversion.
+ * @brief Calibration constants for the primary thermistor ADC conversion.
  */
 struct CalibrationConfig {
   /** Fixed divider resistor in milliohms. Must match the real circuit. */
-  int32_t pt50FixedResistorMilliOhms;
-  /** PT50 nominal resistance at 0 C in milliohms. */
-  int32_t pt50NominalMilliOhms;
-  /** PT50 temperature coefficient in parts per million per C. */
-  int32_t pt50AlphaPpmPerC;
+  int32_t ntcFixedResistorMilliOhms;
+  /** Thermistor nominal resistance at the nominal temperature, in milliohms. */
+  int32_t ntcNominalMilliOhms;
+  /** Thermistor Beta coefficient in kelvin. */
+  int32_t ntcBetaK;
+  /** Thermistor nominal temperature in centi-Celsius. */
+  int16_t ntcNominalTempCentiC;
   /** Maximum ADC count for the configured ADC resolution. */
   uint16_t adcMaxCount;
-  /** Divider orientation used by the real PT50 wiring. */
-  DividerOrientation pt50DividerOrientation;
-  /** Offset applied after raw PT50 conversion, in centi-Celsius. */
-  int16_t pt50OffsetCentiC;
+  /** Divider orientation used by the real thermistor wiring. */
+  DividerOrientation ntcDividerOrientation;
+  /** Offset applied after raw thermistor conversion, in centi-Celsius. */
+  int16_t ntcOffsetCentiC;
   /** Scale factor applied after offset, in parts per million. */
-  int32_t pt50ScalePpm;
-  /** Lowest plausible converted PT50 temperature, in Celsius. */
-  int16_t pt50MinValidTempC;
-  /** Highest plausible converted PT50 temperature, in Celsius. */
-  int16_t pt50MaxValidTempC;
+  int32_t ntcScalePpm;
+  /** Lowest plausible converted primary temperature, in Celsius. */
+  int16_t ntcMinValidTempC;
+  /** Highest plausible converted primary temperature, in Celsius. */
+  int16_t ntcMaxValidTempC;
   /** Secondary temp/RH sensor temperature offset, in centi-Celsius. */
   int16_t tempRhTempOffsetCentiC;
   /** Secondary temp/RH sensor humidity offset, in centi-percent RH. */
@@ -167,13 +169,14 @@ constexpr SafetyConfig SAFETY = {
     30U,
 };
 
-/** Default PT50 conversion and calibration constants. */
+/** Default primary thermistor conversion and calibration constants. */
 constexpr CalibrationConfig CALIBRATION = {
-    100000,
-    50000,
-    3850,
+    100000000,
+    100000000,
+    3950,
+    2500,
     1023U,
-    DividerOrientation::FixedHighPt50Low,
+    DividerOrientation::FixedHighNtcLow,
     0,
     1000000,
     -20,

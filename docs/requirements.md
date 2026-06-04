@@ -31,19 +31,19 @@ Status: draft baseline from discovery conversation. Requirement IDs are stable a
 ## Safety Requirements
 
 - REQ-SAFE-001: The maximum user/program setpoint shall be 75 C.
-- REQ-SAFE-002: The heater shall be forced OFF when PT50 temperature is greater than 75 C.
-- REQ-SAFE-003: A hard over-temperature fault shall occur when PT50 temperature is at or above 80 C.
+- REQ-SAFE-002: The heater shall be forced OFF when the primary thermistor temperature is greater than 75 C.
+- REQ-SAFE-003: A hard over-temperature fault shall occur when the primary thermistor temperature is at or above 80 C.
 - REQ-SAFE-004: The heater shall never be commanded ON unless the fan is commanded ON.
-- REQ-SAFE-005: PT50 missing, invalid, or out-of-range condition shall trigger a hard fault.
+- REQ-SAFE-005: Primary thermistor missing, invalid, or out-of-range condition shall trigger a hard fault.
 - REQ-SAFE-006: If temperature does not rise by at least 2 C within 5 min of accumulated heater ON command time, the controller shall trigger a hard fault.
-- REQ-SAFE-007: If PT50 temperature rises by 3 C over 5 min while heater command is OFF, measured from the end of a 2 min post-heater-off grace period, the controller shall trigger a suspected-heater-stuck-ON hard fault.
+- REQ-SAFE-007: If primary thermistor temperature rises by 3 C over 5 min while heater command is OFF, measured from the end of a 2 min post-heater-off grace period, the controller shall trigger a suspected-heater-stuck-ON hard fault.
 - REQ-SAFE-008: A pushbutton active continuously for 30 s shall trigger a hard fault.
 - REQ-SAFE-009: During a hard fault, heater and fan shall be commanded OFF immediately.
 - REQ-SAFE-010: A hard fault shall require user acknowledgement before another run can start.
 - REQ-SAFE-011: Watchdog reset during an active run shall be treated as a hard fault/non-auto-resume condition.
 - REQ-SAFE-012: Manual mode shall not bypass safety checks or limits.
 - REQ-SAFE-013: Startup shall initialize outputs OFF before allowing any run.
-- REQ-SAFE-014: Startup self-checks shall include PT50 plausibility, secondary temp/RH sensor availability, EEPROM config validation/defaulting, input stuck detection where feasible, interrupted-run detection, and commanded output-safe-state verification.
+- REQ-SAFE-014: Startup self-checks shall include primary thermistor plausibility, secondary temp/RH sensor availability, EEPROM config validation/defaulting, input stuck detection where feasible, interrupted-run detection, and commanded output-safe-state verification.
 - REQ-SAFE-015: Warnings shall be shown/logged but shall not require acknowledgement and shall not block operation unless later promoted to hard faults.
 - REQ-SAFE-016: The firmware shall define stable fault and warning codes for UI, logs, tests, and documentation.
 
@@ -52,7 +52,7 @@ Product-minded recommendation: add independent hardware thermal protection in th
 ## Hardware Requirements
 
 - REQ-HW-001: The initial target board shall be Arduino Mega2560.
-- REQ-HW-002: PT50 shall be the primary control temperature sensor.
+- REQ-HW-002: The primary control temperature sensor shall be an NTC thermistor with configurable nominal resistance and Beta coefficient.
 - REQ-HW-003: A DHT22/AM2302-class sensor shall provide secondary temperature/RH telemetry when available.
 - REQ-HW-004: Heater and fan shall be controlled through relay outputs.
 - REQ-HW-005: Relay polarity shall be configurable.

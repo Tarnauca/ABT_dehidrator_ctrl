@@ -12,9 +12,9 @@ namespace dehydrator {
 enum class FaultCode {
   /** No hard fault is active. */
   None,
-  /** PT50 is missing, invalid, or outside configured plausible range. */
-  Pt50Invalid,
-  /** PT50 temperature reached the hard over-temperature threshold. */
+  /** Primary thermistor is missing, invalid, or outside configured plausible range. */
+  NtcInvalid,
+  /** Primary thermistor temperature reached the hard over-temperature threshold. */
   OverTemperature,
   /** Temperature did not rise enough while heater was commanded ON. */
   TemperatureNotRising,
@@ -30,10 +30,10 @@ enum class FaultCode {
  * @brief Inputs needed for one fault-detection update.
  */
 struct FaultDetectorInput {
-  /** True when the primary PT50 measurement is valid and present. */
-  bool pt50Valid = false;
-  /** Primary PT50 temperature in integer Celsius. */
-  int16_t pt50TempC = 0;
+  /** True when the primary thermistor measurement is valid and present. */
+  bool ntcValid = false;
+  /** Primary thermistor temperature in integer Celsius. */
+  int16_t ntcTempC = 0;
   /** Logical heater command after control policy but before relay polarity. */
   bool heaterCommandOn = false;
   /** True while the encoder pushbutton is debounced active. */
@@ -87,7 +87,7 @@ class FaultDetector {
   /**
    * @brief Updates fault detection using one scheduler tick of input data.
    *
-   * PT50 validity and hard over-temperature are checked immediately.
+   * Primary thermistor validity and hard over-temperature are checked immediately.
    * Temperature-not-rising accumulates heater ON command time. Suspected
    * heater-stuck-ON monitoring starts only after the configured heater-OFF
    * grace time.
@@ -107,12 +107,12 @@ class FaultDetector {
       return result();
     }
 
-    if (!isPt50Usable(config, input)) {
-      latch(FaultCode::Pt50Invalid);
+    if (!isNtcUsable(config, input)) {
+      latch(FaultCode::NtcInvalid);
       return result();
     }
 
-    if (input.pt50TempC >= config.hardFaultTempC) {
+    if (input.ntcTempC >= config.hardFaultTempC) {
       latch(FaultCode::OverTemperature);
       return result();
     }
@@ -132,10 +132,10 @@ class FaultDetector {
   }
 
  private:
-  static bool isPt50Usable(const config::SafetyConfig& config,
+  static bool isNtcUsable(const config::SafetyConfig& config,
                            const FaultDetectorInput& input) {
-    return input.pt50Valid && input.pt50TempC >= config.pt50MinValidTempC &&
-           input.pt50TempC <= config.pt50MaxValidTempC;
+    return input.ntcValid && input.ntcTempC >= config.ntcMinValidTempC &&
+           input.ntcTempC <= config.ntcMaxValidTempC;
   }
 
   void updateButton(const config::SafetyConfig& config,
@@ -159,15 +159,15 @@ class FaultDetector {
 
     if (!noRiseTracking_) {
       noRiseTracking_ = true;
-      noRiseBaselineTempC_ = input.pt50TempC;
+      noRiseBaselineTempC_ = input.ntcTempC;
       noRiseAccumulatedSeconds_ = 0;
     }
 
     noRiseAccumulatedSeconds_ =
         saturatingAdd(noRiseAccumulatedSeconds_, input.deltaSeconds);
 
-    if (input.pt50TempC >= noRiseBaselineTempC_ + config.noRiseMinIncreaseC) {
-      noRiseBaselineTempC_ = input.pt50TempC;
+    if (input.ntcTempC >= noRiseBaselineTempC_ + config.noRiseMinIncreaseC) {
+      noRiseBaselineTempC_ = input.ntcTempC;
       noRiseAccumulatedSeconds_ = 0;
       return;
     }
@@ -199,21 +199,21 @@ class FaultDetector {
     if (!stuckMonitoring_) {
       stuckMonitoring_ = true;
       stuckMonitorSeconds_ = 0;
-      stuckBaselineTempC_ = input.pt50TempC;
+      stuckBaselineTempC_ = input.ntcTempC;
       return;
     }
 
     stuckMonitorSeconds_ =
         saturatingAdd(stuckMonitorSeconds_, input.deltaSeconds);
 
-    if (input.pt50TempC >= stuckBaselineTempC_ + config.stuckHeaterRiseC &&
+    if (input.ntcTempC >= stuckBaselineTempC_ + config.stuckHeaterRiseC &&
         stuckMonitorSeconds_ <= config.stuckHeaterWindowSeconds) {
       latch(FaultCode::HeaterStuckOnSuspected);
       return;
     }
 
     if (stuckMonitorSeconds_ >= config.stuckHeaterWindowSeconds) {
-      stuckBaselineTempC_ = input.pt50TempC;
+      stuckBaselineTempC_ = input.ntcTempC;
       stuckMonitorSeconds_ = 0;
     }
   }

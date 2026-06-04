@@ -14,10 +14,10 @@ namespace dehydrator {
 struct LcdStatusSnapshot {
   /** Romanian state label, for example `INACTIV` or `RULARE`. */
   const char* stateLabel;
-  /** PT50 temperature in Celsius. Ignored when `pt50Valid` is false. */
-  int16_t pt50TempC;
-  /** Whether PT50 temperature is available for display. */
-  bool pt50Valid;
+  /** Primary thermistor temperature in Celsius. Ignored when `ntcValid` is false. */
+  int16_t ntcTempC;
+  /** Whether primary thermistor temperature is available for display. */
+  bool ntcValid;
   /** Relative humidity in percent. Ignored when `rhValid` is false. */
   uint8_t rhPercent;
   /** Whether RH is available for display. */
@@ -104,9 +104,9 @@ class LcdStatusView {
                                           const LcdStatusSnapshot& snapshot) {
     char value[16] = {};
     writeToken(line, "T:", 0U);
-    if (snapshot.pt50Valid) {
+    if (snapshot.ntcValid) {
       snprintf(value, sizeof(value), "%d\xDF""C",
-               static_cast<int>(snapshot.pt50TempC));
+               static_cast<int>(snapshot.ntcTempC));
       writeToken(line, value, 2U);
     } else {
       writeToken(line, "--\xDF""C", 2U);

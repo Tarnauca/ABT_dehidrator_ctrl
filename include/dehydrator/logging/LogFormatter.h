@@ -47,73 +47,73 @@ class LogFormatter {
   }
 
   /**
-   * @brief Formats the periodic bring-up state record with PT50 fields.
+   * @brief Formats the periodic bring-up state record with primary thermistor fields.
    *
    * @param buffer Destination character buffer.
    * @param bufferSize Size of `buffer` in bytes.
    * @param uptimeMs Current firmware uptime in milliseconds.
    * @param ledOn Whether the built-in LED is currently on.
-   * @param pt50Valid Whether the PT50 reading is valid.
-   * @param pt50TempC Latest PT50 temperature in Celsius.
-   * @param pt50AdcCount Latest raw PT50 ADC count.
+   * @param ntcValid Whether the primary thermistor reading is valid.
+   * @param ntcTempC Latest primary thermistor temperature in Celsius.
+   * @param ntcAdcCount Latest raw primary thermistor ADC count.
    * @return true if the full line fit in the destination buffer.
    */
   static bool formatBringupState(char* buffer, size_t bufferSize,
                                  uint32_t uptimeMs, bool ledOn,
-                                 bool pt50Valid, int16_t pt50TempC,
-                                 uint16_t pt50AdcCount, bool tempRhValid,
+                                 bool ntcValid, int16_t ntcTempC,
+                                 uint16_t ntcAdcCount, bool tempRhValid,
                                  int16_t tempRhTempC, uint8_t rhPercent,
                                  const char* runStateToken = nullptr,
                                  const char* presetToken = nullptr,
                                  bool heaterOn = false, bool fanOn = false) {
     const char* stateToken = safeToken(runStateToken);
     const char* activePreset = safeToken(presetToken);
-    if (!pt50Valid && !tempRhValid) {
+    if (!ntcValid && !tempRhValid) {
       return format(buffer, bufferSize,
-                    "STATE app=bringup uptime_ms=%lu led=%s run=%s preset=%s h=%s f=%s pt50=null adc=%u env_t=null rh=null",
+                    "STATE app=bringup uptime_ms=%lu led=%s run=%s preset=%s h=%s f=%s ntc=null adc=%u env_t=null rh=null",
                     static_cast<unsigned long>(uptimeMs),
                     ledOn ? "on" : "off",
                     stateToken,
                     activePreset,
                     heaterOn ? "on" : "off",
                     fanOn ? "on" : "off",
-                    static_cast<unsigned int>(pt50AdcCount));
+                    static_cast<unsigned int>(ntcAdcCount));
     }
 
-    if (!pt50Valid) {
+    if (!ntcValid) {
       return format(buffer, bufferSize,
-                    "STATE app=bringup uptime_ms=%lu led=%s run=%s preset=%s h=%s f=%s pt50=null adc=%u env_t=%d rh=%u",
+                    "STATE app=bringup uptime_ms=%lu led=%s run=%s preset=%s h=%s f=%s ntc=null adc=%u env_t=%d rh=%u",
                     static_cast<unsigned long>(uptimeMs), ledOn ? "on" : "off",
                     stateToken,
                     activePreset,
                     heaterOn ? "on" : "off",
                     fanOn ? "on" : "off",
-                    static_cast<unsigned int>(pt50AdcCount),
+                    static_cast<unsigned int>(ntcAdcCount),
                     tempRhValid ? static_cast<int>(tempRhTempC) : 0,
                     tempRhValid ? static_cast<unsigned int>(rhPercent) : 0U);
     }
 
     if (!tempRhValid) {
       return format(buffer, bufferSize,
-                    "STATE app=bringup uptime_ms=%lu led=%s run=%s preset=%s h=%s f=%s pt50=%d adc=%u env_t=null rh=null",
+                    "STATE app=bringup uptime_ms=%lu led=%s run=%s preset=%s h=%s f=%s ntc=%d adc=%u env_t=null rh=null",
                     static_cast<unsigned long>(uptimeMs), ledOn ? "on" : "off",
                     stateToken,
                     activePreset,
                     heaterOn ? "on" : "off",
                     fanOn ? "on" : "off",
-                    static_cast<int>(pt50TempC),
-                    static_cast<unsigned int>(pt50AdcCount));
+                    static_cast<int>(ntcTempC),
+                    static_cast<unsigned int>(ntcAdcCount));
     }
 
     return format(buffer, bufferSize,
-                  "STATE app=bringup uptime_ms=%lu led=%s run=%s preset=%s h=%s f=%s pt50=%d adc=%u env_t=%d rh=%u",
+                  "STATE app=bringup uptime_ms=%lu led=%s run=%s preset=%s h=%s f=%s ntc=%d adc=%u env_t=%d rh=%u",
                   static_cast<unsigned long>(uptimeMs), ledOn ? "on" : "off",
                   stateToken,
                   activePreset,
                   heaterOn ? "on" : "off",
                   fanOn ? "on" : "off",
-                  static_cast<int>(pt50TempC),
-                  static_cast<unsigned int>(pt50AdcCount),
+                  static_cast<int>(ntcTempC),
+                  static_cast<unsigned int>(ntcAdcCount),
                   static_cast<int>(tempRhTempC),
                   static_cast<unsigned int>(rhPercent));
   }

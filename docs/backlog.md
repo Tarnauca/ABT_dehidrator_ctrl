@@ -50,9 +50,9 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 
 ## Phase 6: Hardware Adapters
 
-- [x] Add PT50 conversion model and interface-based reader.
-- [x] Add concrete Arduino PT50 analog adapter for bring-up.
-- [ ] Confirm PT50 divider wiring and calibration on real hardware.
+- [x] Add primary thermistor conversion model and interface-based reader.
+- [x] Add concrete Arduino thermistor analog adapter for bring-up.
+- [ ] Confirm NTC divider wiring and calibration on real hardware.
 - [x] Add interface-based secondary temp/RH reader.
 - [x] Add concrete Arduino DHT22/AM2302 sensor adapter for bring-up.
 - [ ] Confirm real DHT22/AM2302 module compatibility and bench readings.

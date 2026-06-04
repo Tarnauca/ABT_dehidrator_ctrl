@@ -54,15 +54,15 @@ class PresetRunController {
   }
 
   /**
-   * @brief Advances the active run using the latest PT50 reading.
+   * @brief Advances the active run using the latest primary thermistor reading.
    *
    * @param deltaSeconds Scheduler-provided elapsed time.
-   * @param pt50Valid Whether the PT50 reading may be used for control.
-   * @param pt50TempC Latest PT50 temperature in Celsius.
+   * @param ntcValid Whether the primary thermistor reading may be used for control.
+   * @param ntcTempC Latest primary thermistor temperature in Celsius.
    */
-  void update(uint16_t deltaSeconds, bool pt50Valid, int16_t pt50TempC) {
+  void update(uint16_t deltaSeconds, bool ntcValid, int16_t ntcTempC) {
     stateMachine_.update(deltaSeconds);
-    updateCommand(deltaSeconds, pt50Valid, pt50TempC);
+    updateCommand(deltaSeconds, ntcValid, ntcTempC);
   }
 
   /**
@@ -196,7 +196,7 @@ class PresetRunController {
     temperatureControl_.reset(false);
   }
 
-  void updateCommand(uint16_t deltaSeconds, bool pt50Valid, int16_t pt50TempC) {
+  void updateCommand(uint16_t deltaSeconds, bool ntcValid, int16_t ntcTempC) {
     const RunStateSnapshot snapshot = stateMachine_.snapshot();
     const RunOutputPolicy runPolicy = stateMachine_.outputPolicy();
 
@@ -217,13 +217,13 @@ class PresetRunController {
         ProfileEngine::evaluate(activePreset_->profile, snapshot.activeElapsedSeconds);
     lastTargetTempC_ = target.targetTempC;
 
-    if (!pt50Valid) {
+    if (!ntcValid) {
       temperatureControl_.reset(false);
       return;
     }
 
     TemperatureControlInput controlInput;
-    controlInput.currentTempC = pt50TempC;
+    controlInput.currentTempC = ntcTempC;
     controlInput.targetTempC = target.targetTempC;
     controlInput.runPolicy = runPolicy;
     controlInput.deltaSeconds = deltaSeconds;
