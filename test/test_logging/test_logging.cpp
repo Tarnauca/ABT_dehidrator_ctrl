@@ -46,22 +46,39 @@ void test_format_bringup_state_includes_valid_pt50_fields() {
   char line[96] = {};
 
   const bool ok = LogFormatter::formatBringupState(line, sizeof(line), 5000U,
-                                                   true, true, 57, 512U);
+                                                   true, true, 57, 512U, true,
+                                                   24, 43U);
 
   TEST_ASSERT_TRUE(ok);
   TEST_ASSERT_EQUAL_STRING(
-      "STATE app=bringup uptime_ms=5000 led=on pt50=57 adc=512", line);
+      "STATE app=bringup uptime_ms=5000 led=on pt50=57 adc=512 aht_t=24 rh=43",
+      line);
 }
 
 void test_format_bringup_state_marks_invalid_pt50_as_null() {
   char line[96] = {};
 
   const bool ok = LogFormatter::formatBringupState(line, sizeof(line), 5000U,
-                                                   false, false, 0, 0U);
+                                                   false, false, 0, 0U, false,
+                                                   0, 0U);
 
   TEST_ASSERT_TRUE(ok);
   TEST_ASSERT_EQUAL_STRING(
-      "STATE app=bringup uptime_ms=5000 led=off pt50=null adc=0", line);
+      "STATE app=bringup uptime_ms=5000 led=off pt50=null adc=0 aht_t=null rh=null",
+      line);
+}
+
+void test_format_bringup_state_marks_invalid_aht_as_null() {
+  char line[96] = {};
+
+  const bool ok = LogFormatter::formatBringupState(line, sizeof(line), 5000U,
+                                                   true, true, 57, 512U, false,
+                                                   0, 0U);
+
+  TEST_ASSERT_TRUE(ok);
+  TEST_ASSERT_EQUAL_STRING(
+      "STATE app=bringup uptime_ms=5000 led=on pt50=57 adc=512 aht_t=null rh=null",
+      line);
 }
 
 void test_formatter_reports_truncated_line() {
@@ -128,6 +145,7 @@ void setup() {
   RUN_TEST(test_format_scheduler_state_creates_parseable_line);
   RUN_TEST(test_format_bringup_state_includes_valid_pt50_fields);
   RUN_TEST(test_format_bringup_state_marks_invalid_pt50_as_null);
+  RUN_TEST(test_format_bringup_state_marks_invalid_aht_as_null);
   RUN_TEST(test_formatter_reports_truncated_line);
   RUN_TEST(test_formatter_uses_stable_null_token);
   RUN_TEST(test_dispatcher_fans_out_to_all_sinks);

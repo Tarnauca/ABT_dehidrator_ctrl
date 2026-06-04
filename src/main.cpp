@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Adafruit_AHTX0.h>
 #include <Bounce2.h>
 #include <Encoder.h>
 #include <LiquidCrystal_I2C.h>
@@ -8,10 +9,12 @@
 #include "dehydrator/config/RuntimeConfig.h"
 #include "dehydrator/domain/Pt50SensorModel.h"
 #include "dehydrator/hardware/ArduinoAnalogInput.h"
+#include "dehydrator/hardware/ArduinoAhtSensorDriver.h"
 #include "dehydrator/interfaces/CharacterDisplay.h"
 #include "dehydrator/logging/LogDispatcher.h"
 #include "dehydrator/logging/LogFormatter.h"
 #include "dehydrator/logging/LogSink.h"
+#include "dehydrator/sensors/AhtReader.h"
 #include "dehydrator/sensors/Pt50Reader.h"
 #include "dehydrator/ui/LcdStatusView.h"
 
@@ -24,6 +27,8 @@ dehydrator::PeriodicTask stateLogTask(
     dehydrator::config::SCHEDULER.stateLogIntervalMs);
 dehydrator::PeriodicTask sensorSampleTask(
     dehydrator::config::SCHEDULER.sensorSampleIntervalMs);
+dehydrator::PeriodicTask ahtSampleTask(
+    dehydrator::config::SCHEDULER.ahtSampleIntervalMs);
 dehydrator::PeriodicTask lcdRefreshTask(
     dehydrator::config::SCHEDULER.lcdRefreshIntervalMs);
 dehydrator::PeriodicTask inputScanTask(
@@ -35,6 +40,7 @@ long lastEncoderPosition = 0L;
 uint32_t buttonPressedAtMs = 0UL;
 bool buttonPressed = false;
 dehydrator::Pt50Reading latestPt50;
+dehydrator::AhtReading latestAht;
 
 LiquidCrystal_I2C lcd(dehydrator::config::HARDWARE.lcdI2cAddress,
                       dehydrator::LcdStatusView::COLUMNS,
@@ -96,9 +102,11 @@ class ArduinoLcdCharacterDisplay final : public dehydrator::CharacterDisplay {
 ArduinoLcdCharacterDisplay lcdDisplay(lcd);
 dehydrator::LcdStatusView statusView(lcdDisplay);
 dehydrator::ArduinoAnalogInput analogInput;
+dehydrator::ArduinoAhtSensorDriver ahtDriver;
 dehydrator::Pt50Reader pt50Reader(analogInput,
                                   dehydrator::config::HARDWARE.pins.pt50Analog,
                                   dehydrator::config::CALIBRATION);
+dehydrator::AhtReader ahtReader(ahtDriver, dehydrator::config::CALIBRATION);
 
 /**
  * @brief Arduino `Stream` adapter for the project log sink interface.
@@ -208,6 +216,19 @@ void updateSensorTask(uint32_t nowMs) {
 }
 
 /**
+ * @brief Cooperative AHT temperature/RH sampling task.
+ *
+ * @param nowMs Current firmware uptime in milliseconds.
+ */
+void updateAhtTask(uint32_t nowMs) {
+  if (!ahtSampleTask.shouldRun(nowMs)) {
+    return;
+  }
+
+  latestAht = ahtReader.read();
+}
+
+/**
  * @brief Cooperative LCD status refresh task.
  *
  * @param nowMs Current firmware uptime in milliseconds.
@@ -222,8 +243,8 @@ void updateLcdTask(uint32_t nowMs) {
   snapshot.stateLabel = "INACTIV";
   snapshot.pt50TempC = latestPt50.tempC;
   snapshot.pt50Valid = latestPt50.valid;
-  snapshot.rhPercent = 0U;
-  snapshot.rhValid = false;
+  snapshot.rhPercent = latestAht.rhPercent;
+  snapshot.rhValid = latestAht.valid;
   snapshot.heaterOn = false;
   snapshot.fanOn = false;
   snapshot.heartbeatOn = heartbeatOn;
@@ -274,7 +295,8 @@ void updateStateLogTask(uint32_t nowMs) {
   char line[dehydrator::config::LOGGING.lineSize] = {};
   if (dehydrator::LogFormatter::formatBringupState(
           line, sizeof(line), nowMs, ledOn, latestPt50.valid,
-          latestPt50.tempC, latestPt50.adcCount)) {
+          latestPt50.tempC, latestPt50.adcCount, latestAht.valid,
+          latestAht.tempC, latestAht.rhPercent)) {
     writeLogLine(line);
     return;
   }
@@ -312,6 +334,12 @@ void setup() {
   logger.addSink(usbLogSink);
   logger.addSink(telemetryLogSink);
 
+  if (ahtDriver.begin()) {
+    logEvent("sensor", "aht_ready");
+  } else {
+    logEvent("sensor", "aht_missing");
+  }
+
   lcd.init();
   lcd.backlight();
   lcd.clear();
@@ -326,6 +354,7 @@ void loop() {
 
   updateLedTask(nowMs);
   updateSensorTask(nowMs);
+  updateAhtTask(nowMs);
   updateStateLogTask(nowMs);
   updateInputTask(nowMs);
   updateLcdTask(nowMs);

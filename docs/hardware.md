@@ -46,7 +46,15 @@ Product-minded recommendation: consider a precision reference, calibration proce
 
 The AHT-like sensor provides secondary temperature and RH. Its failure is a warning only and must not stop drying unless a future feature depends on RH.
 
-The firmware contains an interface-based AHT reader that accepts centi-Celsius and centi-percent RH samples from a future concrete driver, applies optional calibration offsets, and rejects implausible temperature/RH values. A concrete Arduino AHT library adapter is still pending until the exact device/library is confirmed.
+The firmware contains an interface-based AHT reader that accepts centi-Celsius
+and centi-percent RH samples, applies optional calibration offsets, and rejects
+implausible temperature/RH values.
+
+The current concrete Arduino adapter uses the proven `Adafruit_AHTX0` library
+on the shared I2C bus and converts its floating-point readings into the fixed
+centi-units used by the project. If the sensor is missing or incompatible,
+initialization fails, RH stays unavailable on the LCD, and the serial log emits
+`EVENT type=sensor detail=aht_missing`.
 
 ## Output Notes
 
@@ -74,6 +82,8 @@ H:OFF     F:OFF
 
 The heartbeat is a custom LCD character in the bottom-right cell. The renderer
 redraws fixed-width lines so shorter values do not leave stale characters.
+When the AHT sensor is present and initializes correctly, `RH:--%` is replaced
+by the live humidity percentage.
 
 Encoder rotation is read through the proven `Encoder` library and the
 pushbutton is debounced through `Bounce2`. In this slice, input events are only

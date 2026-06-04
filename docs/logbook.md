@@ -1105,3 +1105,61 @@ proceed with the next step.
 - `docs/backlog.md`
 - `docs/hardware.md`
 - `docs/test-plan.md`
+
+### 2026-06-04 - Concrete AHT Bring-Up
+
+**Context**
+PT50 calibration is postponed because the required hardware is not yet
+available. The next useful hardware step is to stop treating AHT as an abstract
+interface only and wire a real Arduino library into the existing LCD and log
+pipeline.
+
+**Trigger**
+The user said calibration can wait and asked to proceed with AHT.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Created `feature/aht-concrete-bringup`.
+- Chose `Adafruit_AHTX0` as the concrete Arduino AHT20/AHT21 bring-up library.
+- Added an Arduino AHT sensor driver that implements the project
+  `AhtSensorDriver` interface.
+- Added a 2-second AHT sample task beside the existing 1-second PT50 task.
+- Wired RH into the LCD status snapshot.
+- Extended the periodic bring-up state log to include AHT temperature and RH or
+  stable `null` tokens when unavailable.
+- Added startup sensor events for `aht_ready` and `aht_missing`.
+- Updated backlog, hardware notes, test plan, and logbook.
+
+**Decisions**
+- Reuse the existing `AhtReader` abstraction instead of mixing Adafruit library
+  calls directly into the UI/logging code.
+- Treat missing AHT hardware as a non-fatal bring-up condition: the firmware
+  logs `aht_missing` and keeps RH unavailable instead of faulting.
+- Sample AHT every 2 seconds, matching the previously agreed slower cadence for
+  the humidity sensor.
+
+**Commits / Branches**
+- Branch: `feature/aht-concrete-bringup`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 139 tests passed.
+- `platformio run -e megaatmega2560`: success.
+- `platformio run -e megaatmega2560 -t upload`: success.
+- Short serial monitor capture on the current bench showed
+  `EVENT type=sensor detail=aht_missing` followed by periodic
+  `STATE app=bringup ... aht_t=null rh=null`, which matches the expected
+  behavior when no AHT module is attached.
+- Source scan found no project use of Arduino `String`, `new`, `delete`,
+  `malloc`, or `free`.
+
+**Links**
+- `include/dehydrator/hardware/ArduinoAhtSensorDriver.h`
+- `include/dehydrator/interfaces/AhtSensorDriver.h`
+- `include/dehydrator/sensors/AhtReader.h`
+- `src/main.cpp`
+- `platformio.ini`

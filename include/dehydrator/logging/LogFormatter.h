@@ -61,20 +61,40 @@ class LogFormatter {
   static bool formatBringupState(char* buffer, size_t bufferSize,
                                  uint32_t uptimeMs, bool ledOn,
                                  bool pt50Valid, int16_t pt50TempC,
-                                 uint16_t pt50AdcCount) {
-    if (!pt50Valid) {
+                                 uint16_t pt50AdcCount, bool ahtValid,
+                                 int16_t ahtTempC, uint8_t rhPercent) {
+    if (!pt50Valid && !ahtValid) {
       return format(buffer, bufferSize,
-                    "STATE app=bringup uptime_ms=%lu led=%s pt50=null adc=%u",
+                    "STATE app=bringup uptime_ms=%lu led=%s pt50=null adc=%u aht_t=null rh=null",
                     static_cast<unsigned long>(uptimeMs),
                     ledOn ? "on" : "off",
                     static_cast<unsigned int>(pt50AdcCount));
     }
 
+    if (!pt50Valid) {
+      return format(buffer, bufferSize,
+                    "STATE app=bringup uptime_ms=%lu led=%s pt50=null adc=%u aht_t=%d rh=%u",
+                    static_cast<unsigned long>(uptimeMs), ledOn ? "on" : "off",
+                    static_cast<unsigned int>(pt50AdcCount),
+                    ahtValid ? static_cast<int>(ahtTempC) : 0,
+                    ahtValid ? static_cast<unsigned int>(rhPercent) : 0U);
+    }
+
+    if (!ahtValid) {
+      return format(buffer, bufferSize,
+                    "STATE app=bringup uptime_ms=%lu led=%s pt50=%d adc=%u aht_t=null rh=null",
+                    static_cast<unsigned long>(uptimeMs), ledOn ? "on" : "off",
+                    static_cast<int>(pt50TempC),
+                    static_cast<unsigned int>(pt50AdcCount));
+    }
+
     return format(buffer, bufferSize,
-                  "STATE app=bringup uptime_ms=%lu led=%s pt50=%d adc=%u",
+                  "STATE app=bringup uptime_ms=%lu led=%s pt50=%d adc=%u aht_t=%d rh=%u",
                   static_cast<unsigned long>(uptimeMs), ledOn ? "on" : "off",
                   static_cast<int>(pt50TempC),
-                  static_cast<unsigned int>(pt50AdcCount));
+                  static_cast<unsigned int>(pt50AdcCount),
+                  static_cast<int>(ahtTempC),
+                  static_cast<unsigned int>(rhPercent));
   }
 
  private:
