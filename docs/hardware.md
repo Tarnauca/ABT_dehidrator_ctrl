@@ -36,7 +36,11 @@ The firmware contains a ratiometric PT50 conversion model with configurable divi
 - default divider orientation: fixed resistor high side, PT50 low side,
 - plausible converted PT50 range: -20 C..120 C.
 
-The current branch adds a project-owned `AnalogInput` interface and a PT50 reader that can consume raw ADC counts through that interface. A concrete Arduino `analogRead()` adapter is still pending until wiring is confirmed.
+The firmware contains a project-owned `AnalogInput` interface, a PT50 reader
+that consumes raw ADC counts through that interface, and a concrete Arduino
+`analogRead()` adapter for hardware bring-up. The default analog channel is A0
+placeholder. Real divider wiring and calibration still need bench confirmation
+before the PT50 value is used for heater decisions.
 
 Product-minded recommendation: consider a precision reference, calibration procedure, ratiometric review, or RTD interface IC for improved measurement accuracy.
 

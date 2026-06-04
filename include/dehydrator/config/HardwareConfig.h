@@ -77,7 +77,7 @@ constexpr HardwareConfig HARDWARE = {
         0U,    // pt50Analog: analog channel placeholder
         255U,  // heaterRelay: TBD
         255U,  // fanRelay: TBD
-        LED_BUILTIN,    // lcdBacklight: temporary bench pin
+        7U,    // lcdBacklight: temporary bench pin
         8U,    // buzzer: temporary bench pin
         2U,    // encoderA: temporary interrupt-capable bench pin
         3U,    // encoderB: temporary interrupt-capable bench pin
