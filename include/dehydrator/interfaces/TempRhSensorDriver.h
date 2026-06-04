@@ -5,9 +5,9 @@
 namespace dehydrator {
 
 /**
- * @brief Raw AHT-like temperature/RH sample from a hardware driver.
+ * @brief Raw temperature/RH sample from a secondary environment sensor driver.
  */
-struct AhtRawSample {
+struct TempRhRawSample {
   /** Temperature reported by the driver, in centi-Celsius. */
   int16_t tempCentiC = 0;
   /** Relative humidity reported by the driver, in centi-percent RH. */
@@ -17,25 +17,25 @@ struct AhtRawSample {
 };
 
 /**
- * @brief Interface for AHT-like temperature/RH hardware drivers.
+ * @brief Interface for secondary temperature/RH hardware drivers.
  *
- * Concrete implementations may wrap an AHT21/AHT20 Arduino library later. The
- * application consumes this interface so secondary telemetry handling can be
- * tested without I2C hardware or a chosen library dependency.
+ * Concrete implementations may wrap a DHT22/AM2302 library or a future sensor
+ * family. Higher-level telemetry code consumes this interface so tests do not
+ * depend on a chosen bus or vendor library.
  */
-class AhtSensorDriver {
+class TempRhSensorDriver {
  public:
   /**
    * @brief Virtual destructor for safe polymorphic use.
    */
-  virtual ~AhtSensorDriver() = default;
+  virtual ~TempRhSensorDriver() = default;
 
   /**
    * @brief Reads one temperature/RH sample.
    *
    * @return Raw sample with validity flag.
    */
-  virtual AhtRawSample readSample() = 0;
+  virtual TempRhRawSample readSample() = 0;
 };
 
 }  // namespace dehydrator

@@ -53,9 +53,9 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 - [x] Add PT50 conversion model and interface-based reader.
 - [x] Add concrete Arduino PT50 analog adapter for bring-up.
 - [ ] Confirm PT50 divider wiring and calibration on real hardware.
-- [x] Add AHT-like interface-based reader.
-- [x] Add concrete Arduino AHT sensor adapter for bring-up.
-- [ ] Confirm real AHT module compatibility and bench readings.
+- [x] Add interface-based secondary temp/RH reader.
+- [x] Add concrete Arduino DHT22/AM2302 sensor adapter for bring-up.
+- [ ] Confirm real DHT22/AM2302 module compatibility and bench readings.
 - [x] Add relay output adapter with configurable polarity.
 - [x] Add buzzer and backlight alarm output adapter.
 - [x] Add LCD and encoder bring-up adapters.

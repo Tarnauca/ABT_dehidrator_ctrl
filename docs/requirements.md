@@ -43,7 +43,7 @@ Status: draft baseline from discovery conversation. Requirement IDs are stable a
 - REQ-SAFE-011: Watchdog reset during an active run shall be treated as a hard fault/non-auto-resume condition.
 - REQ-SAFE-012: Manual mode shall not bypass safety checks or limits.
 - REQ-SAFE-013: Startup shall initialize outputs OFF before allowing any run.
-- REQ-SAFE-014: Startup self-checks shall include PT50 plausibility, AHT availability, EEPROM config validation/defaulting, input stuck detection where feasible, interrupted-run detection, and commanded output-safe-state verification.
+- REQ-SAFE-014: Startup self-checks shall include PT50 plausibility, secondary temp/RH sensor availability, EEPROM config validation/defaulting, input stuck detection where feasible, interrupted-run detection, and commanded output-safe-state verification.
 - REQ-SAFE-015: Warnings shall be shown/logged but shall not require acknowledgement and shall not block operation unless later promoted to hard faults.
 - REQ-SAFE-016: The firmware shall define stable fault and warning codes for UI, logs, tests, and documentation.
 
@@ -53,7 +53,7 @@ Product-minded recommendation: add independent hardware thermal protection in th
 
 - REQ-HW-001: The initial target board shall be Arduino Mega2560.
 - REQ-HW-002: PT50 shall be the primary control temperature sensor.
-- REQ-HW-003: AHT21-like sensor shall provide secondary temperature/RH telemetry when available.
+- REQ-HW-003: A DHT22/AM2302-class sensor shall provide secondary temperature/RH telemetry when available.
 - REQ-HW-004: Heater and fan shall be controlled through relay outputs.
 - REQ-HW-005: Relay polarity shall be configurable.
 - REQ-HW-006: The LCD shall be 4 lines x 20 characters, driven through an I2C-to-parallel interface.
@@ -68,7 +68,7 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-UI-001: LCD user-facing text shall be Romanian.
 - REQ-UI-002: LCD text shall be ASCII-only Romanian by default unless the exact LCD character set is verified.
 - REQ-UI-003: Serial logs, source code, comments, and developer docs shall be English.
-- REQ-UI-004: LCD shall show RH when the AHT sensor is present and functional.
+- REQ-UI-004: LCD shall show RH when the secondary temp/RH sensor is present and functional.
 - REQ-UI-005: A bottom-right heartbeat symbol shall always indicate that the main loop is alive.
 - REQ-UI-006: Finish alarm shall use buzzer and blinking LCD backlight after the 3-minute finish cooldown completes.
 - REQ-UI-007: Fault alarm shall use buzzer, blinking LCD backlight, and a compact Romanian fault message until user acknowledgement.

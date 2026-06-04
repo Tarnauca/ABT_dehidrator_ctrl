@@ -21,7 +21,7 @@ void test_scheduler_sensor_and_lcd_intervals_match_bringup_needs() {
   TEST_ASSERT_EQUAL_UINT32(1000UL,
                            dehydrator::config::SCHEDULER.sensorSampleIntervalMs);
   TEST_ASSERT_EQUAL_UINT32(2000UL,
-                           dehydrator::config::SCHEDULER.ahtSampleIntervalMs);
+                           dehydrator::config::SCHEDULER.tempRhSampleIntervalMs);
   TEST_ASSERT_EQUAL_UINT32(1000UL,
                            dehydrator::config::SCHEDULER.lcdRefreshIntervalMs);
   TEST_ASSERT_EQUAL_UINT32(20UL,
@@ -84,15 +84,15 @@ void test_alarm_output_polarity_defaults_are_explicit() {
       static_cast<int>(dehydrator::config::HARDWARE.buzzerActiveLevel));
 }
 
-void test_aht_calibration_defaults_are_explicit() {
+void test_temp_rh_calibration_defaults_are_explicit() {
   TEST_ASSERT_EQUAL_INT16(0,
-                          dehydrator::config::CALIBRATION.ahtTempOffsetCentiC);
+                          dehydrator::config::CALIBRATION.tempRhTempOffsetCentiC);
   TEST_ASSERT_EQUAL_INT16(
-      0, dehydrator::config::CALIBRATION.ahtRhOffsetCentiPercent);
+      0, dehydrator::config::CALIBRATION.tempRhRhOffsetCentiPercent);
   TEST_ASSERT_EQUAL_INT16(-40,
-                          dehydrator::config::CALIBRATION.ahtMinValidTempC);
+                          dehydrator::config::CALIBRATION.tempRhMinValidTempC);
   TEST_ASSERT_EQUAL_INT16(85,
-                          dehydrator::config::CALIBRATION.ahtMaxValidTempC);
+                          dehydrator::config::CALIBRATION.tempRhMaxValidTempC);
 }
 
 void setup() {
@@ -107,7 +107,7 @@ void setup() {
   RUN_TEST(test_safety_fault_thresholds_match_requirements);
   RUN_TEST(test_pt50_calibration_defaults_are_explicit);
   RUN_TEST(test_alarm_output_polarity_defaults_are_explicit);
-  RUN_TEST(test_aht_calibration_defaults_are_explicit);
+  RUN_TEST(test_temp_rh_calibration_defaults_are_explicit);
   UNITY_END();
 }
 

@@ -12,7 +12,7 @@ Status: draft baseline. Heater/fan pin assignments are TBD until wiring is final
 | Signal | Purpose | Mega2560 Pin | Active Level | Notes |
 | --- | --- | --- | --- | --- |
 | PT50 analog | Primary temperature control sensor | A0 placeholder | N/A | Voltage divider into ADC, supplied from VCC |
-| AHT-like sensor SDA/SCL | Secondary temp/RH telemetry | Mega I2C SDA/SCL | N/A | Warning only if unavailable |
+| DHT22/AM2302 data | Secondary temp/RH telemetry | TBD digital pin | N/A | Single-wire style data pin, warning only if unavailable |
 | Heater relay | Heater control | TBD | Configurable | Mechanical relay, on/off only |
 | Fan relay | Fan control | TBD | Configurable | Mechanical relay, on/off only |
 | LCD I2C | 4x20 display | Mega I2C SDA/SCL | N/A | `LiquidCrystal_I2C`, default address `0x27` |
@@ -44,17 +44,17 @@ before the PT50 value is used for heater decisions.
 
 Product-minded recommendation: consider a precision reference, calibration procedure, ratiometric review, or RTD interface IC for improved measurement accuracy.
 
-The AHT-like sensor provides secondary temperature and RH. Its failure is a warning only and must not stop drying unless a future feature depends on RH.
+The DHT22/AM2302-class sensor provides secondary temperature and RH. Its failure is a warning only and must not stop drying unless a future feature depends on RH.
 
-The firmware contains an interface-based AHT reader that accepts centi-Celsius
+The firmware contains an interface-based secondary temp/RH reader that accepts centi-Celsius
 and centi-percent RH samples, applies optional calibration offsets, and rejects
 implausible temperature/RH values.
 
-The current concrete Arduino adapter uses the proven `Adafruit_AHTX0` library
-on the shared I2C bus and converts its floating-point readings into the fixed
-centi-units used by the project. If the sensor is missing or incompatible,
-initialization fails, RH stays unavailable on the LCD, and the serial log emits
-`EVENT type=sensor detail=aht_missing`.
+The current concrete Arduino adapter uses the proven Adafruit `DHT` library
+with a DHT22-compatible sensor on one digital pin and converts its floating-
+point readings into the fixed centi-units used by the project. If the sensor is
+missing or incompatible, initialization fails, RH stays unavailable on the LCD,
+and the serial log emits `EVENT type=sensor detail=temp_rh_missing`.
 
 ## Output Notes
 
@@ -82,7 +82,7 @@ H:OFF     F:OFF
 
 The heartbeat is a custom LCD character in the bottom-right cell. The renderer
 redraws fixed-width lines so shorter values do not leave stale characters.
-When the AHT sensor is present and initializes correctly, `RH:--%` is replaced
+When the secondary temp/RH sensor is present and initializes correctly, `RH:--%` is replaced
 by the live humidity percentage.
 
 Encoder rotation is read through the proven `Encoder` library and the

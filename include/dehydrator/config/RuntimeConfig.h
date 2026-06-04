@@ -24,8 +24,8 @@ struct SchedulerConfig {
   uint32_t stateLogIntervalMs;
   /** Sensor sampling interval in milliseconds. */
   uint32_t sensorSampleIntervalMs;
-  /** Secondary AHT sampling interval in milliseconds. */
-  uint32_t ahtSampleIntervalMs;
+  /** Secondary temp/RH sensor sampling interval in milliseconds. */
+  uint32_t tempRhSampleIntervalMs;
   /** LCD status refresh interval in milliseconds. */
   uint32_t lcdRefreshIntervalMs;
   /** Encoder/button sampling interval in milliseconds. */
@@ -114,14 +114,14 @@ struct CalibrationConfig {
   int16_t pt50MinValidTempC;
   /** Highest plausible converted PT50 temperature, in Celsius. */
   int16_t pt50MaxValidTempC;
-  /** AHT temperature offset, in centi-Celsius. */
-  int16_t ahtTempOffsetCentiC;
-  /** AHT relative humidity offset, in centi-percent RH. */
-  int16_t ahtRhOffsetCentiPercent;
-  /** Lowest plausible AHT temperature, in Celsius. */
-  int16_t ahtMinValidTempC;
-  /** Highest plausible AHT temperature, in Celsius. */
-  int16_t ahtMaxValidTempC;
+  /** Secondary temp/RH sensor temperature offset, in centi-Celsius. */
+  int16_t tempRhTempOffsetCentiC;
+  /** Secondary temp/RH sensor humidity offset, in centi-percent RH. */
+  int16_t tempRhRhOffsetCentiPercent;
+  /** Lowest plausible secondary sensor temperature, in Celsius. */
+  int16_t tempRhMinValidTempC;
+  /** Highest plausible secondary sensor temperature, in Celsius. */
+  int16_t tempRhMaxValidTempC;
 };
 
 /** Default serial configuration for USB debug and secondary telemetry. */

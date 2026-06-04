@@ -3,14 +3,14 @@
 #include <stdint.h>
 
 #include "dehydrator/config/RuntimeConfig.h"
-#include "dehydrator/interfaces/AhtSensorDriver.h"
+#include "dehydrator/interfaces/TempRhSensorDriver.h"
 
 namespace dehydrator {
 
 /**
- * @brief Calibrated AHT-like temperature/RH reading.
+ * @brief Calibrated secondary temperature/RH reading.
  */
-struct AhtReading {
+struct TempRhReading {
   /** Calibrated integer temperature in Celsius. */
   int16_t tempC = 0;
   /** Calibrated integer relative humidity in percent. */
@@ -20,47 +20,48 @@ struct AhtReading {
 };
 
 /**
- * @brief AHT-like sensor reader for secondary temperature/RH telemetry.
+ * @brief Secondary temperature/RH reader for telemetry and UI display.
  *
- * The AHT sensor is not a safety-control source in the current scope. Invalid
+ * This sensor is not a safety-control source in the current scope. Invalid
  * readings should be handled by higher layers as warnings, not hard faults.
  */
-class AhtReader {
+class TempRhReader {
  public:
   /**
-   * @brief Creates an AHT reader.
+   * @brief Creates a secondary temp/RH reader.
    *
    * @param driver Hardware/library driver interface.
    * @param calibration Calibration and plausible-range configuration.
    */
-  AhtReader(AhtSensorDriver& driver,
-            const config::CalibrationConfig& calibration)
+  TempRhReader(TempRhSensorDriver& driver,
+               const config::CalibrationConfig& calibration)
       : driver_(driver), calibration_(calibration) {}
 
   /**
-   * @brief Reads and calibrates one AHT sample.
+   * @brief Reads and calibrates one secondary temp/RH sample.
    *
-   * @return Calibrated AHT reading with validity flag.
+   * @return Calibrated reading with validity flag.
    */
-  AhtReading read() {
-    const AhtRawSample raw = driver_.readSample();
-    AhtReading reading;
+  TempRhReading read() {
+    const TempRhRawSample raw = driver_.readSample();
+    TempRhReading reading;
 
     if (!raw.valid) {
       return reading;
     }
 
     const int32_t calibratedTempCentiC =
-        static_cast<int32_t>(raw.tempCentiC) + calibration_.ahtTempOffsetCentiC;
+        static_cast<int32_t>(raw.tempCentiC) +
+        calibration_.tempRhTempOffsetCentiC;
     const int32_t calibratedRhCentiPercent =
         static_cast<int32_t>(raw.rhCentiPercent) +
-        calibration_.ahtRhOffsetCentiPercent;
+        calibration_.tempRhRhOffsetCentiPercent;
 
     const int32_t tempC = roundCentiToInteger(calibratedTempCentiC);
     const int32_t rhPercent = roundCentiToInteger(calibratedRhCentiPercent);
 
-    if (tempC < calibration_.ahtMinValidTempC ||
-        tempC > calibration_.ahtMaxValidTempC || rhPercent < 0 ||
+    if (tempC < calibration_.tempRhMinValidTempC ||
+        tempC > calibration_.tempRhMaxValidTempC || rhPercent < 0 ||
         rhPercent > 100) {
       return reading;
     }
@@ -80,7 +81,7 @@ class AhtReader {
     return (centiValue - 50) / 100;
   }
 
-  AhtSensorDriver& driver_;
+  TempRhSensorDriver& driver_;
   const config::CalibrationConfig& calibration_;
 };
 

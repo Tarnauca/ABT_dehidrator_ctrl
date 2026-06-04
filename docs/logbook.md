@@ -152,6 +152,51 @@ After stabilizing menu navigation, the next requested phase was to connect
 - `docs/test-plan.md`
 - `docs/user-ui-ro.md`
 
+### 2026-06-04 - Secondary Sensor Family Switched To DHT22
+
+**Context**
+The repo still reflected an AHT-family secondary sensor in concrete adapter
+code and in the durable documentation, but the hardware direction changed.
+
+**Trigger**
+The user clarified that the combined temperature/humidity sensor is no longer
+from the AHT family and should be treated as an AM2302/DHT22-class device.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Replaced the concrete Arduino adapter from `Adafruit_AHTX0` to Adafruit `DHT`.
+- Renamed the project-owned secondary sensor interface and reader from
+  AHT-specific names to generic temp/RH names.
+- Added a dedicated placeholder data pin for the DHT-style sensor in hardware
+  configuration.
+- Updated active documentation so future work no longer assumes an I2C AHT
+  sensor.
+- Changed boot events from `aht_ready` / `aht_missing` to
+  `temp_rh_ready` / `temp_rh_missing`.
+
+**Decisions**
+- Keep the higher-level abstraction generic (`TempRh*`) so a future sensor
+  family change does not require another architecture rename.
+- Assume the practical target is DHT22/AM2302-compatible behavior on one data
+  pin, despite the user's `AM2332/DHT22` wording.
+
+**Commits / Branches**
+- Branch: pending
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Native reader tests were migrated to the generic temp/RH reader.
+- Firmware build/test verification pending after code migration.
+
+**Links**
+- `include/dehydrator/interfaces/TempRhSensorDriver.h`
+- `include/dehydrator/sensors/TempRhReader.h`
+- `include/dehydrator/hardware/ArduinoDhtSensorDriver.h`
+
 ### 2026-05-31 - Discovery And Agentic Workflow Baseline
 
 **Context**
