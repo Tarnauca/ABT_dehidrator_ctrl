@@ -11,7 +11,7 @@ Status: draft baseline from discovery conversation. Requirement IDs are stable a
 
 ## Functional Requirements
 
-- REQ-FUNC-001: The controller shall support manual on/off mode.
+- REQ-FUNC-001: The controller shall support a direct-output test mode for relay and output bring-up.
 - REQ-FUNC-002: The controller shall support fixed temperature and duration mode.
 - REQ-FUNC-003: The controller shall support fluctuating temperature mode with low/high temperature range, average temperature metadata, cycle timing, and duration.
 - REQ-FUNC-004: The controller shall support built-in presets only in the initial scope.
@@ -20,7 +20,8 @@ Status: draft baseline from discovery conversation. Requirement IDs are stable a
 - REQ-FUNC-007: The controller shall clear resume state automatically after normal finish.
 - REQ-FUNC-008: The controller shall support duration values up to 99 h 0 min. Internal and editable representations may use `HH:MM`, while compact LCD views may use `Xh Ym` when space is limited.
 - REQ-FUNC-009: Temperature settings shall use Celsius with 1 C step.
-- REQ-FUNC-010: In manual mode, the user may control heater operation only within safety constraints; if heater is requested ON, fan shall also be commanded ON.
+- REQ-FUNC-010: In test mode, the user may control heater operation only within safety constraints; if heater is requested ON, fan shall also be commanded ON.
+- REQ-FUNC-017: The controller shall support a manual configurable program with editable temperature, duration, and fixed/fluctuating mode selection.
 - REQ-FUNC-011: Pause shall command heater OFF and fan OFF immediately, suspend program timer/profile progression, and keep the active run resumable.
 - REQ-FUNC-012: Resume from pause shall continue the same profile from the paused point.
 - REQ-FUNC-013: Confirmed user stop/cancel shall command heater OFF and fan OFF immediately, shall not run cooldown, and shall clear or mark resume state non-resumable.

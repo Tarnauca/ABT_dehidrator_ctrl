@@ -41,12 +41,29 @@ class PresetRunController {
    * @return true when the run was accepted from idle state.
    */
   bool startPreset(const PresetDefinition& preset) {
-    if (!stateMachine_.start(preset.profile)) {
+    if (!startProfile(preset.profile, preset.token)) {
       return false;
     }
 
     activePreset_ = &preset;
-    lastTargetTempC_ = initialTargetTempC(preset.profile);
+    return true;
+  }
+
+  /**
+   * @brief Starts a run from a non-preset profile, such as manual mode.
+   *
+   * @param profile Profile configuration to run.
+   * @param runToken Stable ASCII token for logs.
+   * @return true when the run was accepted from idle state.
+   */
+  bool startProfile(const ProfileConfig& profile, const char* runToken) {
+    if (!stateMachine_.start(profile)) {
+      return false;
+    }
+
+    activePreset_ = nullptr;
+    activeRunToken_ = runToken;
+    lastTargetTempC_ = initialTargetTempC(profile);
     currentCommand_ = {};
     temperatureControl_.reset(false);
     updateCommand(0U, false, 0);
@@ -129,6 +146,13 @@ class PresetRunController {
   constexpr const PresetDefinition* activePreset() const { return activePreset_; }
 
   /**
+   * @brief Returns the current active run token, preset-based or manual.
+   *
+   * @return Stable ASCII token or null when idle.
+   */
+  constexpr const char* activeRunToken() const { return activeRunToken_; }
+
+  /**
    * @brief Returns the last profile target temperature used for control.
    *
    * @return Integer target temperature in Celsius.
@@ -205,6 +229,7 @@ class PresetRunController {
 
   void clearRunContext() {
     activePreset_ = nullptr;
+    activeRunToken_ = nullptr;
     currentCommand_ = {};
     lastTargetTempC_ = 0;
     temperatureControl_.reset(false);
@@ -251,6 +276,7 @@ class PresetRunController {
   RunStateMachine stateMachine_;
   TemperatureControl temperatureControl_;
   const PresetDefinition* activePreset_ = nullptr;
+  const char* activeRunToken_ = nullptr;
   OutputCommand currentCommand_;
   int16_t lastTargetTempC_ = 0;
 };

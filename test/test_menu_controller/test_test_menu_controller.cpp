@@ -39,6 +39,7 @@ void test_rotation_stops_at_end_of_menu() {
   controller.onRotate(1);
   controller.onRotate(1);
   controller.onRotate(1);
+  controller.onRotate(1);
 
   const UiResult result = controller.onRotate(1);
 
@@ -75,6 +76,7 @@ void test_short_press_on_menu_selects_current_item() {
 void test_short_press_on_inapoi_closes_menu() {
   MenuController controller;
   controller.onShortPress();
+  controller.onRotate(1);
   controller.onRotate(1);
   controller.onRotate(1);
   controller.onRotate(1);
