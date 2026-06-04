@@ -1605,3 +1605,77 @@ states as unused labels.
 - `src/main.cpp`
 - `docs/backlog.md`
 - `docs/test-plan.md`
+
+---
+
+## Boot self-check terminal visibility
+
+**Trigger**
+The user wanted all self-check results to be visible in the serial terminal at
+boot, not only the final `passed` or `fault` outcome.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added explicit boot-time self-check log records in `main.cpp`.
+- Logged per-check outcomes for config, output-safe-state, NTC validity, and
+  button safety using stable `self_check` event tokens.
+- Logged contextual startup states for watchdog-reset status and resume-snapshot
+  availability so the terminal output explains the boot path more clearly.
+- Kept the final `run_state` and `fault` logging so the existing structured
+  boot trace remains intact.
+
+**Decisions**
+- Use the existing structured event format rather than inventing a second boot
+  reporting format.
+- Keep per-check tokens simple and parseable, for example
+  `self_check detail=ntc_ok` or `self_check detail=resume_none`.
+
+**Commits / Branches**
+- Branch: `feature/self-check-boot-logging`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Pending after native tests and Mega2560 build are rerun.
+
+**Links**
+- `src/main.cpp`
+
+---
+
+## Terminal boot splash banner
+
+**Trigger**
+The user wanted a boot splash screen in the terminal: a short text shown inside
+an ASCII box before the structured startup logs.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added a plain-text boot banner in `main.cpp`.
+- Emitted the banner immediately after the serial sinks are registered, so it
+  appears before the sensor and self-check startup records.
+- Kept the structured event logs unchanged after the banner so testing tools
+  can still parse the boot sequence normally.
+
+**Decisions**
+- Use a simple ASCII box instead of LCD-style framing, because this request was
+  specifically for the terminal.
+- Keep the banner short and fixed-width so it remains readable on basic serial
+  terminals.
+
+**Commits / Branches**
+- Branch: `feature/self-check-boot-logging`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Pending after native tests and Mega2560 build are rerun.
+
+**Links**
+- `src/main.cpp`

@@ -237,6 +237,16 @@ void writeLogLine(const char* line) {
 }
 
 /**
+ * @brief Writes a plain-text splash banner to all serial log sinks.
+ */
+void writeBootSplash() {
+  writeLogLine("+----------------------+");
+  writeLogLine("| ABT Dehidrator Ctrl  |");
+  writeLogLine("| Mega2560 Boot        |");
+  writeLogLine("+----------------------+");
+}
+
+/**
  * @brief Formats and writes a structured event line.
  *
  * @param type Stable event type token.
@@ -250,6 +260,33 @@ void logEvent(const char* type, const char* detail) {
   }
 
   writeLogLine(LOG_TRUNCATED_EVENT);
+}
+
+/**
+ * @brief Logs one startup self-check verdict as a stable structured event.
+ *
+ * @param check Stable self-check item token.
+ * @param passed Whether the check passed.
+ */
+void logSelfCheckVerdict(const char* check, bool passed) {
+  char detail[dehydrator::config::LOGGING.lineSize] = {};
+  if (snprintf(detail, sizeof(detail), "%s_%s", check,
+               passed ? "ok" : "fail") > 0) {
+    logEvent("self_check", detail);
+  }
+}
+
+/**
+ * @brief Logs one startup self-check status token that is not pass/fail.
+ *
+ * @param check Stable self-check item token.
+ * @param status Stable status token for that check.
+ */
+void logSelfCheckStatus(const char* check, const char* status) {
+  char detail[dehydrator::config::LOGGING.lineSize] = {};
+  if (snprintf(detail, sizeof(detail), "%s_%s", check, status) > 0) {
+    logEvent("self_check", detail);
+  }
 }
 
 /**
@@ -625,6 +662,7 @@ void setup() {
 
   logger.addSink(usbLogSink);
   logger.addSink(telemetryLogSink);
+  writeBootSplash();
 
   if (tempRhDriver.begin()) {
     logEvent("sensor", "temp_rh_ready");
@@ -656,7 +694,18 @@ void setup() {
 
   const dehydrator::ControlStartupResult startupResult =
       controlStateMachine.completeSelfCheck(startupInput);
+  logSelfCheckVerdict("config", startupInput.configValid);
+  logSelfCheckVerdict("outputs", startupInput.outputsSafe);
+  logSelfCheckVerdict("ntc", startupInput.primarySensorValid);
+  logSelfCheckVerdict("button", startupInput.buttonSafe);
+  logSelfCheckStatus("watchdog",
+                     startupInput.watchdogResetDuringRun ? "during_run"
+                                                         : "clear");
+  logSelfCheckStatus("resume", startupInput.interruptedRunAvailable
+                                   ? "available"
+                                   : "none");
   logEvent("run_state", controlStateMachine.stateToken());
+  logEvent("self_check", startupResult.passed ? "passed" : "failed");
   if (!startupResult.passed && startupResult.faultToken != nullptr) {
     logEvent("fault", startupResult.faultToken);
   }
