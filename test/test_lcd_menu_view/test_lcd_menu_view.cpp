@@ -54,10 +54,21 @@ void assertLinePrefixEquals(const FakeDisplay& display, uint8_t row,
   }
 }
 
-LcdMenuSnapshot snapshotForIndex(size_t selectedIndex, bool heartbeatOn) {
+LcdMenuSnapshot snapshotForIndex(size_t selectedIndex, bool heartbeatOn,
+                                 bool showStop = false,
+                                 bool showResume = false,
+                                 const char* title = "Meniu") {
+  static const char* labels[MenuController::MAX_ITEM_COUNT] = {};
+  MenuController controller;
+  dehydrator::MainMenuContext context;
+  context.showStopProgram = showStop;
+  context.showResumeProgram = showResume;
+  controller.setContext(context);
+  controller.fillVisibleItems(labels);
   LcdMenuSnapshot snapshot;
-  snapshot.items = MenuController::items();
-  snapshot.itemCount = MenuController::ITEM_COUNT;
+  snapshot.title = title;
+  snapshot.items = labels;
+  snapshot.itemCount = controller.itemCount();
   snapshot.selectedIndex = selectedIndex;
   snapshot.heartbeatOn = heartbeatOn;
   return snapshot;
@@ -70,33 +81,45 @@ void test_menu_view_renders_first_items_and_hint() {
   view.render(snapshotForIndex(0U, true));
 
   assertLineEquals(display, 0U, "Meniu               ");
-  assertLineEquals(display, 1U, ">Pornire preset     ");
-  assertLineEquals(display, 2U, " Mod manual         ");
-  assertLineEquals(display, 3U, " Testare            ");
+  assertLineEquals(display, 1U, ">Programe presetate ");
+  assertLineEquals(display, 2U, " Programe utilizator");
+  assertLineEquals(display, 3U, " Program manual     ");
 }
 
 void test_menu_view_scrolls_when_selection_moves_down() {
   FakeDisplay display;
   LcdMenuView view(display);
 
-  view.render(snapshotForIndex(4U, false));
+  view.render(snapshotForIndex(3U, false));
 
   assertLineEquals(display, 0U, "Meniu               ");
-  assertLineEquals(display, 1U, ">Reluare program    ");
-  assertLineEquals(display, 2U, " Oprire             ");
-  assertLineEquals(display, 3U, " Inapoi             ");
+  assertLineEquals(display, 1U, ">Setari             ");
+  assertLineEquals(display, 2U, " Inapoi             ");
+  assertLineEquals(display, 3U, "                    ");
 }
 
 void test_menu_view_keeps_last_item_on_first_line() {
   FakeDisplay display;
   LcdMenuView view(display);
 
-  view.render(snapshotForIndex(5U, false));
+  view.render(snapshotForIndex(4U, false));
 
   assertLineEquals(display, 0U, "Meniu               ");
-  assertLineEquals(display, 1U, ">Oprire             ");
-  assertLineEquals(display, 2U, " Inapoi             ");
+  assertLineEquals(display, 1U, ">Inapoi             ");
+  assertLineEquals(display, 2U, "                    ");
   assertLineEquals(display, 3U, "                    ");
+}
+
+void test_menu_view_renders_dynamic_stop_and_resume_entries() {
+  FakeDisplay display;
+  LcdMenuView view(display);
+
+  view.render(snapshotForIndex(0U, false, true, true));
+
+  assertLineEquals(display, 0U, "Meniu               ");
+  assertLineEquals(display, 1U, ">Oprire program     ");
+  assertLineEquals(display, 2U, " Reluare program    ");
+  assertLineEquals(display, 3U, " Programe presetate ");
 }
 
 void setup() {
@@ -104,6 +127,7 @@ void setup() {
   RUN_TEST(test_menu_view_renders_first_items_and_hint);
   RUN_TEST(test_menu_view_scrolls_when_selection_moves_down);
   RUN_TEST(test_menu_view_keeps_last_item_on_first_line);
+  RUN_TEST(test_menu_view_renders_dynamic_stop_and_resume_entries);
   UNITY_END();
 }
 

@@ -27,6 +27,16 @@ ProfileConfig fluctuatingProfile() {
   return profile;
 }
 
+ProfileConfig boostProfile() {
+  ProfileConfig profile;
+  profile.mode = ProfileMode::Boost;
+  profile.targetTempC = 55;
+  profile.highTempC = 65;
+  profile.durationMinutes = 120;
+  profile.highPhaseMinutes = 30;
+  return profile;
+}
+
 void test_fixed_profile_returns_fixed_target() {
   const ProfileTarget target = ProfileEngine::evaluate(fixedProfile(), 123);
 
@@ -68,6 +78,30 @@ void test_fluctuating_profile_repeats_high_low_cycle() {
   TEST_ASSERT_EQUAL_INT16(50, secondLow.targetTempC);
 }
 
+void test_boost_profile_starts_with_high_target() {
+  const ProfileTarget target = ProfileEngine::evaluate(boostProfile(), 0);
+
+  TEST_ASSERT_TRUE(target.valid);
+  TEST_ASSERT_EQUAL_INT16(65, target.targetTempC);
+}
+
+void test_boost_profile_continues_with_base_target_after_boost_phase() {
+  const ProfileTarget target =
+      ProfileEngine::evaluate(boostProfile(), 30UL * 60UL);
+
+  TEST_ASSERT_TRUE(target.valid);
+  TEST_ASSERT_EQUAL_INT16(55, target.targetTempC);
+}
+
+void test_boost_profile_is_complete_at_configured_duration() {
+  const ProfileTarget target =
+      ProfileEngine::evaluate(boostProfile(), 120UL * 60UL);
+
+  TEST_ASSERT_TRUE(target.valid);
+  TEST_ASSERT_TRUE(target.complete);
+  TEST_ASSERT_EQUAL_INT16(55, target.targetTempC);
+}
+
 void test_rejects_setpoint_above_safety_limit() {
   ProfileConfig profile = fixedProfile();
   profile.targetTempC = 76;
@@ -90,6 +124,24 @@ void test_accepts_setpoint_at_safety_limit() {
 void test_rejects_fluctuating_average_above_safety_limit() {
   ProfileConfig profile = fluctuatingProfile();
   profile.targetTempC = 76;
+
+  const ProfileTarget target = ProfileEngine::evaluate(profile, 0);
+
+  TEST_ASSERT_FALSE(target.valid);
+}
+
+void test_rejects_boost_target_above_safety_limit() {
+  ProfileConfig profile = boostProfile();
+  profile.highTempC = 76;
+
+  const ProfileTarget target = ProfileEngine::evaluate(profile, 0);
+
+  TEST_ASSERT_FALSE(target.valid);
+}
+
+void test_rejects_boost_duration_above_half_total_duration() {
+  ProfileConfig profile = boostProfile();
+  profile.highPhaseMinutes = 61;
 
   const ProfileTarget target = ProfileEngine::evaluate(profile, 0);
 
@@ -185,9 +237,14 @@ void setup() {
   RUN_TEST(test_fluctuating_profile_starts_with_high_target);
   RUN_TEST(test_fluctuating_profile_switches_to_low_after_high_phase);
   RUN_TEST(test_fluctuating_profile_repeats_high_low_cycle);
+  RUN_TEST(test_boost_profile_starts_with_high_target);
+  RUN_TEST(test_boost_profile_continues_with_base_target_after_boost_phase);
+  RUN_TEST(test_boost_profile_is_complete_at_configured_duration);
   RUN_TEST(test_rejects_setpoint_above_safety_limit);
   RUN_TEST(test_accepts_setpoint_at_safety_limit);
   RUN_TEST(test_rejects_fluctuating_average_above_safety_limit);
+  RUN_TEST(test_rejects_boost_target_above_safety_limit);
+  RUN_TEST(test_rejects_boost_duration_above_half_total_duration);
   RUN_TEST(test_accepts_fluctuating_high_at_safety_limit);
   RUN_TEST(test_rejects_fluctuating_high_above_safety_limit);
   RUN_TEST(test_rejects_duration_above_99_hours);

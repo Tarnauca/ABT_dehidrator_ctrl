@@ -62,6 +62,8 @@ class PresetRunController {
     }
 
     activePreset_ = nullptr;
+    activeProfile_ = profile;
+    activeProfileValid_ = true;
     activeRunToken_ = runToken;
     lastTargetTempC_ = initialTargetTempC(profile);
     currentCommand_ = {};
@@ -121,6 +123,20 @@ class PresetRunController {
     }
 
     clearRunContext();
+    return true;
+  }
+
+  /**
+   * @brief Resumes one previously paused run.
+   *
+   * @return true when the lifecycle returned to `Running`.
+   */
+  bool resume() {
+    if (!stateMachine_.resume()) {
+      return false;
+    }
+
+    updateCommand(0U, false, 0);
     return true;
   }
 
@@ -223,12 +239,16 @@ class PresetRunController {
 
  private:
   static int16_t initialTargetTempC(const ProfileConfig& profile) {
-    return profile.mode == ProfileMode::Fluctuating ? profile.highTempC
-                                                    : profile.targetTempC;
+    return (profile.mode == ProfileMode::Fluctuating ||
+            profile.mode == ProfileMode::Boost)
+               ? profile.highTempC
+               : profile.targetTempC;
   }
 
   void clearRunContext() {
     activePreset_ = nullptr;
+    activeProfile_ = {};
+    activeProfileValid_ = false;
     activeRunToken_ = nullptr;
     currentCommand_ = {};
     lastTargetTempC_ = 0;
@@ -244,16 +264,17 @@ class PresetRunController {
     currentCommand_.buzzerOn = runPolicy.finishAlarmOn || runPolicy.faultAlarmOn;
     currentCommand_.backlightOn = true;
 
-    if (snapshot.state != RunState::Running || activePreset_ == nullptr) {
+    if (snapshot.state != RunState::Running || !activeProfileValid_) {
       if (snapshot.state == RunState::Idle) {
         activePreset_ = nullptr;
+        activeProfileValid_ = false;
       }
       temperatureControl_.reset(false);
       return;
     }
 
     const ProfileTarget target =
-        ProfileEngine::evaluate(activePreset_->profile, snapshot.activeElapsedSeconds);
+        ProfileEngine::evaluate(activeProfile_, snapshot.activeElapsedSeconds);
     lastTargetTempC_ = target.targetTempC;
 
     if (!ntcValid) {
@@ -276,6 +297,8 @@ class PresetRunController {
   RunStateMachine stateMachine_;
   TemperatureControl temperatureControl_;
   const PresetDefinition* activePreset_ = nullptr;
+  ProfileConfig activeProfile_;
+  bool activeProfileValid_ = false;
   const char* activeRunToken_ = nullptr;
   OutputCommand currentCommand_;
   int16_t lastTargetTempC_ = 0;

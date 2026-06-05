@@ -7,9 +7,9 @@
 namespace dehydrator {
 
 /**
- * @brief Editable fields on the manual mode screen.
+ * @brief Selectable fields on the direct-output test screen.
  */
-enum class ManualField {
+enum class TestField {
   /** Fan ON/OFF selection field. */
   Fan,
   /** Heater ON/OFF selection field. */
@@ -19,38 +19,38 @@ enum class ManualField {
 };
 
 /**
- * @brief Result of one manual mode UI action.
+ * @brief Result of one direct-output test UI action.
  */
-struct ManualUiResult {
+struct TestUiResult {
   /** True when the selected field changed. */
   bool selectionChanged = false;
   /** True when logical outputs changed. */
   bool outputChanged = false;
-  /** True when the screen should close back to menu. */
+  /** True when the screen should close back to the previous menu level. */
   bool exitToMenu = false;
 };
 
 /**
- * @brief Minimal manual-mode editor for bring-up.
+ * @brief Minimal direct-output test controller for bring-up.
  *
  * The controller owns a logical `OutputCommand` and applies the existing
  * heater/fan safety invariant through `sanitizeOutputCommand()`. It does not
  * write hardware directly; it only updates the desired logical outputs for the
  * UI shell and future integration work.
  */
-class ManualModeController {
+class TestModeController {
  public:
   /**
    * @brief Returns the currently selected field.
    *
-   * @return Active editable field on the manual screen.
+   * @return Active selectable field on the test screen.
    */
-  ManualField selectedField() const { return selectedField_; }
+  TestField selectedField() const { return selectedField_; }
 
   /**
-   * @brief Returns the current logical manual output command.
+   * @brief Returns the current logical test output command.
    *
-   * @return Manual logical output command.
+   * @return Test logical output command.
    */
   OutputCommand command() const { return command_; }
 
@@ -60,26 +60,26 @@ class ManualModeController {
    * @param delta Positive for clockwise, negative for counter-clockwise.
    * @return Result indicating whether selection changed.
    */
-  ManualUiResult onRotate(int8_t delta) {
+  TestUiResult onRotate(int8_t delta) {
     if (delta == 0) {
       return {};
     }
 
     if (delta > 0) {
-      if (selectedField_ == ManualField::Fan) {
-        selectedField_ = ManualField::Heater;
-      } else if (selectedField_ == ManualField::Heater) {
-        selectedField_ = ManualField::Back;
+      if (selectedField_ == TestField::Fan) {
+        selectedField_ = TestField::Heater;
+      } else if (selectedField_ == TestField::Heater) {
+        selectedField_ = TestField::Back;
       }
     } else {
-      if (selectedField_ == ManualField::Back) {
-        selectedField_ = ManualField::Heater;
-      } else if (selectedField_ == ManualField::Heater) {
-        selectedField_ = ManualField::Fan;
+      if (selectedField_ == TestField::Back) {
+        selectedField_ = TestField::Heater;
+      } else if (selectedField_ == TestField::Heater) {
+        selectedField_ = TestField::Fan;
       }
     }
 
-    ManualUiResult result;
+    TestUiResult result;
     result.selectionChanged = true;
     return result;
   }
@@ -89,17 +89,17 @@ class ManualModeController {
    *
    * @return Result indicating whether outputs changed.
    */
-  ManualUiResult onShortPress() {
-    if (selectedField_ == ManualField::Back) {
-      selectedField_ = ManualField::Fan;
-      ManualUiResult result;
+  TestUiResult onShortPress() {
+    if (selectedField_ == TestField::Back) {
+      selectedField_ = TestField::Fan;
+      TestUiResult result;
       result.exitToMenu = true;
       return result;
     }
 
     const OutputCommand previous = command_;
 
-    if (selectedField_ == ManualField::Fan) {
+    if (selectedField_ == TestField::Fan) {
       command_.fanOn = !command_.fanOn;
     } else {
       command_.heaterOn = !command_.heaterOn;
@@ -110,25 +110,21 @@ class ManualModeController {
 
     command_ = sanitizeOutputCommand(command_);
 
-    ManualUiResult result;
+    TestUiResult result;
     result.outputChanged = previous.heaterOn != command_.heaterOn ||
                            previous.fanOn != command_.fanOn;
     return result;
   }
 
   /**
-   * @brief Handles a long press with currently reserved behavior.
+   * @brief Handles a long press with no assigned action in the current scope.
    *
-   * @return Result requesting a return to the menu.
+   * @return Result with no externally visible action.
    */
-  ManualUiResult onLongPress() {
-    ManualUiResult result;
-    result.exitToMenu = true;
-    return result;
-  }
+  TestUiResult onLongPress() const { return {}; }
 
  private:
-  ManualField selectedField_ = ManualField::Fan;
+  TestField selectedField_ = TestField::Fan;
   OutputCommand command_;
 };
 

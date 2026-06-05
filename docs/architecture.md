@@ -74,7 +74,12 @@ Pure logic modules:
 
 - `ControlStateMachine`: run states, pause/resume, finish, stop, fault transitions.
 - `ControlStateMachine`: boot/self-check/resume-offer and the normal run lifecycle.
-- `ProfileEngine`: fixed and fluctuating temperature targets over time.
+- `ProfileEngine`: fixed, boost, and fluctuating temperature targets over time.
+- `PresetRunController`: bridges preset/manual profiles into the run lifecycle,
+  keeps the active profile independent from the optional active preset pointer,
+  and coordinates profile evaluation with hysteresis control.
+- `UserProfileStore`: owns the EEPROM schema for 10 user-defined manual
+  profiles, including slot occupancy, version, and checksum handling.
 - `TemperatureControl`: hysteresis and relay minimum timing decisions.
 - `FaultDetector`: primary thermistor validity, over-temperature, no-rise, stuck-heater, stuck-input checks.
 - `RunTimer`: elapsed/remaining time and pause behavior.
@@ -91,6 +96,7 @@ Hardware-facing adapters:
 - `BuzzerAlarm`.
 - `BacklightOutput`.
 - `EepromStore`.
+- `UserProfileStore`.
 - `SerialLogSink`.
 
 ## Data Flow
@@ -102,7 +108,7 @@ The application loop should follow a stable flow:
 3. Update debounced input state.
 4. Run fault detection.
 5. Update state machine.
-6. Compute profile target.
+6. Compute profile target from the active profile.
 7. Compute heater/fan commands.
 8. Apply safety invariants.
 9. Write outputs.
@@ -146,6 +152,41 @@ Configuration:
 - Logging intervals.
 - Calibration defaults.
 - Built-in presets.
+
+## Profile Model
+
+Profiles are evaluated by pure logic before temperature control runs:
+
+- Fixed profiles return the base target for the full active duration.
+- Boost profiles return the boost/high target during the initial boost phase,
+  then return the base target for the rest of the active duration.
+- Fluctuating profiles return the upper target first, then alternate upper and
+  lower targets according to configured phase durations.
+
+`PresetRunController` must store the active `ProfileConfig` separately from
+`activePreset`. Preset runs set both the active profile and the preset pointer;
+manual runs set only the active profile and use a stable run token such as
+`manual`. This prevents manual profiles from depending on built-in preset
+storage.
+
+Manual-program editing constraints are owned by `ManualProgramController`.
+`ProfileEngine` validates generic profile safety and shape constraints, such as
+maximum target temperature, valid total duration, boost duration not exceeding
+half of total duration, and fluctuating low/high ordering. It intentionally does
+not enforce UI-specific edit ranges such as manual `Tsup`/`Tinf` staying within
+10 C of the reference temperature; callers that create manual profiles must use
+the manual controller or an equivalent manual-profile validator.
+
+`ManualProgramController` also owns the editor dirty/baseline state so `Nu`
+from an unsaved `Inapoi` prompt can discard changes deterministically without
+mixing UI persistence rules into `main.cpp`.
+
+User-defined profile persistence is intentionally separate from interrupted-run
+resume persistence. The current user-profile path stores only reusable manual
+profiles, while resume storage remains a later concern for run snapshots and
+reset recovery. This separation keeps the EEPROM schema easier to reason about
+and avoids mixing "library of profiles" behavior with "recover active run"
+behavior.
 
 Proposed configuration ownership:
 

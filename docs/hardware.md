@@ -17,7 +17,7 @@ Status: draft baseline. Heater/fan pin assignments are TBD until wiring is final
 | Fan relay | Fan control | TBD | Configurable | Mechanical relay, on/off only |
 | LCD I2C | 4x20 display | Mega I2C SDA/SCL | N/A | `LiquidCrystal_I2C`, default address `0x27` |
 | Encoder A/B | Navigation/change values | D2/D3 temporary | Pull-up/input library dependent | `Encoder` library |
-| Encoder button | Select/confirm | D4 temporary | Active low with `INPUT_PULLUP` | `Bounce2`; short press is active behavior, long press currently reserved |
+| Encoder button | Select/confirm | D4 temporary | Active low with `INPUT_PULLUP` | `Bounce2`; short press is active behavior, long press currently reserved with no assigned action |
 | Piezo buzzer | Finish/fault alarm | D8 temporary | Configurable, default active high | No routine button beep |
 | Backlight FET | LCD backlight blink/control | D7 temporary | Configurable, default active high | Dedicated MCU output |
 | USB Serial | Debug log | USB | N/A | 115200 8N1 |

@@ -60,12 +60,14 @@ void test_short_press_on_back_returns_to_menu() {
   TEST_ASSERT_EQUAL_STRING("mere", controller.currentPreset()->token);
 }
 
-void test_long_press_returns_to_menu() {
+void test_long_press_has_no_assigned_action() {
   PresetSelectController controller;
 
   const auto result = controller.onLongPress();
 
-  TEST_ASSERT_TRUE(result.exitToMenu);
+  TEST_ASSERT_FALSE(result.exitToMenu);
+  TEST_ASSERT_FALSE(result.presetSelected);
+  TEST_ASSERT_FALSE(result.selectionChanged);
 }
 
 void setup() {
@@ -74,7 +76,7 @@ void setup() {
   RUN_TEST(test_rotation_stops_at_ends);
   RUN_TEST(test_short_press_confirms_selected_preset);
   RUN_TEST(test_short_press_on_back_returns_to_menu);
-  RUN_TEST(test_long_press_returns_to_menu);
+  RUN_TEST(test_long_press_has_no_assigned_action);
   UNITY_END();
 }
 

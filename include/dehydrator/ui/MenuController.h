@@ -53,23 +53,37 @@ struct UiResult {
 };
 
 /**
- * @brief Minimal encoder-driven menu controller for UI bring-up.
- *
- * This controller intentionally avoids business logic. It only owns the active
- * screen and current menu selection so we can verify encoder/menu behavior on
- * real hardware before wiring the full dehydrator workflows.
+ * @brief Runtime visibility flags for the main menu.
+ */
+struct MainMenuContext {
+  /** Show `Oprire program` when one active/resumable run exists. */
+  bool showStopProgram = false;
+  /** Show `Reluare program` when one resumable run exists. */
+  bool showResumeProgram = false;
+};
+
+/**
+ * @brief Minimal encoder-driven main menu controller with dynamic entries.
  */
 class MenuController {
  public:
-  /**
-   * @brief Number of built-in bring-up menu items.
-   */
-  static constexpr size_t ITEM_COUNT = 7U;
+  /** Maximum number of visible top-level menu items including `Inapoi`. */
+  static constexpr size_t MAX_ITEM_COUNT = 7U;
 
   /**
    * @brief Creates a menu controller starting on the status screen.
    */
   constexpr MenuController() = default;
+
+  /**
+   * @brief Updates dynamic menu visibility flags.
+   *
+   * @param context Runtime context that decides which top-level entries appear.
+   */
+  void setContext(const MainMenuContext& context) {
+    context_ = context;
+    clampSelection();
+  }
 
   /**
    * @brief Opens the menu or selects the current menu item.
@@ -82,8 +96,7 @@ class MenuController {
       return {UiAction::OpenMenu, nullptr};
     }
 
-    if (selectedIndex_ < ITEM_COUNT &&
-        strcmp(currentToken(), "inapoi") == 0) {
+    if (strcmp(currentToken(), "inapoi") == 0) {
       screen_ = UiScreen::Status;
       return {UiAction::CloseMenu, nullptr};
     }
@@ -102,9 +115,10 @@ class MenuController {
       return {};
     }
 
+    const size_t count = itemCount();
     size_t newIndex = selectedIndex_;
     if (delta > 0) {
-      if (selectedIndex_ + 1U >= ITEM_COUNT) {
+      if (selectedIndex_ + 1U >= count) {
         return {};
       }
       newIndex = selectedIndex_ + 1U;
@@ -125,31 +139,51 @@ class MenuController {
 
   /**
    * @brief Returns the currently active screen.
-   *
-   * @return `UiScreen::Status` or `UiScreen::Menu`.
    */
   UiScreen screen() const { return screen_; }
 
   /**
    * @brief Returns the current selected menu item label.
-   *
-   * @return Stable Romanian item label.
    */
-  const char* currentItem() const { return items()[selectedIndex_]; }
+  const char* currentItem() const { return itemAt(selectedIndex_)->label; }
 
   /**
    * @brief Returns the current selected menu item token for logs.
-   *
-   * @return Stable ASCII token without spaces.
    */
-  const char* currentToken() const { return tokens()[selectedIndex_]; }
+  const char* currentToken() const { return itemAt(selectedIndex_)->token; }
 
   /**
    * @brief Returns the selected menu index.
-   *
-   * @return Zero-based selected item index.
    */
   size_t selectedIndex() const { return selectedIndex_; }
+
+  /**
+   * @brief Returns the current visible item count.
+   */
+  size_t itemCount() const {
+    size_t count = 0U;
+    for (size_t index = 0U; index < FULL_ITEM_COUNT; index++) {
+      if (isVisible(allItems()[index])) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * @brief Copies the current visible labels into one caller-owned array.
+   *
+   * @param labels Output label array of at least `MAX_ITEM_COUNT`.
+   */
+  void fillVisibleItems(const char* (&labels)[MAX_ITEM_COUNT]) const {
+    size_t writeIndex = 0U;
+    for (size_t index = 0U; index < FULL_ITEM_COUNT && writeIndex < MAX_ITEM_COUNT;
+         index++) {
+      if (isVisible(allItems()[index])) {
+        labels[writeIndex++] = allItems()[index].label;
+      }
+    }
+  }
 
   /**
    * @brief Forces the controller into the menu-screen mode.
@@ -158,51 +192,70 @@ class MenuController {
 
   /**
    * @brief Forces the controller back to the status-screen mode.
-   *
-   * This keeps the controller synchronized when application wiring leaves the
-   * menu to another screen without selecting the built-in `Inapoi` entry.
    */
   void returnToStatus() { screen_ = UiScreen::Status; }
 
-  /**
-   * @brief Returns the built-in menu item labels.
-   *
-   * @return Pointer to the fixed menu item array.
-   */
-  static const char* const* items() {
-    static const char* const kItems[ITEM_COUNT] = {
-        "Pornire preset",
-        "Mod manual",
-        "Testare",
-        "Setari",
-        "Reluare program",
-        "Oprire",
-        "Inapoi",
+ private:
+  struct MenuItem {
+    const char* label;
+    const char* token;
+    bool dynamicStop;
+    bool dynamicResume;
+  };
+
+  static constexpr size_t FULL_ITEM_COUNT = 7U;
+
+  static const MenuItem* allItems() {
+    static const MenuItem kItems[FULL_ITEM_COUNT] = {
+        {"Oprire program", "oprire_program", true, false},
+        {"Reluare program", "reluare_program", false, true},
+        {"Programe presetate", "programe_presetate", false, false},
+        {"Programe utilizator", "programe_utilizator", false, false},
+        {"Program manual", "program_manual", false, false},
+        {"Setari", "setari", false, false},
+        {"Inapoi", "inapoi", false, false},
     };
     return kItems;
   }
 
-  /**
-   * @brief Returns stable log tokens for the built-in menu items.
-   *
-   * @return Pointer to the fixed token array.
-   */
-  static const char* const* tokens() {
-    static const char* const kTokens[ITEM_COUNT] = {
-        "pornire_preset",
-        "mod_manual",
-        "testare",
-        "setari",
-        "reluare_program",
-        "oprire",
-        "inapoi",
-    };
-    return kTokens;
+  bool isVisible(const MenuItem& item) const {
+    if (item.dynamicStop) {
+      return context_.showStopProgram;
+    }
+    if (item.dynamicResume) {
+      return context_.showResumeProgram;
+    }
+    return true;
   }
 
- private:
+  const MenuItem* itemAt(size_t visibleIndex) const {
+    size_t currentVisible = 0U;
+    for (size_t index = 0U; index < FULL_ITEM_COUNT; index++) {
+      if (!isVisible(allItems()[index])) {
+        continue;
+      }
+      if (currentVisible == visibleIndex) {
+        return &allItems()[index];
+      }
+      currentVisible++;
+    }
+    return &allItems()[FULL_ITEM_COUNT - 1U];
+  }
+
+  void clampSelection() {
+    const size_t count = itemCount();
+    if (count == 0U) {
+      selectedIndex_ = 0U;
+      return;
+    }
+    if (selectedIndex_ >= count) {
+      selectedIndex_ = count - 1U;
+    }
+  }
+
   UiScreen screen_ = UiScreen::Status;
   size_t selectedIndex_ = 0U;
+  MainMenuContext context_;
 };
 
 }  // namespace dehydrator

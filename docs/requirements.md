@@ -13,7 +13,7 @@ Status: draft baseline from discovery conversation. Requirement IDs are stable a
 
 - REQ-FUNC-001: The controller shall support a direct-output test mode for relay and output bring-up.
 - REQ-FUNC-002: The controller shall support fixed temperature and duration mode.
-- REQ-FUNC-003: The controller shall support fluctuating temperature mode with low/high temperature range, average temperature metadata, cycle timing, and duration.
+- REQ-FUNC-003: The controller shall support fluctuating temperature mode with reference temperature metadata, absolute upper/lower target temperatures, cycle timing, and duration.
 - REQ-FUNC-004: The controller shall support built-in presets only in the initial scope.
 - REQ-FUNC-005: The controller shall support pause and resume for active programs.
 - REQ-FUNC-006: The controller shall support normal user stop/cancel with confirmation.
@@ -21,12 +21,22 @@ Status: draft baseline from discovery conversation. Requirement IDs are stable a
 - REQ-FUNC-008: The controller shall support duration values up to 99 h 0 min. Internal and editable representations may use `HH:MM`, while compact LCD views may use `Xh Ym` when space is limited.
 - REQ-FUNC-009: Temperature settings shall use Celsius with 1 C step.
 - REQ-FUNC-010: In test mode, the user may control heater operation only within safety constraints; if heater is requested ON, fan shall also be commanded ON.
-- REQ-FUNC-017: The controller shall support a manual configurable program with editable temperature, duration, and fixed/fluctuating mode selection.
+- REQ-FUNC-017: The controller shall support a manual configurable program with selectable `Constant`, `Boost`, and `Fluctuant` modes.
+- REQ-FUNC-018: Manual `Constant` mode shall provide editable temperature and duration.
+- REQ-FUNC-019: Manual `Boost` mode shall provide editable base temperature, total duration, boost temperature delta from 0 C to 20 C in 5 C steps, and boost duration in 5 min steps. The boost phase shall be first, shall not exceed 50% of the total duration, and shall be followed by constant operation at the base temperature.
+- REQ-FUNC-020: Manual `Fluctuant` mode shall provide editable reference temperature, total duration, absolute upper/lower temperatures within +/-10 C of the reference temperature in 1 C steps, and upper/lower phase durations from 5 min to 20 min in 1 min steps.
+- REQ-FUNC-021: Manual-program editing shall provide `Salveaza` before `Inapoi` and shall support storing the current manual profile into one of 10 user-profile slots.
+- REQ-FUNC-022: If `Start` is selected while the current manual profile has unsaved changes, the controller shall ask `Da / Nu / Renunta` for saving first. `Da` shall continue to slot selection and then start automatically after save; `Nu` shall start without saving; `Renunta` shall return to the editor.
+- REQ-FUNC-023: If `Inapoi` is selected while the current manual profile has unsaved changes, the controller shall ask `Da / Nu / Renunta` for saving first. `Da` shall continue to slot selection and then return to the previous menu after save; `Nu` shall discard unsaved changes and return; `Renunta` shall return to the editor.
+- REQ-FUNC-024: The main menu shall provide a `Programe utilizator` entry for browsing 10 saved manual-profile slots, including vacant slots.
+- REQ-FUNC-025: Saved user profiles shall support read-only inspection plus `Pornire`, `Editeaza`, `Sterge`, and `Inapoi` actions when occupied. Vacant slots shall indicate `Liber` and shall still allow entering the editor through `Editeaza`.
+- REQ-FUNC-026: The main menu shall order entries as `Oprire program`, `Reluare program`, `Programe presetate`, `Programe utilizator`, `Program manual`, `Setari`, `Inapoi`, while hiding `Oprire program` and `Reluare program` when they are not applicable.
+- REQ-FUNC-027: `Setari` shall expose `Testare` and `Inapoi` as a dedicated submenu instead of showing `Testare` in the main menu.
 - REQ-FUNC-011: Pause shall command heater OFF and fan OFF immediately, suspend program timer/profile progression, and keep the active run resumable.
 - REQ-FUNC-012: Resume from pause shall continue the same profile from the paused point.
 - REQ-FUNC-013: Confirmed user stop/cancel shall command heater OFF and fan OFF immediately, shall not run cooldown, and shall clear or mark resume state non-resumable.
 - REQ-FUNC-014: Normal program finish shall command heater OFF, run fan for a fixed 3-minute cooldown, command fan OFF, then issue the finish alarm.
-- REQ-FUNC-015: The initial fluctuating mode algorithm shall alternate time-based low-temperature and high-temperature phases around the configured profile range. Default phase timing is TBD and shall be configurable in code.
+- REQ-FUNC-015: The fluctuating mode algorithm shall start with the upper-temperature phase, then alternate time-based upper/lower phases until the total duration expires.
 - REQ-FUNC-016: Selecting a built-in preset shall start the associated drying profile when the controller is idle and the preset profile is valid.
 
 ## Safety Requirements
@@ -83,6 +93,10 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-UI-015: Compact LCD duration display shall use the `Xh Ym` format where the UI shows preset summary values.
 - REQ-UI-016: During an active preset run, the status screen shall show the current Romanian lifecycle label, including at least idle, running, finish cooldown, and finished states.
 - REQ-UI-017: When the finish alarm state is active on the status screen, a short press shall acknowledge completion and return the controller to idle.
+- REQ-UI-018: User-profile slot lists shall show all 10 slots plus `Inapoi`; occupied slots shall be labeled as `Profil N`, while vacant slots shall be labeled as `Profil N (nedef.)`.
+- REQ-UI-019: Saving over an occupied user-profile slot shall require explicit `Da / Nu` overwrite confirmation.
+- REQ-UI-020: Deleting one occupied user-profile slot shall require explicit `Da / Nu` confirmation.
+- REQ-UI-021: After saving one manual profile, the `Salveaza profil` slot list shall close automatically and return to the screen flow that triggered the save action.
 
 ## Logging And Diagnostics Requirements
 
@@ -107,6 +121,10 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-PERSIST-008: Reset cause/event shall be recorded in EEPROM carefully when feasible.
 - REQ-PERSIST-009: After power loss or brown-out during an active run, the controller shall offer resume only after user confirmation.
 - REQ-PERSIST-010: Watchdog-reset run context shall not allow automatic or user-confirmed resume without starting a new run.
+- REQ-PERSIST-011: EEPROM shall store 10 user-defined manual profiles separately from interrupted-run resume storage.
+- REQ-PERSIST-012: Each stored user-profile slot shall include versioning and validation/checksum so invalid/corrupt records are treated as vacant rather than executable.
+- REQ-PERSIST-013: Saving one user-defined profile shall update only the selected EEPROM slot bytes rather than rewriting unrelated slots.
+- REQ-PERSIST-014: User-profile storage and interrupted-run resume storage shall remain separate concerns in code and schema.
 
 ## Testing And Verification Requirements
 

@@ -108,15 +108,11 @@ class PresetSelectController {
   }
 
   /**
-   * @brief Handles a long press with currently reserved behavior.
+   * @brief Handles a long press with no assigned action in the current scope.
    *
-   * @return Result requesting a return to the menu.
+   * @return Result with no externally visible action.
    */
-  PresetUiResult onLongPress() {
-    PresetUiResult result;
-    result.exitToMenu = true;
-    return result;
-  }
+  PresetUiResult onLongPress() const { return {}; }
 
  private:
   size_t selectedIndex_ = 0U;

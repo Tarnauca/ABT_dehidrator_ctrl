@@ -12,6 +12,8 @@ namespace dehydrator {
  * @brief Snapshot rendered by the Romanian 4x20 bring-up menu.
  */
 struct LcdMenuSnapshot {
+  /** Title shown on the first LCD row. */
+  const char* title = "Meniu";
   /** Fixed array of menu item labels. */
   const char* const* items = nullptr;
   /** Number of items available in `items`. */
@@ -42,7 +44,7 @@ class LcdMenuView {
   void render(const LcdMenuSnapshot& snapshot) {
     char line[LcdStatusView::COLUMNS + 1U] = {};
     fillLine(line);
-    writeToken(line, "Meniu", 0U);
+    writeToken(line, snapshot.title, 0U);
     writeLine(0U, line, false);
 
     const size_t firstVisible = firstVisibleIndex(snapshot);

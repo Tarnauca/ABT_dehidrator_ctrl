@@ -4,6 +4,8 @@
 
 using dehydrator::PresetCatalog;
 using dehydrator::PresetRunController;
+using dehydrator::ProfileConfig;
+using dehydrator::ProfileMode;
 using dehydrator::RunState;
 
 void test_start_preset_enters_running_state_and_enables_fan() {
@@ -79,6 +81,96 @@ void test_confirmed_stop_returns_running_preset_to_idle() {
   TEST_ASSERT_FALSE(controller.outputCommand().buzzerOn);
 }
 
+void test_manual_boost_profile_updates_without_active_preset() {
+  PresetRunController controller;
+  ProfileConfig profile;
+  profile.mode = ProfileMode::Boost;
+  profile.targetTempC = 55;
+  profile.highTempC = 65;
+  profile.durationMinutes = 120;
+  profile.highPhaseMinutes = 30;
+
+  TEST_ASSERT_TRUE(controller.startProfile(profile, "manual"));
+  TEST_ASSERT_NULL(controller.activePreset());
+  TEST_ASSERT_EQUAL_STRING("manual", controller.activeRunToken());
+
+  controller.update(10U, true, 60);
+
+  TEST_ASSERT_EQUAL_INT(static_cast<int>(RunState::Running),
+                        static_cast<int>(controller.snapshot().state));
+  TEST_ASSERT_TRUE(controller.outputCommand().fanOn);
+  TEST_ASSERT_TRUE(controller.outputCommand().heaterOn);
+  TEST_ASSERT_EQUAL_INT(65, controller.lastTargetTempC());
+}
+
+void test_manual_constant_profile_uses_base_target_without_active_preset() {
+  PresetRunController controller;
+  ProfileConfig profile;
+  profile.mode = ProfileMode::Fixed;
+  profile.targetTempC = 57;
+  profile.durationMinutes = 60;
+
+  TEST_ASSERT_TRUE(controller.startProfile(profile, "manual"));
+  controller.update(10U, true, 50);
+
+  TEST_ASSERT_NULL(controller.activePreset());
+  TEST_ASSERT_EQUAL_STRING("manual", controller.activeRunToken());
+  TEST_ASSERT_EQUAL_INT(57, controller.lastTargetTempC());
+  TEST_ASSERT_TRUE(controller.outputCommand().heaterOn);
+}
+
+void test_manual_fluctuating_profile_switches_between_upper_and_lower_targets() {
+  PresetRunController controller;
+  ProfileConfig profile;
+  profile.mode = ProfileMode::Fluctuating;
+  profile.targetTempC = 57;
+  profile.lowTempC = 52;
+  profile.highTempC = 62;
+  profile.durationMinutes = 60;
+  profile.highPhaseMinutes = 10;
+  profile.lowPhaseMinutes = 10;
+
+  TEST_ASSERT_TRUE(controller.startProfile(profile, "manual"));
+  controller.update(10U, true, 50);
+  TEST_ASSERT_EQUAL_INT(62, controller.lastTargetTempC());
+
+  controller.update(10U * 60U, true, 50);
+  TEST_ASSERT_EQUAL_INT(52, controller.lastTargetTempC());
+}
+
+void test_manual_stop_clears_active_run_token() {
+  PresetRunController controller;
+  ProfileConfig profile;
+  profile.mode = ProfileMode::Fixed;
+  profile.targetTempC = 57;
+  profile.durationMinutes = 60;
+
+  TEST_ASSERT_TRUE(controller.startProfile(profile, "manual"));
+  TEST_ASSERT_TRUE(controller.stopConfirmed());
+
+  TEST_ASSERT_NULL(controller.activePreset());
+  TEST_ASSERT_NULL(controller.activeRunToken());
+  TEST_ASSERT_FALSE(controller.outputCommand().fanOn);
+}
+
+void test_manual_finish_acknowledge_clears_active_run_token() {
+  PresetRunController controller;
+  ProfileConfig profile;
+  profile.mode = ProfileMode::Fixed;
+  profile.targetTempC = 57;
+  profile.durationMinutes = 1;
+
+  TEST_ASSERT_TRUE(controller.startProfile(profile, "manual"));
+  controller.update(60U, true, 50);
+  controller.update(3U * 60U, true, 50);
+  TEST_ASSERT_EQUAL_INT(static_cast<int>(RunState::FinishedAlarm),
+                        static_cast<int>(controller.snapshot().state));
+
+  TEST_ASSERT_TRUE(controller.acknowledgeFinished());
+  TEST_ASSERT_NULL(controller.activeRunToken());
+  TEST_ASSERT_NULL(controller.activePreset());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_start_preset_enters_running_state_and_enables_fan);
@@ -86,5 +178,10 @@ int main() {
   RUN_TEST(test_invalid_ntc_keeps_heater_off_while_run_continues);
   RUN_TEST(test_finish_alarm_can_be_acknowledged_back_to_idle);
   RUN_TEST(test_confirmed_stop_returns_running_preset_to_idle);
+  RUN_TEST(test_manual_boost_profile_updates_without_active_preset);
+  RUN_TEST(test_manual_constant_profile_uses_base_target_without_active_preset);
+  RUN_TEST(test_manual_fluctuating_profile_switches_between_upper_and_lower_targets);
+  RUN_TEST(test_manual_stop_clears_active_run_token);
+  RUN_TEST(test_manual_finish_acknowledge_clears_active_run_token);
   return UNITY_END();
 }

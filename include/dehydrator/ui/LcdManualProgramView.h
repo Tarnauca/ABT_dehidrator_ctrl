@@ -14,16 +14,30 @@ namespace dehydrator {
  * @brief Snapshot rendered by the manual program editor screen.
  */
 struct LcdManualProgramSnapshot {
+  /** Selected manual program mode. */
+  ManualProgramMode mode = ManualProgramMode::Constant;
   /** Currently selected field. */
-  ManualProgramField selectedField = ManualProgramField::Temperature;
+  ManualProgramField selectedField = ManualProgramField::Mode;
+  /** Current zero-based selection index in the dynamic field list. */
+  uint8_t selectedIndex = 0U;
   /** Whether the selected field is being edited. */
   bool editing = false;
-  /** Current target temperature. */
+  /** Current base/reference temperature. */
   int16_t targetTempC = 0;
-  /** Current duration in minutes. */
+  /** Current total duration in minutes. */
   uint16_t durationMinutes = 0;
-  /** Whether fluctuating mode is enabled. */
-  bool fluctuating = false;
+  /** Current boost delta above base temperature. */
+  int16_t boostDeltaC = 0;
+  /** Current boost duration in minutes. */
+  uint16_t boostDurationMinutes = 0;
+  /** Current fluctuating upper target. */
+  int16_t upperTempC = 0;
+  /** Current fluctuating lower target. */
+  int16_t lowerTempC = 0;
+  /** Current fluctuating upper phase duration. */
+  uint16_t upperDurationMinutes = 0;
+  /** Current fluctuating lower phase duration. */
+  uint16_t lowerDurationMinutes = 0;
   /** Whether the heartbeat custom symbol should be visible. */
   bool heartbeatOn = false;
 };
@@ -33,35 +47,40 @@ struct LcdManualProgramSnapshot {
  */
 class LcdManualProgramView {
  public:
+  /**
+   * @brief Creates a manual program view.
+   *
+   * @param display Character display abstraction used for rendering.
+   */
   explicit LcdManualProgramView(CharacterDisplay& display) : display_(display) {}
 
+  /**
+   * @brief Renders the current manual program editor state.
+   *
+   * @param snapshot Values and selection state to display.
+   */
   void render(const LcdManualProgramSnapshot& snapshot) {
     char line[LcdStatusView::COLUMNS + 1U] = {};
 
     fillLine(line);
-    writeToken(line, "Mod manual", 0U);
+    writeToken(line, "Program manual", 0U);
     writeLine(0U, line, false);
 
-    fillLine(line);
-    line[0] = marker(snapshot, ManualProgramField::Temperature);
-    formatTemperatureLine(line, snapshot.targetTempC);
-    writeLine(1U, line, false);
-
-    fillLine(line);
-    line[0] = marker(snapshot, ManualProgramField::Duration);
-    formatDurationLine(line, snapshot.durationMinutes);
-    writeLine(2U, line, false);
-
-    fillLine(line);
-    if (snapshot.selectedField == ManualProgramField::Fluctuating) {
-      line[0] = marker(snapshot, ManualProgramField::Fluctuating);
-    } else if (snapshot.selectedField == ManualProgramField::Start) {
-      line[5] = marker(snapshot, ManualProgramField::Start);
-    } else if (snapshot.selectedField == ManualProgramField::Back) {
-      line[11] = marker(snapshot, ManualProgramField::Back);
+    const uint8_t count =
+        ManualProgramController::fieldCountForMode(snapshot.mode);
+    for (uint8_t visibleRow = 0U; visibleRow < 3U; visibleRow++) {
+      fillLine(line);
+      const uint8_t fieldIndex =
+          static_cast<uint8_t>(snapshot.selectedIndex + visibleRow);
+      if (fieldIndex < count) {
+        const ManualProgramField field =
+            ManualProgramController::fieldAtIndex(snapshot.mode, fieldIndex);
+        line[0] = marker(snapshot, field);
+        formatField(line, snapshot, field);
+      }
+      writeLine(static_cast<uint8_t>(visibleRow + 1U), line,
+                visibleRow == 2U && snapshot.heartbeatOn);
     }
-    formatModeLine(line, snapshot.fluctuating);
-    writeLine(3U, line, snapshot.heartbeatOn);
   }
 
  private:
@@ -93,23 +112,51 @@ class LcdManualProgramView {
     }
   }
 
-  static void formatTemperatureLine(char* line, int16_t targetTempC) {
-    char value[16] = {};
-    snprintf(value, sizeof(value), "Temp:%d\xDF""C", targetTempC);
-    writeToken(line, value, 1U);
+  static const char* modeLabel(ManualProgramMode mode) {
+    if (mode == ManualProgramMode::Boost) {
+      return "Boost";
+    }
+    if (mode == ManualProgramMode::Fluctuating) {
+      return "Fluctuant";
+    }
+    return "Constant";
   }
 
-  static void formatDurationLine(char* line, uint16_t durationMinutes) {
+  static void formatField(char* line, const LcdManualProgramSnapshot& snapshot,
+                          ManualProgramField field) {
     char value[20] = {};
-    snprintf(value, sizeof(value), "Dur:%uh %um", durationMinutes / 60U,
-             durationMinutes % 60U);
+    if (field == ManualProgramField::Mode) {
+      snprintf(value, sizeof(value), "Mod:%s", modeLabel(snapshot.mode));
+    } else if (field == ManualProgramField::Temperature) {
+      snprintf(value, sizeof(value), "Temp:%d\xDF""C", snapshot.targetTempC);
+    } else if (field == ManualProgramField::Duration) {
+      snprintf(value, sizeof(value), "Dur:%uh %um",
+               snapshot.durationMinutes / 60U,
+               snapshot.durationMinutes % 60U);
+    } else if (field == ManualProgramField::BoostDelta) {
+      snprintf(value, sizeof(value), "Boost:+%d\xDF""C",
+               snapshot.boostDeltaC);
+    } else if (field == ManualProgramField::BoostDuration) {
+      snprintf(value, sizeof(value), "DurBoost:%um",
+               snapshot.boostDurationMinutes);
+    } else if (field == ManualProgramField::UpperTemp) {
+      snprintf(value, sizeof(value), "Tsup:%d\xDF""C", snapshot.upperTempC);
+    } else if (field == ManualProgramField::LowerTemp) {
+      snprintf(value, sizeof(value), "Tinf:%d\xDF""C", snapshot.lowerTempC);
+    } else if (field == ManualProgramField::UpperDuration) {
+      snprintf(value, sizeof(value), "Dur Tsup:%um",
+               snapshot.upperDurationMinutes);
+    } else if (field == ManualProgramField::LowerDuration) {
+      snprintf(value, sizeof(value), "Dur Tinf:%um",
+               snapshot.lowerDurationMinutes);
+    } else if (field == ManualProgramField::Start) {
+      snprintf(value, sizeof(value), "Start");
+    } else if (field == ManualProgramField::Save) {
+      snprintf(value, sizeof(value), "Salveaza");
+    } else if (field == ManualProgramField::Back) {
+      snprintf(value, sizeof(value), "Inapoi");
+    }
     writeToken(line, value, 1U);
-  }
-
-  static void formatModeLine(char* line, bool fluctuating) {
-    writeToken(line, fluctuating ? "F:Da" : "F:Nu", 1U);
-    writeToken(line, "Start", 6U);
-    writeToken(line, "Inapoi", 12U);
   }
 
   void writeLine(uint8_t row, const char* line, bool heartbeatOn) {

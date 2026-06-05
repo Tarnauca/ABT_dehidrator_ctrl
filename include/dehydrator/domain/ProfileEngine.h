@@ -10,6 +10,8 @@ namespace dehydrator {
 enum class ProfileMode {
   /** One target temperature for the whole run. */
   Fixed,
+  /** Starts with a higher target, then continues at the base target. */
+  Boost,
   /** Alternates between high and low target phases. */
   Fluctuating,
 };
@@ -23,15 +25,15 @@ enum class ProfileMode {
 struct ProfileConfig {
   /** Profile mode to evaluate. */
   ProfileMode mode = ProfileMode::Fixed;
-  /** Fixed-mode target temperature and fluctuating-mode user average metadata. */
+  /** Fixed/boost base target and fluctuating-mode reference metadata. */
   int16_t targetTempC = 0;
   /** Fluctuating-mode low phase target temperature. */
   int16_t lowTempC = 0;
-  /** Fluctuating-mode high phase target temperature. */
+  /** Fluctuating-mode high phase target or boost target temperature. */
   int16_t highTempC = 0;
   /** Total active profile duration in minutes. */
   uint16_t durationMinutes = 0;
-  /** Fluctuating-mode high phase duration in minutes. */
+  /** Fluctuating-mode high phase or boost phase duration in minutes. */
   uint16_t highPhaseMinutes = 0;
   /** Fluctuating-mode low phase duration in minutes. */
   uint16_t lowPhaseMinutes = 0;
@@ -40,7 +42,7 @@ struct ProfileConfig {
    * @brief Creates a profile configuration.
    *
    * @param modeValue Profile mode to evaluate.
-   * @param targetTempCValue Fixed target temperature or fluctuating average metadata.
+   * @param targetTempCValue Fixed/boost base target or fluctuating reference.
    * @param lowTempCValue Fluctuating-mode low phase target temperature.
    * @param highTempCValue Fluctuating-mode high phase target temperature.
    * @param durationMinutesValue Total active profile duration in minutes.
@@ -97,7 +99,8 @@ class ProfileEngine {
   /**
    * @brief Evaluates a profile at a given active elapsed time.
    *
-   * Fluctuating profiles start with the high-temperature phase, then alternate
+   * Boost profiles start with the high-temperature phase, then continue at the
+   * base target. Fluctuating profiles start with the high-temperature phase, then alternate
    * high/low phases using the configured phase durations.
    *
    * @param config Profile configuration to evaluate.
@@ -122,6 +125,11 @@ class ProfileEngine {
       return result;
     }
 
+    if (config.mode == ProfileMode::Boost) {
+      result.targetTempC = boostTarget(config, elapsedSeconds);
+      return result;
+    }
+
     result.targetTempC = fluctuatingTarget(config, elapsedSeconds);
     return result;
   }
@@ -137,6 +145,12 @@ class ProfileEngine {
            config.durationMinutes <= MAX_DURATION_MINUTES &&
            ((config.mode == ProfileMode::Fixed &&
              isAllowedTemp(config.targetTempC)) ||
+            (config.mode == ProfileMode::Boost &&
+             isAllowedTemp(config.targetTempC) &&
+             isAllowedTemp(config.highTempC) &&
+             config.targetTempC <= config.highTempC &&
+             config.highPhaseMinutes > 0U &&
+             config.highPhaseMinutes * 2U <= config.durationMinutes) ||
             (config.mode == ProfileMode::Fluctuating &&
              isAllowedTemp(config.targetTempC) &&
              isAllowedTemp(config.lowTempC) &&
@@ -157,6 +171,13 @@ class ProfileEngine {
 
   static uint32_t phaseSeconds(uint16_t minutes) {
     return static_cast<uint32_t>(minutes) * 60UL;
+  }
+
+  static int16_t boostTarget(const ProfileConfig& config,
+                             uint32_t elapsedSeconds) {
+    return elapsedSeconds < phaseSeconds(config.highPhaseMinutes)
+               ? config.highTempC
+               : config.targetTempC;
   }
 
   static int16_t fluctuatingTarget(const ProfileConfig& config,
