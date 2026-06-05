@@ -30,8 +30,10 @@ Status: draft baseline from discovery conversation. Requirement IDs are stable a
 - REQ-FUNC-023: If `Inapoi` is selected while the current manual profile has unsaved changes, the controller shall ask `Da / Nu / Renunta` for saving first. `Da` shall continue to slot selection and then return to the previous menu after save; `Nu` shall discard unsaved changes and return; `Renunta` shall return to the editor.
 - REQ-FUNC-024: The main menu shall provide a `Programe utilizator` entry for browsing 10 saved manual-profile slots, including vacant slots.
 - REQ-FUNC-025: Saved user profiles shall support read-only inspection plus `Pornire`, `Editeaza`, `Sterge`, and `Inapoi` actions when occupied. Vacant slots shall indicate `Liber` and shall still allow entering the editor through `Editeaza`.
-- REQ-FUNC-026: The main menu shall order entries as `Oprire program`, `Reluare program`, `Programe presetate`, `Programe utilizator`, `Program manual`, `Setari`, `Inapoi`, while hiding `Oprire program` and `Reluare program` when they are not applicable.
+- REQ-FUNC-026: The main menu shall order entries as `Oprire program`, `Pauza program`, `Reluare program`, `Programe presetate`, `Programe utilizator`, `Program manual`, `Setari`, `Inapoi`, while hiding the run-control entries when they are not applicable.
 - REQ-FUNC-027: `Setari` shall expose `Testare` and `Inapoi` as a dedicated submenu instead of showing `Testare` in the main menu.
+- REQ-FUNC-028: `Testare` shall show the latest NTC temperature, AM2302 temperature, and AM2302 humidity as the first read-only entries before any output toggles.
+- REQ-FUNC-029: If a `Testare` sensor reading is invalid, the corresponding row shall show a short error indication instead of a value.
 - REQ-FUNC-011: Pause shall command heater OFF and fan OFF immediately, suspend program timer/profile progression, and keep the active run resumable.
 - REQ-FUNC-012: Resume from pause shall continue the same profile from the paused point.
 - REQ-FUNC-013: Confirmed user stop/cancel shall command heater OFF and fan OFF immediately, shall not run cooldown, and shall clear or mark resume state non-resumable.
@@ -80,7 +82,7 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-UI-002: LCD text shall be ASCII-only Romanian by default unless the exact LCD character set is verified.
 - REQ-UI-003: Serial logs, source code, comments, and developer docs shall be English.
 - REQ-UI-004: LCD shall show RH when the secondary temp/RH sensor is present and functional.
-- REQ-UI-005: A bottom-right heartbeat symbol shall always indicate that the main loop is alive.
+- REQ-UI-005: The main status screen shall show a blinking top-right play symbol while a run is `RULARE`, a blinking top-right pause symbol while a run is `PAUZA`, and no status-corner symbol in other lifecycle states.
 - REQ-UI-006: Finish alarm shall use buzzer and blinking LCD backlight after the 3-minute finish cooldown completes.
 - REQ-UI-007: Fault alarm shall use buzzer, blinking LCD backlight, and a compact Romanian fault message until user acknowledgement.
 - REQ-UI-008: Encoder rotation shall navigate/change values.
@@ -101,6 +103,8 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-UI-023: While the main status screen is active, encoder rotation shall cycle between logical status pages without opening the menu.
 - REQ-UI-024: Additional status pages shall show active-program parameters and logical output states, using one parameter or output per LCD line where practical.
 - REQ-UI-025: The status screen may use compact program labels when the full source label would not fit after the `Program:` prefix on one 20-character line.
+- REQ-UI-026: Selecting `Oprire program` from the main menu shall require explicit `Da / Nu` confirmation before the run is stopped.
+- REQ-UI-027: `Pauza program` shall appear only while a run is in `RULARE`, and its resume flow shall reuse the same `Reluare program` behavior as other resumable interruptions.
 
 ## Logging And Diagnostics Requirements
 

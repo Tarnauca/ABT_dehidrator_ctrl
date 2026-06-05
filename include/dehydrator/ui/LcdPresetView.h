@@ -20,8 +20,6 @@ struct LcdPresetSnapshot {
   size_t presetCount = 0U;
   /** Currently selected preset index. */
   size_t selectedIndex = 0U;
-  /** Whether the heartbeat custom symbol should be visible. */
-  bool heartbeatOn = false;
 };
 
 /**
@@ -46,20 +44,20 @@ class LcdPresetView {
 
     fillLine(line);
     writeToken(line, "Programe presetate", 0U);
-    writeLine(0U, line, false);
+    writeLine(0U, line);
 
     fillLine(line);
     line[0] = '>';
     writeToken(line, currentLabel(snapshot), 1U);
-    writeLine(1U, line, false);
+    writeLine(1U, line);
 
     fillLine(line);
     writeToken(line, currentDescription(snapshot), 0U);
-    writeLine(2U, line, false);
+    writeLine(2U, line);
 
     fillLine(line);
     writeToken(line, currentDetails(snapshot), 0U);
-    writeLine(3U, line, snapshot.heartbeatOn);
+    writeLine(3U, line);
   }
 
  private:
@@ -142,15 +140,10 @@ class LcdPresetView {
     }
   }
 
-  void writeLine(uint8_t row, const char* line, bool heartbeatOn) {
+  void writeLine(uint8_t row, const char* line) {
     display_.setCursor(0U, row);
     for (uint8_t column = 0U; column < LcdStatusView::COLUMNS; column++) {
-      if (row == LcdStatusView::ROWS - 1U &&
-          column == LcdStatusView::COLUMNS - 1U && heartbeatOn) {
-        display_.writeCustom(LcdStatusView::HEARTBEAT_CHAR);
-      } else {
-        display_.writeChar(line[column]);
-      }
+      display_.writeChar(line[column]);
     }
   }
 

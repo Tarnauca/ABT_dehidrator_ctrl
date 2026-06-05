@@ -113,6 +113,20 @@ class PresetRunController {
   }
 
   /**
+   * @brief Pauses one running run while keeping it resumable.
+   *
+   * @return true when the lifecycle entered `Paused`.
+   */
+  bool pause() {
+    if (!stateMachine_.pause()) {
+      return false;
+    }
+
+    updateCommand(0U, false, 0);
+    return true;
+  }
+
+  /**
    * @brief Applies a confirmed user stop and returns to idle immediately.
    *
    * @return true when an active lifecycle state was stopped.

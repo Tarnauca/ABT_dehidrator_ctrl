@@ -58,6 +58,8 @@ struct UiResult {
 struct MainMenuContext {
   /** Show `Oprire program` when one active/resumable run exists. */
   bool showStopProgram = false;
+  /** Show `Pauza program` only while one run is actively running. */
+  bool showPauseProgram = false;
   /** Show `Reluare program` when one resumable run exists. */
   bool showResumeProgram = false;
 };
@@ -68,7 +70,7 @@ struct MainMenuContext {
 class MenuController {
  public:
   /** Maximum number of visible top-level menu items including `Inapoi`. */
-  static constexpr size_t MAX_ITEM_COUNT = 7U;
+  static constexpr size_t MAX_ITEM_COUNT = 8U;
 
   /**
    * @brief Creates a menu controller starting on the status screen.
@@ -204,11 +206,12 @@ class MenuController {
     bool dynamicResume;
   };
 
-  static constexpr size_t FULL_ITEM_COUNT = 7U;
+  static constexpr size_t FULL_ITEM_COUNT = 8U;
 
   static const MenuItem* allItems() {
     static const MenuItem kItems[FULL_ITEM_COUNT] = {
         {"Oprire program", "oprire_program", true, false},
+        {"Pauza program", "pauza_program", false, false},
         {"Reluare program", "reluare_program", false, true},
         {"Programe presetate", "programe_presetate", false, false},
         {"Programe utilizator", "programe_utilizator", false, false},
@@ -222,6 +225,9 @@ class MenuController {
   bool isVisible(const MenuItem& item) const {
     if (item.dynamicStop) {
       return context_.showStopProgram;
+    }
+    if (strcmp(item.token, "pauza_program") == 0) {
+      return context_.showPauseProgram;
     }
     if (item.dynamicResume) {
       return context_.showResumeProgram;

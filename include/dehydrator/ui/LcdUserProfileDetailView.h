@@ -22,8 +22,6 @@ struct LcdUserProfileDetailSnapshot {
   ProfileConfig profile;
   /** Currently selected action. */
   UserProfileAction action = UserProfileAction::Edit;
-  /** Whether the heartbeat custom symbol should be visible. */
-  bool heartbeatOn = false;
 };
 
 /**
@@ -48,7 +46,7 @@ class LcdUserProfileDetailView {
 
     fillLine(line);
     snprintf(line, sizeof(line), "Profil %u", snapshot.slotNumber);
-    writeLine(0U, line, false);
+    writeLine(0U, line);
 
     fillLine(line);
     if (!snapshot.occupied) {
@@ -56,7 +54,7 @@ class LcdUserProfileDetailView {
     } else {
       writeToken(line, modeLabel(snapshot.profile.mode), 0U);
     }
-    writeLine(1U, line, false);
+    writeLine(1U, line);
 
     fillLine(line);
     if (snapshot.occupied) {
@@ -64,12 +62,12 @@ class LcdUserProfileDetailView {
     } else {
       writeToken(line, "Fara profil salvat", 0U);
     }
-    writeLine(2U, line, false);
+    writeLine(2U, line);
 
     fillLine(line);
     line[0] = '>';
     writeToken(line, actionLabel(snapshot.action), 1U);
-    writeLine(3U, line, snapshot.heartbeatOn);
+    writeLine(3U, line);
   }
 
  private:
@@ -130,15 +128,10 @@ class LcdUserProfileDetailView {
     }
   }
 
-  void writeLine(uint8_t row, const char* line, bool heartbeatOn) {
+  void writeLine(uint8_t row, const char* line) {
     display_.setCursor(0U, row);
     for (uint8_t column = 0U; column < LcdStatusView::COLUMNS; column++) {
-      if (row == LcdStatusView::ROWS - 1U &&
-          column == LcdStatusView::COLUMNS - 1U && heartbeatOn) {
-        display_.writeCustom(LcdStatusView::HEARTBEAT_CHAR);
-      } else {
-        display_.writeChar(line[column]);
-      }
+      display_.writeChar(line[column]);
     }
   }
 

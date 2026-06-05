@@ -99,8 +99,13 @@ Warnings are shown/logged but do not require acknowledgement.
 - LCD text should be ASCII-only Romanian by default because HD44780 diacritics are uncertain.
 - LCD size: 4 lines x 20 characters.
 - Main menu is product-oriented and dynamic: `Oprire program` and
-  `Reluare program` appear only when applicable, while `Testare` lives under
-  `Setari`.
+  `Pauza program` / `Reluare program` appear only when applicable, while
+  `Testare` lives under `Setari`.
+- `Testare` begins with read-only sensor rows for NTC temperature, AM2302
+  temperature, and AM2302 humidity before the direct-output toggle rows.
+- `Oprire program` is a confirmed action, not an immediate stop.
+- `Pauza program` is shown only in `RULARE`; once paused, resume uses the same
+  resumable-program flow as any other resumable interruption.
 - The main LCD status area is paged: rotary movement on the status screen
   cycles summary, parameter, and output pages without opening the menu.
 - The status summary page shows `Program`, `Temp/RH`, `Timp scurs`, and
@@ -109,8 +114,8 @@ Warnings are shown/logged but do not require acknowledgement.
 - UI navigation rule: the dedicated one-level-up entry (e.g. `Back`) of any
   menu-like screen must not remain selected across re-entry. When the screen is
   opened again, selection starts on the first actionable item.
-- Bottom-right LCD cell is reserved for an always-running heartbeat symbol.
-- Heartbeat should use a custom character if supported.
+- The status summary page uses the top-right LCD corner for a blinking custom
+  state symbol: `Play` in `RULARE`, `Pause` in `PAUZA`, blank otherwise.
 - Serial logs, code, comments, and docs are English.
 - Serial logs should be human-readable but tool-friendly.
 - Every discrete event/change should be logged: state changes, parameter changes, output changes, warnings, faults, user actions, resume/discard decisions.

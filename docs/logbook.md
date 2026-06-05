@@ -1971,6 +1971,95 @@ status screen itself should switch to additional parameter and output pages.
 
 ---
 
+## Main menu pause and confirmed stop
+
+**Trigger**
+The user noticed that runtime control in the main menu still felt too abrupt.
+They wanted `Oprire program` to ask for confirmation and also wanted an
+explicit `Pauza program` entry for actively running programs, with resume
+behavior reusing the existing resumable-program flow.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added a dynamic `Pauza program` item to the main menu, shown only while the
+  lifecycle is in `RULARE`.
+- Kept `Reluare program` tied to paused/resumable state.
+- Routed `Oprire program` through the existing binary yes/no confirmation
+  screen instead of stopping immediately.
+- Exposed `pause()` through `PresetRunController` so the firmware shell can
+  pause runs without reaching into the lower-level state machine directly.
+- Updated menu/controller tests and preset-run controller tests.
+- Aligned requirements, test-plan, backlog, UI notes, and project context.
+
+**Decisions**
+- Reuse the existing resumable-program mechanism after a user pause instead of
+  introducing a second resume path.
+- Show `Pauza program` only in `RULARE`, not in `RACIRE` or other lifecycle
+  states.
+
+**Commits / Branches**
+- Branch: pending
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Pending after native tests and Mega2560 build rerun.
+
+**Links**
+- `include/dehydrator/ui/MenuController.h`
+- `include/dehydrator/app/PresetRunController.h`
+- `src/main.cpp`
+- `test/test_menu_controller/test_test_menu_controller.cpp`
+- `test/test_lcd_menu_view/test_lcd_menu_view.cpp`
+- `test/test_preset_run_controller/test_preset_run_controller.cpp`
+
+---
+
+## Status play/pause indicator
+
+**Trigger**
+The user wanted the main status screen to communicate something useful instead
+of a generic heartbeat symbol. They asked to remove the explicit bottom-right
+heartbeat from the status page and replace it with a blinking top-right
+indicator: `Play` for `RULARE`, `Pause` for `PAUZA`, blank otherwise.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Removed the old status-screen heartbeat rendering from `LcdStatusView`.
+- Added status-specific `Play` and `Pause` custom-character slots.
+- Wired the summary page to show the blinking icon in the top-right corner
+  using the existing UI refresh cadence.
+- Removed the old bottom-right heartbeat marker from the other LCD screens as
+  well, so the generic heartbeat concept no longer appears anywhere in the UI.
+- Updated status-view tests and the active UI documentation.
+
+**Decisions**
+- Keep the blink cadence from the old heartbeat timing, but repurpose it as a
+  run-state indicator rather than a generic liveness marker.
+- Show no corner symbol at all for `INACTIV`, `RACIRE`, `FINALIZAT`, `EROARE`,
+  or other non-running/non-paused states.
+
+**Commits / Branches**
+- Branch: pending
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Pending after native tests and Mega2560 build rerun.
+
+**Links**
+- `include/dehydrator/ui/LcdStatusView.h`
+- `src/main.cpp`
+- `test/test_lcd_status_view/test_lcd_status_view.cpp`
+
+---
+
 ## Preset stop menu wiring fix
 
 **Trigger**
@@ -2130,3 +2219,20 @@ an ASCII box before the structured startup logs.
 
 **Links**
 - `src/main.cpp`
+## 2026-06-05 - Testare sensor rows
+
+The bench-oriented `Testare` screen only showed output toggles, which made it
+less useful for the common "are the sensors alive?" check.
+
+What changed:
+
+- Added read-only NTC temperature, AM2302 temperature, and AM2302 humidity
+  rows at the start of `Testare`.
+- Kept `Fan`, `Heat`, and `Inapoi` after the sensor rows.
+- Short press on sensor rows does nothing.
+- Invalid readings are rendered as `Eroare` on the corresponding row.
+
+Why this shape:
+
+- It lets the operator confirm sensor health before toggling outputs.
+- The short per-row error text keeps the screen readable on a 4x20 LCD.

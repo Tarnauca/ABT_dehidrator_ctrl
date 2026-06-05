@@ -101,14 +101,13 @@ void test_manual_program_view_renders_boost_fields() {
   assertLineEquals(display, 3U, " Start              ");
 }
 
-void test_manual_program_view_renders_fluctuating_fields_and_heartbeat() {
+void test_manual_program_view_renders_fluctuating_fields() {
   FakeDisplay display;
   LcdManualProgramView view(display);
   LcdManualProgramSnapshot snapshot = baseSnapshot();
   snapshot.mode = ManualProgramMode::Fluctuating;
   snapshot.selectedField = ManualProgramField::UpperTemp;
   snapshot.selectedIndex = 3U;
-  snapshot.heartbeatOn = true;
 
   view.render(snapshot);
 
@@ -123,7 +122,7 @@ void test_manual_program_view_renders_fluctuating_fields_and_heartbeat() {
   TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[1U][8U]);
   TEST_ASSERT_EQUAL_CHAR('C', display.cells[1U][9U]);
   assertLineEquals(display, 2U, " Tinf:52\xDF""C          ");
-  TEST_ASSERT_TRUE(display.custom[3U][19U]);
+  TEST_ASSERT_FALSE(display.custom[3U][19U]);
 }
 
 void test_manual_program_view_renders_constant_start_and_back_at_end() {
@@ -189,7 +188,7 @@ int main() {
   UNITY_BEGIN();
   RUN_TEST(test_manual_program_view_renders_mode_selector_first);
   RUN_TEST(test_manual_program_view_renders_boost_fields);
-  RUN_TEST(test_manual_program_view_renders_fluctuating_fields_and_heartbeat);
+  RUN_TEST(test_manual_program_view_renders_fluctuating_fields);
   RUN_TEST(test_manual_program_view_renders_constant_start_and_back_at_end);
   RUN_TEST(test_manual_program_view_renders_boost_start_and_back_at_end);
   RUN_TEST(test_manual_program_view_renders_fluctuating_late_fields);

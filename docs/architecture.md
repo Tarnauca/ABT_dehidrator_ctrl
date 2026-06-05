@@ -148,7 +148,7 @@ Configuration:
 - Hardware pins, relay polarity, LCD address, and serial ports.
 - Safety limits and fault thresholds.
 - Control timing and hysteresis.
-- UI and heartbeat timing.
+- UI blink timing and status indication behavior.
 - Logging intervals.
 - Calibration defaults.
 - Built-in presets.
@@ -193,7 +193,7 @@ Proposed configuration ownership:
 - `HardwareConfig`: pins, relay polarity, LCD I2C address, serial port selection, baud rate.
 - `SafetyConfig`: 75 C setpoint limit, 80 C hard fault, no-rise and stuck-heater thresholds, input-stuck timing.
 - `ControlConfig`: hysteresis, relay minimum ON/OFF times, sensor/control intervals.
-- `UiConfig`: LCD dimensions, heartbeat interval, alarm blink timing.
+- `UiConfig`: LCD dimensions, activity-indicator blink interval, alarm blink timing.
 - `LoggingConfig`: periodic state interval, verbose/raw ADC enable flag.
 - `PersistenceConfig`: EEPROM schema version, checkpoint interval, validation settings.
 - `CalibrationConfig`: default primary thermistor and secondary temp/RH calibration constants.
