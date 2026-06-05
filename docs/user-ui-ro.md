@@ -14,26 +14,80 @@ Status: draft. LCD labels are Romanian, ASCII-only by default, and must fit a 4x
 
 ## Draft Status Screen
 
-Initial implemented bring-up screen:
+The main status screen is now a small group of rotary-selectable pages rather
+than one fixed screen. The heartbeat occupies the bottom-right LCD cell on
+every page. Sensor values are shown as `--` until real readings are connected
+to the status snapshot.
+
+### Summary page
 
 ```text
-Stare: INACTIV
-T:--°C   RH:--%
-H:OFF     F:OFF
-                   <3
+Program: Mere
+Temp: 57°C RH: 43%
+Timp scurs: 1h 30m
+Timp ramas: 8h 30m
 ```
 
-The heartbeat occupies the bottom-right character as a custom LCD glyph. Sensor values are shown as `--` until real readings are connected to the status snapshot.
+The first line always shows the active program in compact form:
 
-Current implemented lifecycle labels on the status screen include:
+- built-in preset label, such as `Mere`
+- saved user profile, such as `Profil 1`
+- manual run, such as `Man. Const`, `Man. Boost`, `Man. Fluct`
+- `Inactiv`
 
-- `INACTIV`
-- `RULARE`
-- `RACIRE`
-- `FINALIZAT`
+### Parameter pages
 
-When `FINALIZAT` is shown, a short press acknowledges the finished run and
-returns the controller to idle instead of opening the menu.
+Program parameters are shown on separate lines and may occupy more than one
+page when needed.
+
+Constant-mode example:
+
+```text
+Temp: 57°C
+Durata: 8h 0m
+
+
+```
+
+Boost-mode example:
+
+```text
+Temp: 55°C
+Durata: 8h 0m
+Boost: +10°C
+Dur.boost: 0h 30m
+```
+
+Fluctuating-mode page 1 example:
+
+```text
+T.ref: 57°C
+Durata: 10h 0m
+Tsup: 65°C
+Tinf: 50°C
+```
+
+Fluctuating-mode page 2 example:
+
+```text
+Dur. Tsup: 0h 20m
+Dur. Tinf: 0h 20m
+
+
+```
+
+### Output page
+
+```text
+Incalzitor: Oprit
+Ventilator: Pornit
+
+
+```
+
+Encoder rotation on the status screen cycles through the available pages.
+Short press from status still opens the menu, except when the run is in
+`FINALIZAT`, where a short press acknowledges completion and returns to idle.
 
 ## Draft Fault Screen
 

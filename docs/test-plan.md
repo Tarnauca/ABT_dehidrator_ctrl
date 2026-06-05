@@ -102,7 +102,7 @@ Status values:
 | REQ-UI-012 | Unit/Bench | Selecting `Inapoi` returns one UI level up | Menu, preset, test, and manual-program controller tests; bench navigation check pending | Implemented |
 | REQ-UI-013 | Unit/Bench | Menu-like screens use line 1 as section title and lower lines for items | `test_lcd_menu_view`, `test_lcd_preset_view`, `test_lcd_test_view`, `test_lcd_manual_program_view`; LCD bench check pending | Implemented |
 | REQ-UI-014 | Unit/Bench | LCD temperatures use `°C` consistently | `test_lcd_status_view`, `test_lcd_preset_view`, `test_lcd_manual_program_view`; LCD bench check pending | Implemented |
-| REQ-UI-015 | Unit/Bench | Preset summary durations use `Xh Ym` format | `test_lcd_preset_view`; LCD bench check pending | Implemented |
+| REQ-UI-015 | Unit/Bench | Compact LCD durations use `Xh Ym` in preset, status, and parameter views | `test_lcd_status_view`, `test_lcd_preset_view`, `test_lcd_manual_program_view`; LCD bench check pending | Implemented |
 | REQ-FUNC-001 | Unit/Bench | Test mode supports direct on/off control shell | `test_test_mode_controller`, `test_lcd_test_view`; bench test-mode check pending | Implemented |
 | REQ-FUNC-004 | Unit/Bench | Built-in preset selection shell is available from the menu | `test_preset_select_controller`, `test_lcd_preset_view`; bench preset check pending | Implemented |
 | REQ-FUNC-016 | Unit/Bench | Confirming a preset starts the associated run profile from idle | `test_preset_run_controller`; preset start bench check pending | Implemented |
@@ -118,12 +118,15 @@ Status values:
 | REQ-FUNC-025 | Unit/Bench | Occupied/vacant saved profiles expose the correct actions | `test_user_profile_controllers`, new LCD/detail wiring; bench browse/edit/delete pending | Implemented |
 | REQ-FUNC-026 | Unit/Bench | Main menu order and dynamic stop/resume visibility match the product flow | `test_menu_controller`, `test_lcd_menu_view`; bench menu hierarchy check pending | Implemented |
 | REQ-FUNC-027 | Unit/Bench | `Setari` exposes `Testare` as a submenu instead of a top-level main-menu entry | Native UI wiring plus LCD/menu tests; bench settings navigation pending | Implemented |
-| REQ-UI-016 | Unit/Bench | Status screen reflects Romanian lifecycle labels during a preset run | `test_lcd_status_view`, `test_preset_run_controller`; LCD bench check pending | Implemented |
+| REQ-UI-016 | Unit/Bench | Status summary page shows program, Temp/RH, elapsed time, and remaining time | `test_lcd_status_view`; LCD bench check pending | Implemented |
 | REQ-UI-017 | Unit/Bench | Finished state can be acknowledged from the status screen with short press | `test_preset_run_controller`; status acknowledgement bench check pending | Implemented |
 | REQ-UI-018 | Unit/Bench | User-profile slot list shows all 10 slots as `Profil N` or `Profil N (nedef.)` | `test_user_profile_controllers`, `test_lcd_user_profile_slot_view`; LCD bench check pending | Implemented |
 | REQ-UI-019 | Unit/Bench | Saving over an occupied slot requires overwrite confirmation | `test_confirm_replace_run_controller`; bench overwrite-confirm flow pending | Implemented |
 | REQ-UI-020 | Unit/Bench | Deleting an occupied slot requires confirmation | `test_confirm_replace_run_controller`; bench delete-confirm flow pending | Implemented |
 | REQ-UI-021 | Unit/Bench | Saving one profile automatically closes the slot list and resumes the triggering flow | Native UI wiring; bench save-return flow pending | Implemented |
+| REQ-UI-023 | Unit/Bench | Encoder rotation on status cycles between the available status pages | Native UI wiring plus LCD/status bench check pending | Implemented |
+| REQ-UI-024 | Unit/Bench | Additional status pages show program parameters and output states line-by-line | `test_lcd_status_view`; LCD bench check pending | Implemented |
+| REQ-UI-025 | Review/Bench | Status uses compact program labels when the full source label would overflow `Program:` line width | Code review plus LCD bench check pending | Implemented |
 | REQ-PERSIST-001 | Unit | Calibration defaults are explicit and later persistable | `test_config` thermistor calibration default tests; EEPROM persistence pending | Implemented |
 | REQ-UI-005 | Unit/Bench | Heartbeat visible bottom-right and runs in all states | `test_lcd_status_view`; LCD bench test pending | Implemented |
 | REQ-UI-006 | Unit/Bench | Finish alarm starts after cooldown | State machine plus buzzer/backlight bench check | Planned |

@@ -101,6 +101,11 @@ Warnings are shown/logged but do not require acknowledgement.
 - Main menu is product-oriented and dynamic: `Oprire program` and
   `Reluare program` appear only when applicable, while `Testare` lives under
   `Setari`.
+- The main LCD status area is paged: rotary movement on the status screen
+  cycles summary, parameter, and output pages without opening the menu.
+- The status summary page shows `Program`, `Temp/RH`, `Timp scurs`, and
+  `Timp ramas`; longer program names may be compacted to fit the 20-character
+  line.
 - UI navigation rule: the dedicated one-level-up entry (e.g. `Back`) of any
   menu-like screen must not remain selected across re-entry. When the screen is
   opened again, selection starts on the first actionable item.
