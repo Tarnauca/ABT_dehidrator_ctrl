@@ -68,13 +68,16 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 - [x] Implement initial encoder-driven menu shell.
 - [x] Implement initial manual mode screen shell.
 - [x] Split the original manual shell into `Mod manual` program setup and `Testare` direct-output bring-up.
+- [x] Add EEPROM-backed user manual-profile save/load/edit/delete flow with 10 slots.
 - [x] Implement preset selection and run configuration shell.
 - [x] Wire preset selection into the real run lifecycle and status screen.
+- [x] Add manual `Constant`, `Boost`, and `Fluctuant` program variants.
+- [x] Reshape the LCD menu hierarchy to product-oriented labels and move `Testare` under `Setari`.
 - [ ] Add built-in presets after source values are confirmed.
 
 ## Phase 8: Verification And Safety Review
 
 - [x] Run unit tests.
-- [ ] Run PlatformIO build.
+- [x] Run PlatformIO build.
 - [ ] Create manual bench test checklist.
 - [ ] Review risks and safety behavior before real heater testing.

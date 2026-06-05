@@ -68,7 +68,7 @@ void test_preset_view_renders_selected_preset_details() {
 
   view.render(snapshotForIndex(0U, true));
 
-  assertLineEquals(display, 0U, "Pornire preset      ");
+  assertLineEquals(display, 0U, "Programe presetate  ");
   assertLineEquals(display, 1U, ">Mere               ");
   assertLineEquals(display, 2U, "Mod fluctuat        ");
   TEST_ASSERT_EQUAL_CHAR('5', display.cells[3U][0U]);
@@ -116,7 +116,7 @@ void test_preset_view_renders_back_row() {
 
   view.render(snapshot);
 
-  assertLineEquals(display, 0U, "Pornire preset      ");
+  assertLineEquals(display, 0U, "Programe presetate  ");
   assertLineEquals(display, 1U, ">Inapoi             ");
   assertLineEquals(display, 2U, "                    ");
   assertLineEquals(display, 3U, "                    ");

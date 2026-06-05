@@ -1,31 +1,31 @@
 #include <unity.h>
 
-#include "dehydrator/ui/ManualModeController.h"
+#include "dehydrator/ui/TestModeController.h"
 
-using dehydrator::ManualField;
-using dehydrator::ManualModeController;
+using dehydrator::TestField;
+using dehydrator::TestModeController;
 
 void test_rotation_switches_between_fan_and_heater_fields() {
-  ManualModeController controller;
+  TestModeController controller;
 
   const auto first = controller.onRotate(1);
   TEST_ASSERT_TRUE(first.selectionChanged);
-  TEST_ASSERT_EQUAL(static_cast<int>(ManualField::Heater),
+  TEST_ASSERT_EQUAL(static_cast<int>(TestField::Heater),
                     static_cast<int>(controller.selectedField()));
 
   const auto second = controller.onRotate(1);
   TEST_ASSERT_TRUE(second.selectionChanged);
-  TEST_ASSERT_EQUAL(static_cast<int>(ManualField::Back),
+  TEST_ASSERT_EQUAL(static_cast<int>(TestField::Back),
                     static_cast<int>(controller.selectedField()));
 
   const auto third = controller.onRotate(-1);
   TEST_ASSERT_TRUE(third.selectionChanged);
-  TEST_ASSERT_EQUAL(static_cast<int>(ManualField::Heater),
+  TEST_ASSERT_EQUAL(static_cast<int>(TestField::Heater),
                     static_cast<int>(controller.selectedField()));
 }
 
 void test_toggling_heater_forces_fan_on() {
-  ManualModeController controller;
+  TestModeController controller;
   controller.onRotate(1);
 
   const auto result = controller.onShortPress();
@@ -37,7 +37,7 @@ void test_toggling_heater_forces_fan_on() {
 }
 
 void test_toggling_fan_off_while_heater_on_also_turns_heater_off() {
-  ManualModeController controller;
+  TestModeController controller;
   controller.onRotate(1);
   controller.onShortPress();
   controller.onRotate(-1);
@@ -51,23 +51,25 @@ void test_toggling_fan_off_while_heater_on_also_turns_heater_off() {
 }
 
 void test_short_press_on_back_requests_exit_to_menu() {
-  ManualModeController controller;
+  TestModeController controller;
   controller.onRotate(1);
   controller.onRotate(1);
 
   const auto result = controller.onShortPress();
 
   TEST_ASSERT_TRUE(result.exitToMenu);
-  TEST_ASSERT_EQUAL(static_cast<int>(ManualField::Fan),
+  TEST_ASSERT_EQUAL(static_cast<int>(TestField::Fan),
                     static_cast<int>(controller.selectedField()));
 }
 
-void test_long_press_requests_exit_to_menu() {
-  ManualModeController controller;
+void test_long_press_has_no_assigned_action() {
+  TestModeController controller;
 
   const auto result = controller.onLongPress();
 
-  TEST_ASSERT_TRUE(result.exitToMenu);
+  TEST_ASSERT_FALSE(result.exitToMenu);
+  TEST_ASSERT_FALSE(result.outputChanged);
+  TEST_ASSERT_FALSE(result.selectionChanged);
 }
 
 void setup() {
@@ -76,7 +78,7 @@ void setup() {
   RUN_TEST(test_toggling_heater_forces_fan_on);
   RUN_TEST(test_toggling_fan_off_while_heater_on_also_turns_heater_off);
   RUN_TEST(test_short_press_on_back_requests_exit_to_menu);
-  RUN_TEST(test_long_press_requests_exit_to_menu);
+  RUN_TEST(test_long_press_has_no_assigned_action);
   UNITY_END();
 }
 

@@ -8,6 +8,7 @@ using dehydrator::LcdManualProgramSnapshot;
 using dehydrator::LcdManualProgramView;
 using dehydrator::LcdStatusView;
 using dehydrator::ManualProgramField;
+using dehydrator::ManualProgramMode;
 
 class FakeDisplay : public CharacterDisplay {
  public:
@@ -47,68 +48,151 @@ void assertLineEquals(const FakeDisplay& display, uint8_t row,
   }
 }
 
-void test_manual_program_view_renders_temperature_selected() {
-  FakeDisplay display;
-  LcdManualProgramView view(display);
+LcdManualProgramSnapshot baseSnapshot() {
   LcdManualProgramSnapshot snapshot;
-  snapshot.selectedField = ManualProgramField::Temperature;
+  snapshot.mode = ManualProgramMode::Constant;
+  snapshot.selectedField = ManualProgramField::Mode;
+  snapshot.selectedIndex = 0U;
   snapshot.targetTempC = 57;
   snapshot.durationMinutes = 8U * 60U;
-  snapshot.fluctuating = false;
+  snapshot.boostDeltaC = 10;
+  snapshot.boostDurationMinutes = 30;
+  snapshot.upperTempC = 62;
+  snapshot.lowerTempC = 52;
+  snapshot.upperDurationMinutes = 10;
+  snapshot.lowerDurationMinutes = 10;
+  return snapshot;
+}
+
+void test_manual_program_view_renders_mode_selector_first() {
+  FakeDisplay display;
+  LcdManualProgramView view(display);
+
+  view.render(baseSnapshot());
+
+  assertLineEquals(display, 0U, "Program manual      ");
+  assertLineEquals(display, 1U, ">Mod:Constant       ");
+  TEST_ASSERT_EQUAL_CHAR(' ', display.cells[2U][0U]);
+  TEST_ASSERT_EQUAL_CHAR('T', display.cells[2U][1U]);
+  TEST_ASSERT_EQUAL_CHAR('e', display.cells[2U][2U]);
+  TEST_ASSERT_EQUAL_CHAR('m', display.cells[2U][3U]);
+  TEST_ASSERT_EQUAL_CHAR('p', display.cells[2U][4U]);
+  TEST_ASSERT_EQUAL_CHAR(':', display.cells[2U][5U]);
+  TEST_ASSERT_EQUAL_CHAR('5', display.cells[2U][6U]);
+  TEST_ASSERT_EQUAL_CHAR('7', display.cells[2U][7U]);
+  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[2U][8U]);
+  TEST_ASSERT_EQUAL_CHAR('C', display.cells[2U][9U]);
+  assertLineEquals(display, 3U, " Dur:8h 0m          ");
+}
+
+void test_manual_program_view_renders_boost_fields() {
+  FakeDisplay display;
+  LcdManualProgramView view(display);
+  LcdManualProgramSnapshot snapshot = baseSnapshot();
+  snapshot.mode = ManualProgramMode::Boost;
+  snapshot.selectedField = ManualProgramField::BoostDelta;
+  snapshot.selectedIndex = 3U;
+  snapshot.editing = true;
 
   view.render(snapshot);
 
-  assertLineEquals(display, 0U, "Mod manual          ");
-  TEST_ASSERT_EQUAL_CHAR('>', display.cells[1U][0U]);
-  TEST_ASSERT_EQUAL_CHAR('T', display.cells[1U][1U]);
-  TEST_ASSERT_EQUAL_CHAR('e', display.cells[1U][2U]);
-  TEST_ASSERT_EQUAL_CHAR('m', display.cells[1U][3U]);
-  TEST_ASSERT_EQUAL_CHAR('p', display.cells[1U][4U]);
-  TEST_ASSERT_EQUAL_CHAR(':', display.cells[1U][5U]);
-  TEST_ASSERT_EQUAL_CHAR('5', display.cells[1U][6U]);
-  TEST_ASSERT_EQUAL_CHAR('7', display.cells[1U][7U]);
-  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[1U][8U]);
-  TEST_ASSERT_EQUAL_CHAR('C', display.cells[1U][9U]);
-  assertLineEquals(display, 2U, " Dur:8h 0m          ");
+  assertLineEquals(display, 1U, "*Boost:+10\xDF""C        ");
+  assertLineEquals(display, 2U, " DurBoost:30m       ");
+  assertLineEquals(display, 3U, " Start              ");
 }
 
-void test_manual_program_view_renders_editing_marker_and_footer() {
+void test_manual_program_view_renders_fluctuating_fields_and_heartbeat() {
   FakeDisplay display;
   LcdManualProgramView view(display);
-  LcdManualProgramSnapshot snapshot;
-  snapshot.selectedField = ManualProgramField::Fluctuating;
-  snapshot.editing = true;
-  snapshot.targetTempC = 60;
-  snapshot.durationMinutes = 9U * 60U;
-  snapshot.fluctuating = true;
+  LcdManualProgramSnapshot snapshot = baseSnapshot();
+  snapshot.mode = ManualProgramMode::Fluctuating;
+  snapshot.selectedField = ManualProgramField::UpperTemp;
+  snapshot.selectedIndex = 3U;
   snapshot.heartbeatOn = true;
 
   view.render(snapshot);
 
-  TEST_ASSERT_EQUAL_CHAR('*', display.cells[3U][0U]);
-  TEST_ASSERT_EQUAL_CHAR('F', display.cells[3U][1U]);
-  TEST_ASSERT_EQUAL_CHAR(':', display.cells[3U][2U]);
-  TEST_ASSERT_EQUAL_CHAR('D', display.cells[3U][3U]);
-  TEST_ASSERT_EQUAL_CHAR('a', display.cells[3U][4U]);
-  TEST_ASSERT_EQUAL_CHAR(' ', display.cells[3U][5U]);
-  TEST_ASSERT_EQUAL_CHAR('S', display.cells[3U][6U]);
-  TEST_ASSERT_EQUAL_CHAR('t', display.cells[3U][7U]);
-  TEST_ASSERT_EQUAL_CHAR('a', display.cells[3U][8U]);
-  TEST_ASSERT_EQUAL_CHAR('r', display.cells[3U][9U]);
-  TEST_ASSERT_EQUAL_CHAR('t', display.cells[3U][10U]);
-  TEST_ASSERT_EQUAL_CHAR(' ', display.cells[3U][11U]);
-  TEST_ASSERT_EQUAL_CHAR('I', display.cells[3U][12U]);
-  TEST_ASSERT_EQUAL_CHAR('n', display.cells[3U][13U]);
-  TEST_ASSERT_EQUAL_CHAR('a', display.cells[3U][14U]);
-  TEST_ASSERT_EQUAL_CHAR('p', display.cells[3U][15U]);
-  TEST_ASSERT_EQUAL_CHAR('o', display.cells[3U][16U]);
-  TEST_ASSERT_EQUAL_CHAR('i', display.cells[3U][17U]);
+  TEST_ASSERT_EQUAL_CHAR('>', display.cells[1U][0U]);
+  TEST_ASSERT_EQUAL_CHAR('T', display.cells[1U][1U]);
+  TEST_ASSERT_EQUAL_CHAR('s', display.cells[1U][2U]);
+  TEST_ASSERT_EQUAL_CHAR('u', display.cells[1U][3U]);
+  TEST_ASSERT_EQUAL_CHAR('p', display.cells[1U][4U]);
+  TEST_ASSERT_EQUAL_CHAR(':', display.cells[1U][5U]);
+  TEST_ASSERT_EQUAL_CHAR('6', display.cells[1U][6U]);
+  TEST_ASSERT_EQUAL_CHAR('2', display.cells[1U][7U]);
+  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[1U][8U]);
+  TEST_ASSERT_EQUAL_CHAR('C', display.cells[1U][9U]);
+  assertLineEquals(display, 2U, " Tinf:52\xDF""C          ");
   TEST_ASSERT_TRUE(display.custom[3U][19U]);
+}
+
+void test_manual_program_view_renders_constant_start_and_back_at_end() {
+  FakeDisplay display;
+  LcdManualProgramView view(display);
+  LcdManualProgramSnapshot snapshot = baseSnapshot();
+  snapshot.selectedField = ManualProgramField::Start;
+  snapshot.selectedIndex = 3U;
+
+  view.render(snapshot);
+
+  assertLineEquals(display, 1U, ">Start              ");
+  assertLineEquals(display, 2U, " Salveaza           ");
+  assertLineEquals(display, 3U, " Inapoi             ");
+}
+
+void test_manual_program_view_renders_boost_start_and_back_at_end() {
+  FakeDisplay display;
+  LcdManualProgramView view(display);
+  LcdManualProgramSnapshot snapshot = baseSnapshot();
+  snapshot.mode = ManualProgramMode::Boost;
+  snapshot.selectedField = ManualProgramField::Start;
+  snapshot.selectedIndex = 5U;
+
+  view.render(snapshot);
+
+  assertLineEquals(display, 1U, ">Start              ");
+  assertLineEquals(display, 2U, " Salveaza           ");
+  assertLineEquals(display, 3U, " Inapoi             ");
+}
+
+void test_manual_program_view_renders_fluctuating_late_fields() {
+  FakeDisplay display;
+  LcdManualProgramView view(display);
+  LcdManualProgramSnapshot snapshot = baseSnapshot();
+  snapshot.mode = ManualProgramMode::Fluctuating;
+  snapshot.selectedField = ManualProgramField::UpperDuration;
+  snapshot.selectedIndex = 5U;
+
+  view.render(snapshot);
+
+  assertLineEquals(display, 1U, ">Dur Tsup:10m       ");
+  assertLineEquals(display, 2U, " Dur Tinf:10m       ");
+  assertLineEquals(display, 3U, " Start              ");
+}
+
+void test_manual_program_view_renders_fluctuating_start_and_back_at_end() {
+  FakeDisplay display;
+  LcdManualProgramView view(display);
+  LcdManualProgramSnapshot snapshot = baseSnapshot();
+  snapshot.mode = ManualProgramMode::Fluctuating;
+  snapshot.selectedField = ManualProgramField::Start;
+  snapshot.selectedIndex = 7U;
+
+  view.render(snapshot);
+
+  assertLineEquals(display, 1U, ">Start              ");
+  assertLineEquals(display, 2U, " Salveaza           ");
+  assertLineEquals(display, 3U, " Inapoi             ");
 }
 
 int main() {
   UNITY_BEGIN();
-  RUN_TEST(test_manual_program_view_renders_temperature_selected);
-  RUN_TEST(test_manual_program_view_renders_editing_marker_and_footer);
+  RUN_TEST(test_manual_program_view_renders_mode_selector_first);
+  RUN_TEST(test_manual_program_view_renders_boost_fields);
+  RUN_TEST(test_manual_program_view_renders_fluctuating_fields_and_heartbeat);
+  RUN_TEST(test_manual_program_view_renders_constant_start_and_back_at_end);
+  RUN_TEST(test_manual_program_view_renders_boost_start_and_back_at_end);
+  RUN_TEST(test_manual_program_view_renders_fluctuating_late_fields);
+  RUN_TEST(test_manual_program_view_renders_fluctuating_start_and_back_at_end);
   return UNITY_END();
 }

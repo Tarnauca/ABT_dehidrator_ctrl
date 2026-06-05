@@ -45,7 +45,7 @@ class LcdPresetView {
     char line[LcdStatusView::COLUMNS + 1U] = {};
 
     fillLine(line);
-    writeToken(line, "Pornire preset", 0U);
+    writeToken(line, "Programe presetate", 0U);
     writeLine(0U, line, false);
 
     fillLine(line);

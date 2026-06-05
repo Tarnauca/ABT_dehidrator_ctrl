@@ -1,62 +1,75 @@
 #pragma once
 
-#include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "dehydrator/interfaces/CharacterDisplay.h"
 #include "dehydrator/ui/LcdStatusView.h"
+#include "dehydrator/ui/SavePromptController.h"
 
 namespace dehydrator {
 
 /**
- * @brief Snapshot rendered by the replace-run confirmation screen.
+ * @brief Snapshot rendered by the three-way save prompt.
  */
-struct LcdConfirmReplaceRunSnapshot {
-  /** Whether `Da` is currently selected. */
-  bool confirmSelected = false;
+struct LcdSavePromptSnapshot {
+  /** Prompt title shown on the top line. */
+  const char* title = "Salveaza profil?";
+  /** Currently highlighted choice. */
+  SavePromptChoice choice = SavePromptChoice::No;
   /** Whether the heartbeat custom symbol should be visible. */
   bool heartbeatOn = false;
 };
 
 /**
- * @brief Renders a simple Romanian yes/no confirmation for replacing a run.
+ * @brief Renders one compact `Da / Nu / Renunta` prompt on the 4x20 LCD.
  */
-class LcdConfirmReplaceRunView {
+class LcdSavePromptView {
  public:
   /**
-   * @brief Creates the confirmation view for the provided display.
+   * @brief Creates the save prompt view.
    *
    * @param display LCD character display interface.
    */
-  explicit LcdConfirmReplaceRunView(CharacterDisplay& display)
-      : display_(display) {}
+  explicit LcdSavePromptView(CharacterDisplay& display) : display_(display) {}
 
   /**
-   * @brief Renders the replace-run confirmation screen.
+   * @brief Renders the current prompt title and selected choice.
    *
-   * @param snapshot Current yes/no selection and heartbeat state.
+   * @param snapshot Prompt title, choice, and heartbeat state.
    */
-  void render(const LcdConfirmReplaceRunSnapshot& snapshot) {
+  void render(const LcdSavePromptSnapshot& snapshot) {
     char line[LcdStatusView::COLUMNS + 1U] = {};
 
     fillLine(line);
-    writeToken(line, "Confirmare", 0U);
+    writeToken(line, snapshot.title, 0U);
     writeLine(0U, line, false);
 
     fillLine(line);
-    writeToken(line, "Pornesti programul", 0U);
+    writeToken(line, "Alege:", 0U);
     writeLine(1U, line, false);
 
     fillLine(line);
-    writeToken(line, "nou?", 0U);
+    line[0] = '>';
+    writeToken(line, choiceLabel(snapshot.choice), 1U);
     writeLine(2U, line, false);
 
     fillLine(line);
-    writeToken(line, snapshot.confirmSelected ? " Nu   >Da" : ">Nu    Da", 0U);
+    writeToken(line, "Roteste si apasa", 0U);
     writeLine(3U, line, snapshot.heartbeatOn);
   }
 
  private:
+  static const char* choiceLabel(SavePromptChoice choice) {
+    if (choice == SavePromptChoice::Yes) {
+      return "Da";
+    }
+    if (choice == SavePromptChoice::Cancel) {
+      return "Renunta";
+    }
+    return "Nu";
+  }
+
   static void fillLine(char* line) {
     for (uint8_t index = 0U; index < LcdStatusView::COLUMNS; index++) {
       line[index] = ' ';
@@ -69,11 +82,10 @@ class LcdConfirmReplaceRunView {
       return;
     }
 
-    uint8_t writeColumn = column;
-    for (size_t index = 0U;
-         token[index] != '\0' && writeColumn < LcdStatusView::COLUMNS; index++) {
-      line[writeColumn] = token[index];
-      writeColumn++;
+    for (size_t index = 0U; token[index] != '\0' &&
+                            column < LcdStatusView::COLUMNS;
+         index++, column++) {
+      line[column] = token[index];
     }
   }
 

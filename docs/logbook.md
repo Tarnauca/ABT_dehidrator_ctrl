@@ -51,6 +51,209 @@ What caused the action or decision.
 
 ## Entries
 
+### 2026-06-05 - Product-Oriented Menu Hierarchy
+
+**Context**
+EEPROM-backed user profiles and the expanded manual editor were already in
+place, but the top-level menu still mixed product flows with bring-up/service
+entries.
+
+**Trigger**
+The user asked to rename the menu labels, move `Testare` under `Setari`,
+enforce the new main-menu order, and hide `Oprire program` / `Reluare program`
+unless they actually apply.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Renamed the main menu paths to `Programe presetate`, `Programe utilizator`,
+  and `Program manual`.
+- Added a dedicated `Setari` submenu with `Testare` and `Inapoi`.
+- Made the main menu dynamic so `Oprire program` and `Reluare program` appear
+  only when the current run state allows them.
+- Added a small `resume()` path to `PresetRunController` so the UI can expose
+  `Reluare program` cleanly when pause/resume is available.
+- Updated the LCD menu renderer to support per-section titles instead of only
+  the fixed `Meniu` header.
+- Updated requirements, project context, UI notes, test plan, backlog, and
+  this logbook.
+
+**Decisions**
+- The top-level menu should feel product-oriented, while `Testare` remains a
+  service/bring-up tool under `Setari`.
+- Dynamic visibility is preferable to showing disabled `Oprire program` or
+  `Reluare program` entries because the menu stays shorter and less confusing.
+- `Salveaza profil` now closes automatically after a successful save and
+  returns to the flow that triggered it, so save slot selection behaves like a
+  transient step rather than a destination.
+
+**Commits / Branches**
+- Branch: `feat/manual-program-modes`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `PLATFORMIO_CORE_DIR=/workspaces/ABT_dehidrator_ctrl/.pio-core platformio test -e native`: 236 tests passed.
+- `PLATFORMIO_CORE_DIR=/workspaces/ABT_dehidrator_ctrl/.pio-core platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/ui/MenuController.h`
+- `include/dehydrator/ui/SettingsMenuController.h`
+- `include/dehydrator/ui/LcdMenuView.h`
+- `include/dehydrator/ui/LcdPresetView.h`
+- `include/dehydrator/ui/LcdManualProgramView.h`
+- `include/dehydrator/ui/LcdUserProfileSlotView.h`
+- `include/dehydrator/app/PresetRunController.h`
+- `src/main.cpp`
+- `docs/requirements.md`
+- `docs/user-ui-ro.md`
+- `docs/test-plan.md`
+- `docs/project-context.md`
+- `docs/backlog.md`
+
+### 2026-06-04 - User Profile Persistence Added
+
+**Context**
+`Mod manual` already supported `Constant`, `Boost`, and `Fluctuant`, but user
+profiles still lived only in the temporary editor state.
+
+**Trigger**
+The user asked for persistent manual profiles in EEPROM, 10 user slots,
+`Salveaza` before `Inapoi`, save-before-start/save-before-exit prompts,
+overwrite confirmation, and a new `Profile utilizator` menu path for browse,
+start, edit, and delete flows.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added a project-owned `ByteStorage` interface and an Arduino EEPROM adapter.
+- Added `UserProfileStore` with a fixed 10-slot schema, explicit byte layout,
+  versioning, occupancy, and checksum validation.
+- Extended `ManualProgramController` with `Salveaza`, dirty tracking,
+  associated-slot tracking, and deterministic discard-to-baseline behavior.
+- Added pure controllers for `Da / Nu / Renunta`, user-profile slot selection,
+  and user-profile actions.
+- Added LCD views for save prompts, slot lists, user-profile detail, and
+  generic yes/no confirmations.
+- Extended the main menu with `Profile utilizator`.
+- Wired `main.cpp` so save/start/back/overwrite/delete flows use explicit state
+  enums instead of fragile ad-hoc booleans.
+- Updated requirements, architecture, project context, UI notes, test plan,
+  backlog, and this logbook.
+
+**Decisions**
+- User profile persistence is intentionally separate from interrupted-run
+  resume persistence.
+- Invalid/corrupt user-profile slots are treated as vacant instead of being
+  offered as executable profiles.
+- Saving uses byte-wise EEPROM updates so only the selected slot bytes are
+  touched.
+- `Nu` from an unsaved `Inapoi` prompt discards changes and restores the last
+  loaded/saved baseline; `Nu` from an unsaved `Start` prompt starts the edited
+  unsaved profile directly.
+- Vacant slots still allow `Editeaza`, so the same browse path can be used to
+  start a new profile from an empty slot later.
+
+**Commits / Branches**
+- Branch: `feat/manual-program-modes`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `platformio test -e native`: 234 tests passed.
+- `platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/interfaces/ByteStorage.h`
+- `include/dehydrator/hardware/ArduinoEepromStorage.h`
+- `include/dehydrator/persistence/UserProfileStore.h`
+- `include/dehydrator/ui/ManualProgramController.h`
+- `include/dehydrator/ui/SavePromptController.h`
+- `include/dehydrator/ui/UserProfileSlotController.h`
+- `include/dehydrator/ui/UserProfileActionController.h`
+- `include/dehydrator/ui/LcdSavePromptView.h`
+- `include/dehydrator/ui/LcdUserProfileSlotView.h`
+- `include/dehydrator/ui/LcdUserProfileDetailView.h`
+- `include/dehydrator/ui/LcdBinaryConfirmView.h`
+- `src/main.cpp`
+- `docs/requirements.md`
+- `docs/test-plan.md`
+- `docs/user-ui-ro.md`
+- `docs/architecture.md`
+- `docs/project-context.md`
+
+### 2026-06-04 - Manual Program Modes Expanded
+
+**Context**
+`Mod manual` had just become a real program editor, but it still represented a
+simple fixed/fluctuating choice rather than the richer manual behavior the
+device needs.
+
+**Trigger**
+The user requested three manual modes: `Constant`, `Boost`, and `Fluctuant`,
+with a dynamic setting list for each mode and explicit edit limits.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Added `ProfileMode::Boost` to the pure profile evaluator.
+- Changed manual program editing so the first field is the mode selector.
+- Added dynamic manual fields for constant, boost, and fluctuating operation.
+- Kept encoder interaction consistent: rotate to navigate/change, short press
+  to enter/leave edit mode or confirm actions.
+- Updated manual LCD rendering to show the current field and following fields
+  from the dynamic list.
+- Renamed the direct-output bring-up code path from manual-oriented names to
+  test-oriented names to match the UI role `Testare`.
+- Captured pending manual profiles before replacement confirmation so `Da`
+  starts the exact profile that was selected when `Start` was pressed.
+- Updated requirements, architecture, project context, UI notes, test plan,
+  backlog, logbook, and persisted review notes.
+
+**Decisions**
+- `Boost` uses base temperature plus a delta from 0 C to 20 C in 5 C steps,
+  starts with the boost phase, and then continues as constant mode.
+- `Boost` edit operations are blocked if the resulting target would exceed
+  75 C or if boost duration would exceed 50% of total duration.
+- `Fluctuant` uses absolute `Tsup` and `Tinf` values. `Tsup` must stay between
+  reference and reference +10 C; `Tinf` must stay between reference -10 C and
+  reference. The profile starts with `Tsup`.
+- Manual-specific constraints live in `ManualProgramController`; `ProfileEngine`
+  enforces generic profile safety/shape rules.
+- `Tsup` / `Tinf` phase durations are edited from 5 min to 20 min in 1 min
+  steps.
+
+**Commits / Branches**
+- Branch: `feat/manual-program-modes`
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- Requirements/documentation, architecture, and test-engineering reviews were
+  performed and recorded in `docs/reviews/manual-program-modes-001.md`.
+- `platformio test -e native`: 222 tests passed.
+- `platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/domain/ProfileEngine.h`
+- `include/dehydrator/ui/ManualProgramController.h`
+- `include/dehydrator/ui/LcdManualProgramView.h`
+- `include/dehydrator/ui/TestModeController.h`
+- `include/dehydrator/ui/LcdTestView.h`
+- `include/dehydrator/app/PresetRunController.h`
+- `docs/requirements.md`
+- `docs/user-ui-ro.md`
+- `docs/test-plan.md`
+- `docs/architecture.md`
+- `docs/project-context.md`
+- `docs/reviews/manual-program-modes-001.md`
+
 ### 2026-06-04 - Manual Program Mode And Test Shell Split
 
 **Context**
@@ -86,9 +289,11 @@ with editable duration, temperature, and fixed/fluctuating operation.
 - The first manual-program implementation uses a simple fluctuating algorithm:
   selected average temperature, +/-5 C low/high band, and 20 min high/20 min
   low phases.
-- Long press remains unused for navigation in the new manual program screen,
-  matching the broader UI rule that explicit `Inapoi` entries drive upward
-  navigation.
+- Superseded by the later `Manual Program Modes Expanded` entry, which replaces
+  this simple derived fluctuating algorithm with explicit `Constant`, `Boost`,
+  and `Fluctuant` manual modes.
+- Long press remains unassigned in the new manual program screen, matching the
+  broader UI rule that explicit `Inapoi` entries drive upward navigation.
 
 **Commits / Branches**
 - Branch: `feat/manual-program-mode`
@@ -106,7 +311,7 @@ with editable duration, temperature, and fixed/fluctuating operation.
 **Links**
 - `include/dehydrator/ui/ManualProgramController.h`
 - `include/dehydrator/ui/LcdManualProgramView.h`
-- `include/dehydrator/ui/LcdManualView.h`
+- `include/dehydrator/ui/LcdManualView.h` (later renamed to `LcdTestView.h`)
 - `include/dehydrator/app/PresetRunController.h`
 - `src/main.cpp`
 - `docs/requirements.md`
@@ -136,7 +341,7 @@ were documented so later phases will build on the correct navigation model.
 - Documented that selecting `Inapoi` returns exactly one level up.
 - Updated LCD/UI notes so the title stays on the first line and menu entries
   occupy lines two through four.
-- Clarified that long press currently has no required navigation role.
+- Clarified that long press currently has no assigned UI action.
 - Updated the test plan so menu-navigation verification follows the implemented
   short-press and `Inapoi` rules.
 - Adjusted hardware notes to describe the encoder button behavior consistently.

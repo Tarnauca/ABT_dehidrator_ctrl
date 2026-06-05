@@ -9,9 +9,13 @@
 namespace dehydrator {
 
 /**
- * @brief Snapshot rendered by the replace-run confirmation screen.
+ * @brief Snapshot rendered by one yes/no confirmation view.
  */
-struct LcdConfirmReplaceRunSnapshot {
+struct LcdBinaryConfirmSnapshot {
+  /** Title shown on the top line. */
+  const char* title = "Confirmare";
+  /** Prompt shown on the second line. */
+  const char* prompt = "";
   /** Whether `Da` is currently selected. */
   bool confirmSelected = false;
   /** Whether the heartbeat custom symbol should be visible. */
@@ -19,40 +23,40 @@ struct LcdConfirmReplaceRunSnapshot {
 };
 
 /**
- * @brief Renders a simple Romanian yes/no confirmation for replacing a run.
+ * @brief Renders a compact yes/no confirmation screen.
  */
-class LcdConfirmReplaceRunView {
+class LcdBinaryConfirmView {
  public:
   /**
-   * @brief Creates the confirmation view for the provided display.
+   * @brief Creates the binary confirm view.
    *
    * @param display LCD character display interface.
    */
-  explicit LcdConfirmReplaceRunView(CharacterDisplay& display)
-      : display_(display) {}
+  explicit LcdBinaryConfirmView(CharacterDisplay& display) : display_(display) {}
 
   /**
-   * @brief Renders the replace-run confirmation screen.
+   * @brief Renders one yes/no confirmation prompt.
    *
-   * @param snapshot Current yes/no selection and heartbeat state.
+   * @param snapshot Title, prompt, selection, and heartbeat state.
    */
-  void render(const LcdConfirmReplaceRunSnapshot& snapshot) {
+  void render(const LcdBinaryConfirmSnapshot& snapshot) {
     char line[LcdStatusView::COLUMNS + 1U] = {};
 
     fillLine(line);
-    writeToken(line, "Confirmare", 0U);
+    writeToken(line, snapshot.title, 0U);
     writeLine(0U, line, false);
 
     fillLine(line);
-    writeToken(line, "Pornesti programul", 0U);
+    writeToken(line, snapshot.prompt, 0U);
     writeLine(1U, line, false);
 
     fillLine(line);
-    writeToken(line, "nou?", 0U);
+    line[0] = '>';
+    writeToken(line, snapshot.confirmSelected ? "Da" : "Nu", 1U);
     writeLine(2U, line, false);
 
     fillLine(line);
-    writeToken(line, snapshot.confirmSelected ? " Nu   >Da" : ">Nu    Da", 0U);
+    writeToken(line, "Roteste si apasa", 0U);
     writeLine(3U, line, snapshot.heartbeatOn);
   }
 
@@ -68,12 +72,10 @@ class LcdConfirmReplaceRunView {
     if (token == nullptr) {
       return;
     }
-
-    uint8_t writeColumn = column;
-    for (size_t index = 0U;
-         token[index] != '\0' && writeColumn < LcdStatusView::COLUMNS; index++) {
-      line[writeColumn] = token[index];
-      writeColumn++;
+    for (size_t index = 0U; token[index] != '\0' &&
+                            column < LcdStatusView::COLUMNS;
+         index++, column++) {
+      line[column] = token[index];
     }
   }
 

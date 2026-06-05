@@ -61,8 +61,9 @@ void test_confirm_view_renders_no_as_default_selection() {
   view.render(snapshot);
 
   assertLineEquals(display, 0U, "Confirmare          ");
-  assertLineEquals(display, 1U, "Inlocuire program?  ");
-  assertLineEquals(display, 2U, ">Nu    Da           ");
+  assertLineEquals(display, 1U, "Pornesti programul  ");
+  assertLineEquals(display, 2U, "nou?                ");
+  assertLineEquals(display, 3U, ">Nu    Da           ");
 }
 
 void test_confirm_view_renders_yes_selected() {
@@ -74,7 +75,14 @@ void test_confirm_view_renders_yes_selected() {
 
   view.render(snapshot);
 
-  assertLineEquals(display, 2U, " Nu   >Da           ");
+  assertLineEquals(display, 1U, "Pornesti programul  ");
+  assertLineEquals(display, 2U, "nou?                ");
+  TEST_ASSERT_EQUAL_CHAR(' ', display.line(3U)[0]);
+  TEST_ASSERT_EQUAL_CHAR('N', display.line(3U)[1]);
+  TEST_ASSERT_EQUAL_CHAR('u', display.line(3U)[2]);
+  TEST_ASSERT_EQUAL_CHAR('>', display.line(3U)[6]);
+  TEST_ASSERT_EQUAL_CHAR('D', display.line(3U)[7]);
+  TEST_ASSERT_EQUAL_CHAR('a', display.line(3U)[8]);
   TEST_ASSERT_EQUAL_CHAR('#', display.line(3U)[19]);
 }
 

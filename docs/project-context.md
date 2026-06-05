@@ -36,9 +36,16 @@ Product-minded recommendation: use an independent thermal fuse, thermal cutoff, 
 
 ## Operating Modes
 
-- Manual on/off mode.
-- Fixed temperature and duration mode.
-- Fluctuating temperature mode with average temperature, low/high cycle range, and duration.
+- Test mode for direct fan/heater output bring-up.
+- Preset mode using built-in profiles.
+- Manual program mode with three variants:
+  - `Constant`: temperature and duration.
+  - `Boost`: base temperature, total duration, initial boost delta, and boost duration.
+  - `Fluctuant`: reference temperature, total duration, absolute upper/lower targets, and upper/lower phase durations.
+- Fixed temperature and duration profiles.
+- Boost profiles that start with a higher target and then continue at the base target.
+- Fluctuating temperature profiles with reference temperature metadata, absolute upper/lower targets, cycle timing, and duration.
+- Manual profiles can be saved into 10 EEPROM-backed user slots, overwritten after confirmation, and later browsed from `Programe utilizator`.
 - Humidity-based stop is deferred/future scope.
 - Presets are built-in only, such as apple, herbs, jerky, yogurt. Exact values may be sourced later from a product manual PDF.
 
@@ -49,6 +56,12 @@ Product-minded recommendation: use an independent thermal fuse, thermal cutoff, 
 - Hard over-temperature fault threshold is 80 C measured by the primary thermistor.
 - No heater operation is allowed unless fan is commanded ON.
 - Heater control uses simple hysteresis and relay minimum on/off timing.
+- Profile logic supplies the current target temperature; hysteresis control then
+  decides heater ON/OFF around that target.
+- Boost profiles start with the boost target and then continue as constant
+  profiles after the boost phase duration expires.
+- Fluctuating profiles start with the upper target and alternate upper/lower
+  targets until the total duration expires.
 - Heater relay minimum ON/OFF time: 10 s.
 - Fan relay minimum ON/OFF time: 10 s, except hard fault or explicit stop may force OFF immediately.
 - Primary thermistor/control update interval: 1 s.
@@ -85,6 +98,9 @@ Warnings are shown/logged but do not require acknowledgement.
 - LCD/user-facing UI language: Romanian only.
 - LCD text should be ASCII-only Romanian by default because HD44780 diacritics are uncertain.
 - LCD size: 4 lines x 20 characters.
+- Main menu is product-oriented and dynamic: `Oprire program` and
+  `Reluare program` appear only when applicable, while `Testare` lives under
+  `Setari`.
 - Bottom-right LCD cell is reserved for an always-running heartbeat symbol.
 - Heartbeat should use a custom character if supported.
 - Serial logs, code, comments, and docs are English.
@@ -98,6 +114,7 @@ Warnings are shown/logged but do not require acknowledgement.
 ## Persistence
 
 - EEPROM stores configuration/calibration and minimal interrupted-run state.
+- EEPROM also stores 10 reusable manual user profiles as a separate concern from interrupted-run resume state.
 - EEPROM writes must be minimized.
 - Do not write in fast loops.
 - Use versioning and validation/checksum.

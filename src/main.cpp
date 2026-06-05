@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Bounce2.h>
 #include <DHT.h>
+#include <EEPROM.h>
 #include <Encoder.h>
 #include <LiquidCrystal_I2C.h>
 #include <string.h>
@@ -15,6 +16,7 @@
 #include "dehydrator/hardware/RelayOutputs.h"
 #include "dehydrator/hardware/ArduinoAnalogInput.h"
 #include "dehydrator/hardware/ArduinoDhtSensorDriver.h"
+#include "dehydrator/hardware/ArduinoEepromStorage.h"
 #include "dehydrator/interfaces/DigitalOutput.h"
 #include "dehydrator/interfaces/CharacterDisplay.h"
 #include "dehydrator/logging/LogDispatcher.h"
@@ -23,17 +25,26 @@
 #include "dehydrator/sensors/TempRhReader.h"
 #include "dehydrator/sensors/NtcReader.h"
 #include "dehydrator/presets/PresetCatalog.h"
-#include "dehydrator/ui/LcdManualView.h"
+#include "dehydrator/persistence/UserProfileStore.h"
+#include "dehydrator/ui/LcdBinaryConfirmView.h"
+#include "dehydrator/ui/LcdTestView.h"
 #include "dehydrator/ui/LcdConfirmReplaceRunView.h"
 #include "dehydrator/ui/LcdManualProgramView.h"
 #include "dehydrator/ui/LcdPresetView.h"
 #include "dehydrator/ui/LcdMenuView.h"
+#include "dehydrator/ui/LcdSavePromptView.h"
 #include "dehydrator/ui/LcdStatusView.h"
+#include "dehydrator/ui/LcdUserProfileDetailView.h"
+#include "dehydrator/ui/LcdUserProfileSlotView.h"
 #include "dehydrator/ui/ConfirmReplaceRunController.h"
 #include "dehydrator/ui/ManualProgramController.h"
-#include "dehydrator/ui/ManualModeController.h"
+#include "dehydrator/ui/SavePromptController.h"
+#include "dehydrator/ui/SettingsMenuController.h"
+#include "dehydrator/ui/TestModeController.h"
 #include "dehydrator/ui/PresetSelectController.h"
 #include "dehydrator/ui/MenuController.h"
+#include "dehydrator/ui/UserProfileActionController.h"
+#include "dehydrator/ui/UserProfileSlotController.h"
 
 constexpr char LOG_TRUNCATED_EVENT[] = "WARN code=log_truncated source=event";
 constexpr char LOG_TRUNCATED_STATE[] = "WARN code=log_truncated source=state";
@@ -71,7 +82,31 @@ enum class BringupScreen {
   Test,
   ManualProgram,
   Preset,
+  SettingsMenu,
   ConfirmReplaceRun,
+  SavePrompt,
+  UserProfileSlots,
+  UserProfileDetail,
+  BinaryConfirm,
+};
+
+enum class ManualSaveFlowOrigin {
+  None,
+  ExplicitSave,
+  StartRequest,
+  BackRequest,
+};
+
+enum class UserProfileSlotScreenPurpose {
+  Browse,
+  Save,
+};
+
+enum class BinaryConfirmPurpose {
+  None,
+  ReplaceRun,
+  OverwriteSlot,
+  DeleteSlot,
 };
 
 BringupScreen currentScreen = BringupScreen::Status;
@@ -173,12 +208,28 @@ dehydrator::NtcReader ntcReader(
 dehydrator::TempRhReader tempRhReader(tempRhDriver,
                                       dehydrator::config::CALIBRATION);
 dehydrator::MenuController menuController;
-dehydrator::ManualModeController manualModeController;
+dehydrator::SettingsMenuController settingsMenuController;
+dehydrator::TestModeController testModeController;
 dehydrator::ManualProgramController manualProgramController;
 dehydrator::PresetSelectController presetSelectController;
 dehydrator::ConfirmReplaceRunController confirmReplaceRunController;
+dehydrator::SavePromptController savePromptController;
+dehydrator::UserProfileSlotController userProfileSlotController;
+dehydrator::UserProfileActionController userProfileActionController;
+dehydrator::ArduinoEepromStorage eepromStorage;
+dehydrator::UserProfileStore userProfileStore(eepromStorage);
+dehydrator::UserProfileSlotRecord
+    userProfileSlots[dehydrator::UserProfileStore::SLOT_COUNT] = {};
 const dehydrator::PresetDefinition* pendingPresetSelection = nullptr;
 bool pendingManualProgramStart = false;
+dehydrator::ProfileConfig pendingManualProgramProfile;
+BringupScreen replaceRunCancelScreen = BringupScreen::Status;
+ManualSaveFlowOrigin manualSaveFlowOrigin = ManualSaveFlowOrigin::None;
+UserProfileSlotScreenPurpose userProfileSlotScreenPurpose =
+    UserProfileSlotScreenPurpose::Browse;
+BinaryConfirmPurpose binaryConfirmPurpose = BinaryConfirmPurpose::None;
+uint8_t pendingProfileSlot = 0U;
+uint8_t activeProfileDetailSlot = 0U;
 
 /**
  * @brief Arduino `Stream` adapter for the project log sink interface.
@@ -209,10 +260,14 @@ dehydrator::LogSink* logSinks[dehydrator::config::LOGGING.sinkCapacity] = {};
 dehydrator::LogDispatcher logger(logSinks,
                                  dehydrator::config::LOGGING.sinkCapacity);
 dehydrator::LcdMenuView menuView(lcdDisplay);
-dehydrator::LcdManualView manualView(lcdDisplay);
+dehydrator::LcdTestView testView(lcdDisplay);
 dehydrator::LcdManualProgramView manualProgramView(lcdDisplay);
 dehydrator::LcdPresetView presetView(lcdDisplay);
 dehydrator::LcdConfirmReplaceRunView confirmReplaceRunView(lcdDisplay);
+dehydrator::LcdSavePromptView savePromptView(lcdDisplay);
+dehydrator::LcdUserProfileSlotView userProfileSlotView(lcdDisplay);
+dehydrator::LcdUserProfileDetailView userProfileDetailView(lcdDisplay);
+dehydrator::LcdBinaryConfirmView binaryConfirmView(lcdDisplay);
 
 /**
  * @brief Returns whether a pin has been assigned in hardware configuration.
@@ -327,20 +382,20 @@ void logUiResult(const dehydrator::UiResult& result) {
 }
 
 /**
- * @brief Logs manual-mode UI transitions and output changes.
+ * @brief Logs direct-output test UI transitions and output changes.
  *
- * @param result Result produced by the manual mode controller.
+ * @param result Result produced by the test mode controller.
  */
-void logManualResult(const dehydrator::ManualUiResult& result) {
+void logTestResult(const dehydrator::TestUiResult& result) {
   if (result.selectionChanged) {
-    logEvent("ui", manualModeController.selectedField() ==
-                           dehydrator::ManualField::Fan
-                       ? "manual_fan"
-                       : "manual_heat");
+    logEvent("ui", testModeController.selectedField() ==
+                           dehydrator::TestField::Fan
+                       ? "test_fan"
+                       : "test_heat");
   }
 
   if (result.outputChanged) {
-    const dehydrator::OutputCommand command = manualModeController.command();
+    const dehydrator::OutputCommand command = testModeController.command();
     logEvent("output", command.fanOn ? "fan_on" : "fan_off");
     logEvent("output", command.heaterOn ? "heat_on" : "heat_off");
   }
@@ -358,17 +413,38 @@ void logManualResult(const dehydrator::ManualUiResult& result) {
 void logManualProgramResult(const dehydrator::ManualProgramUiResult& result) {
   if (result.selectionChanged) {
     switch (manualProgramController.selectedField()) {
+      case dehydrator::ManualProgramField::Mode:
+        logEvent("ui", "manual_mode");
+        return;
       case dehydrator::ManualProgramField::Temperature:
         logEvent("ui", "manual_temp");
         return;
       case dehydrator::ManualProgramField::Duration:
         logEvent("ui", "manual_duration");
         return;
-      case dehydrator::ManualProgramField::Fluctuating:
-        logEvent("ui", "manual_fluct");
+      case dehydrator::ManualProgramField::BoostDelta:
+        logEvent("ui", "manual_boost_delta");
+        return;
+      case dehydrator::ManualProgramField::BoostDuration:
+        logEvent("ui", "manual_boost_duration");
+        return;
+      case dehydrator::ManualProgramField::UpperTemp:
+        logEvent("ui", "manual_tsup");
+        return;
+      case dehydrator::ManualProgramField::LowerTemp:
+        logEvent("ui", "manual_tinf");
+        return;
+      case dehydrator::ManualProgramField::UpperDuration:
+        logEvent("ui", "manual_tsup_duration");
+        return;
+      case dehydrator::ManualProgramField::LowerDuration:
+        logEvent("ui", "manual_tinf_duration");
         return;
       case dehydrator::ManualProgramField::Start:
         logEvent("ui", "manual_start");
+        return;
+      case dehydrator::ManualProgramField::Save:
+        logEvent("ui", "manual_save");
         return;
       case dehydrator::ManualProgramField::Back:
         logEvent("ui", "manual_back");
@@ -382,6 +458,10 @@ void logManualProgramResult(const dehydrator::ManualProgramUiResult& result) {
 
   if (result.startRequested) {
     logEvent("run_manual", "requested");
+  }
+
+  if (result.saveRequested) {
+    logEvent("profile_save", "requested");
   }
 
   if (result.exitToMenu) {
@@ -425,6 +505,158 @@ void logConfirmReplaceRunResult(
   } else if (result.cancelled) {
     logEvent("run_replace", "cancelled");
   }
+}
+
+/**
+ * @brief Reloads the cached 10-slot user-profile directory from EEPROM.
+ */
+void refreshUserProfileSlots() {
+  for (uint8_t slot = 0U; slot < dehydrator::UserProfileStore::SLOT_COUNT;
+       slot++) {
+    dehydrator::UserProfileSlotRecord record;
+    if (!userProfileStore.load(slot, record)) {
+      record = {};
+    }
+    userProfileSlots[slot] = record;
+  }
+}
+
+/**
+ * @brief Returns whether one saved user slot currently contains a profile.
+ *
+ * @param slotIndex Zero-based slot index.
+ * @return true when the cached slot is occupied.
+ */
+bool isOccupiedUserProfileSlot(uint8_t slotIndex) {
+  return slotIndex < dehydrator::UserProfileStore::SLOT_COUNT &&
+         userProfileSlots[slotIndex].occupied;
+}
+
+/**
+ * @brief Opens the user-profile slot list for browsing or saving.
+ *
+ * @param purpose Whether the slot list is used for browse or save flow.
+ * @param preferredSlot Optional preferred slot selection.
+ * @param hasPreferredSlot True when `preferredSlot` should be preselected.
+ */
+void openUserProfileSlots(UserProfileSlotScreenPurpose purpose,
+                          uint8_t preferredSlot = 0U,
+                          bool hasPreferredSlot = false) {
+  refreshUserProfileSlots();
+  userProfileSlotScreenPurpose = purpose;
+  userProfileSlotController.reset();
+  if (hasPreferredSlot) {
+    userProfileSlotController.setSelectedSlot(preferredSlot);
+  }
+  currentScreen = BringupScreen::UserProfileSlots;
+}
+
+/**
+ * @brief Opens the detail view for one user-profile slot.
+ *
+ * @param slotIndex Zero-based slot index.
+ */
+void openUserProfileDetail(uint8_t slotIndex) {
+  if (slotIndex >= dehydrator::UserProfileStore::SLOT_COUNT) {
+    return;
+  }
+
+  activeProfileDetailSlot = slotIndex;
+  userProfileActionController.reset();
+  userProfileActionController.setOccupied(isOccupiedUserProfileSlot(slotIndex));
+  currentScreen = BringupScreen::UserProfileDetail;
+}
+
+/**
+ * @brief Returns whether one running or resumable program may be stopped.
+ */
+bool hasStoppableProgram() {
+  const dehydrator::RunStateSnapshot snapshot = presetRunController.snapshot();
+  return snapshot.state == dehydrator::RunState::Running ||
+         snapshot.state == dehydrator::RunState::Paused ||
+         snapshot.state == dehydrator::RunState::FinishCooldown ||
+         snapshot.state == dehydrator::RunState::FinishedAlarm;
+}
+
+/**
+ * @brief Returns whether one previously paused/resumable program exists.
+ */
+bool hasResumableProgram() {
+  const dehydrator::RunStateSnapshot snapshot = presetRunController.snapshot();
+  return snapshot.state == dehydrator::RunState::Paused && snapshot.resumeAllowed;
+}
+
+/**
+ * @brief Refreshes dynamic main-menu visibility flags from run state.
+ */
+void syncMainMenuContext() {
+  dehydrator::MainMenuContext context;
+  context.showStopProgram = hasStoppableProgram();
+  context.showResumeProgram = hasResumableProgram();
+  menuController.setContext(context);
+}
+
+/**
+ * @brief Starts the current manual editor profile or prompts to replace a run.
+ *
+ * @param profile Manual profile to run.
+ */
+void startManualProfile(const dehydrator::ProfileConfig& profile) {
+  if (presetRunController.snapshot().state == dehydrator::RunState::Idle) {
+    if (presetRunController.startProfile(profile, "manual")) {
+      activeOutputCommand = presetRunController.outputCommand();
+      relayOutputs.apply(activeOutputCommand);
+      logEvent("run_manual", "started");
+      logEvent("run_state", presetRunController.stateToken());
+      menuController.returnToStatus();
+      currentScreen = BringupScreen::Status;
+    } else {
+      logEvent("run_manual", "rejected");
+    }
+    return;
+  }
+
+  pendingPresetSelection = nullptr;
+  pendingManualProgramStart = true;
+  pendingManualProgramProfile = profile;
+  replaceRunCancelScreen = BringupScreen::ManualProgram;
+  confirmReplaceRunController.reset();
+  binaryConfirmPurpose = BinaryConfirmPurpose::ReplaceRun;
+  logEvent("run_replace", "prompt");
+  currentScreen = BringupScreen::ConfirmReplaceRun;
+}
+
+/**
+ * @brief Completes one manual save request and follows the pending origin flow.
+ *
+ * @param slotIndex Zero-based user-profile slot index.
+ */
+void saveManualProfileToSlot(uint8_t slotIndex) {
+  if (!userProfileStore.save(slotIndex, manualProgramController.profile())) {
+    logEvent("profile_save", "failed");
+    return;
+  }
+
+  manualProgramController.markSaved(slotIndex);
+  refreshUserProfileSlots();
+  logEvent("profile_save", "saved");
+
+  if (manualSaveFlowOrigin == ManualSaveFlowOrigin::StartRequest) {
+    const dehydrator::ProfileConfig profile = manualProgramController.profile();
+    manualSaveFlowOrigin = ManualSaveFlowOrigin::None;
+    startManualProfile(profile);
+    return;
+  }
+
+  if (manualSaveFlowOrigin == ManualSaveFlowOrigin::BackRequest) {
+    manualSaveFlowOrigin = ManualSaveFlowOrigin::None;
+    menuController.enterMenu();
+    currentScreen = BringupScreen::Menu;
+    return;
+  }
+
+  manualSaveFlowOrigin = ManualSaveFlowOrigin::None;
+  currentScreen = BringupScreen::ManualProgram;
 }
 
 /**
@@ -512,22 +744,32 @@ void updateLcdTask(uint32_t nowMs) {
 
   heartbeatOn = !heartbeatOn;
   if (currentScreen == BringupScreen::Test) {
-    dehydrator::LcdManualSnapshot manualSnapshot;
-    manualSnapshot.selectedField = manualModeController.selectedField();
-    manualSnapshot.command = manualModeController.command();
-    manualSnapshot.heartbeatOn = heartbeatOn;
-    manualView.render(manualSnapshot);
+    dehydrator::LcdTestSnapshot testSnapshot;
+    testSnapshot.selectedField = testModeController.selectedField();
+    testSnapshot.command = testModeController.command();
+    testSnapshot.heartbeatOn = heartbeatOn;
+    testView.render(testSnapshot);
     return;
   }
 
   if (currentScreen == BringupScreen::ManualProgram) {
     dehydrator::LcdManualProgramSnapshot manualProgramSnapshot;
+    manualProgramSnapshot.mode = manualProgramController.mode();
     manualProgramSnapshot.selectedField = manualProgramController.selectedField();
+    manualProgramSnapshot.selectedIndex = manualProgramController.selectedIndex();
     manualProgramSnapshot.editing = manualProgramController.editing();
     manualProgramSnapshot.targetTempC = manualProgramController.targetTempC();
     manualProgramSnapshot.durationMinutes =
         manualProgramController.durationMinutes();
-    manualProgramSnapshot.fluctuating = manualProgramController.fluctuating();
+    manualProgramSnapshot.boostDeltaC = manualProgramController.boostDeltaC();
+    manualProgramSnapshot.boostDurationMinutes =
+        manualProgramController.boostDurationMinutes();
+    manualProgramSnapshot.upperTempC = manualProgramController.upperTempC();
+    manualProgramSnapshot.lowerTempC = manualProgramController.lowerTempC();
+    manualProgramSnapshot.upperDurationMinutes =
+        manualProgramController.upperDurationMinutes();
+    manualProgramSnapshot.lowerDurationMinutes =
+        manualProgramController.lowerDurationMinutes();
     manualProgramSnapshot.heartbeatOn = heartbeatOn;
     manualProgramView.render(manualProgramSnapshot);
     return;
@@ -543,6 +785,20 @@ void updateLcdTask(uint32_t nowMs) {
     return;
   }
 
+  if (currentScreen == BringupScreen::SettingsMenu) {
+    const char* labels[dehydrator::SettingsMenuController::ITEM_COUNT] = {};
+    dehydrator::SettingsMenuController::fillVisibleItems(labels);
+
+    dehydrator::LcdMenuSnapshot settingsSnapshot;
+    settingsSnapshot.title = "Setari";
+    settingsSnapshot.items = labels;
+    settingsSnapshot.itemCount = dehydrator::SettingsMenuController::ITEM_COUNT;
+    settingsSnapshot.selectedIndex = settingsMenuController.selectedIndex();
+    settingsSnapshot.heartbeatOn = heartbeatOn;
+    menuView.render(settingsSnapshot);
+    return;
+  }
+
   if (currentScreen == BringupScreen::ConfirmReplaceRun) {
     dehydrator::LcdConfirmReplaceRunSnapshot confirmSnapshot;
     confirmSnapshot.confirmSelected =
@@ -552,10 +808,66 @@ void updateLcdTask(uint32_t nowMs) {
     return;
   }
 
+  if (currentScreen == BringupScreen::SavePrompt) {
+    dehydrator::LcdSavePromptSnapshot saveSnapshot;
+    saveSnapshot.choice = savePromptController.currentChoice();
+    saveSnapshot.heartbeatOn = heartbeatOn;
+    savePromptView.render(saveSnapshot);
+    return;
+  }
+
+  if (currentScreen == BringupScreen::UserProfileSlots) {
+    dehydrator::LcdUserProfileSlotSnapshot slotSnapshot;
+    slotSnapshot.title =
+        userProfileSlotScreenPurpose == UserProfileSlotScreenPurpose::Save
+            ? "Salveaza profil"
+            : "Programe utilizator";
+    slotSnapshot.slots = userProfileSlots;
+    slotSnapshot.selectedIndex = userProfileSlotController.selectedIndex();
+    slotSnapshot.heartbeatOn = heartbeatOn;
+    userProfileSlotView.render(slotSnapshot);
+    return;
+  }
+
+  if (currentScreen == BringupScreen::UserProfileDetail) {
+    dehydrator::LcdUserProfileDetailSnapshot detailSnapshot;
+    detailSnapshot.slotNumber = static_cast<uint8_t>(activeProfileDetailSlot + 1U);
+    detailSnapshot.occupied = isOccupiedUserProfileSlot(activeProfileDetailSlot);
+    detailSnapshot.profile = userProfileSlots[activeProfileDetailSlot].profile;
+    detailSnapshot.action = userProfileActionController.currentAction();
+    detailSnapshot.heartbeatOn = heartbeatOn;
+    userProfileDetailView.render(detailSnapshot);
+    return;
+  }
+
+  if (currentScreen == BringupScreen::BinaryConfirm) {
+    dehydrator::LcdBinaryConfirmSnapshot confirmSnapshot;
+    confirmSnapshot.confirmSelected =
+        confirmReplaceRunController.confirmSelected();
+    confirmSnapshot.heartbeatOn = heartbeatOn;
+    if (binaryConfirmPurpose == BinaryConfirmPurpose::OverwriteSlot) {
+      confirmSnapshot.title = "Suprascriere";
+      confirmSnapshot.prompt = "Locatie ocupata?";
+    } else if (binaryConfirmPurpose == BinaryConfirmPurpose::DeleteSlot) {
+      confirmSnapshot.title = "Stergere";
+      confirmSnapshot.prompt = "Stergi profilul?";
+    } else {
+      confirmSnapshot.title = "Confirmare";
+      confirmSnapshot.prompt = "Continui?";
+    }
+    binaryConfirmView.render(confirmSnapshot);
+    return;
+  }
+
   if (currentScreen == BringupScreen::Menu) {
+    syncMainMenuContext();
+    const char* labels[dehydrator::MenuController::MAX_ITEM_COUNT] = {};
+    menuController.fillVisibleItems(labels);
+
     dehydrator::LcdMenuSnapshot menuSnapshot;
-    menuSnapshot.items = dehydrator::MenuController::items();
-    menuSnapshot.itemCount = dehydrator::MenuController::ITEM_COUNT;
+    menuSnapshot.title = "Meniu";
+    menuSnapshot.items = labels;
+    menuSnapshot.itemCount = menuController.itemCount();
     menuSnapshot.selectedIndex = menuController.selectedIndex();
     menuSnapshot.heartbeatOn = heartbeatOn;
     menuView.render(menuSnapshot);
@@ -589,14 +901,25 @@ void updateInputTask(uint32_t nowMs) {
   if (delta != 0) {
     logEvent("input", delta > 0 ? "encoder_cw" : "encoder_ccw");
     if (currentScreen == BringupScreen::Test) {
-      logManualResult(manualModeController.onRotate(delta));
+      logTestResult(testModeController.onRotate(delta));
     } else if (currentScreen == BringupScreen::ManualProgram) {
       logManualProgramResult(manualProgramController.onRotate(delta));
+    } else if (currentScreen == BringupScreen::SavePrompt) {
+      savePromptController.onRotate(delta);
+    } else if (currentScreen == BringupScreen::UserProfileSlots) {
+      userProfileSlotController.onRotate(delta);
+    } else if (currentScreen == BringupScreen::UserProfileDetail) {
+      userProfileActionController.onRotate(delta);
+    } else if (currentScreen == BringupScreen::BinaryConfirm) {
+      confirmReplaceRunController.onRotate(delta);
     } else if (currentScreen == BringupScreen::ConfirmReplaceRun) {
       logConfirmReplaceRunResult(confirmReplaceRunController.onRotate(delta));
+    } else if (currentScreen == BringupScreen::SettingsMenu) {
+      settingsMenuController.onRotate(delta);
     } else if (currentScreen == BringupScreen::Preset) {
       logPresetResult(presetSelectController.onRotate(delta));
     } else if (currentScreen == BringupScreen::Menu) {
+      syncMainMenuContext();
       logUiResult(menuController.onRotate(delta));
     }
   }
@@ -613,35 +936,15 @@ void updateInputTask(uint32_t nowMs) {
     buttonPressed = false;
     if (pressedMs >= 1000UL) {
       logEvent("input", "button_long");
-      if (currentScreen == BringupScreen::Test) {
-        const dehydrator::ManualUiResult result = manualModeController.onLongPress();
-        logManualResult(result);
-        if (result.exitToMenu) {
-          menuController.enterMenu();
-          currentScreen = BringupScreen::Menu;
-        }
-      } else if (currentScreen == BringupScreen::ManualProgram) {
-        return;
-      } else if (currentScreen == BringupScreen::Preset) {
-        const dehydrator::PresetUiResult result = presetSelectController.onLongPress();
-        logPresetResult(result);
-        if (result.exitToMenu) {
-          menuController.enterMenu();
-          currentScreen = BringupScreen::Menu;
-        }
-      } else if (currentScreen == BringupScreen::Menu) {
-        return;
-      }
       return;
     }
 
     logEvent("input", "button_short");
     if (currentScreen == BringupScreen::Test) {
-      const dehydrator::ManualUiResult result = manualModeController.onShortPress();
-      logManualResult(result);
+      const dehydrator::TestUiResult result = testModeController.onShortPress();
+      logTestResult(result);
       if (result.exitToMenu) {
-        menuController.enterMenu();
-        currentScreen = BringupScreen::Menu;
+        currentScreen = BringupScreen::SettingsMenu;
       }
       return;
     }
@@ -651,29 +954,158 @@ void updateInputTask(uint32_t nowMs) {
           manualProgramController.onShortPress();
       logManualProgramResult(result);
       if (result.startRequested) {
-        const dehydrator::ProfileConfig profile = manualProgramController.profile();
+        if (manualProgramController.dirty()) {
+          manualSaveFlowOrigin = ManualSaveFlowOrigin::StartRequest;
+          savePromptController.reset();
+          currentScreen = BringupScreen::SavePrompt;
+        } else {
+          startManualProfile(manualProgramController.profile());
+        }
+      } else if (result.saveRequested) {
+        manualSaveFlowOrigin = ManualSaveFlowOrigin::ExplicitSave;
+        openUserProfileSlots(UserProfileSlotScreenPurpose::Save,
+                             manualProgramController.associatedSlot(),
+                             manualProgramController.hasAssociatedSlot());
+      } else if (result.exitToMenu) {
+        if (manualProgramController.dirty()) {
+          manualSaveFlowOrigin = ManualSaveFlowOrigin::BackRequest;
+          savePromptController.reset();
+          currentScreen = BringupScreen::SavePrompt;
+        } else {
+          menuController.enterMenu();
+          currentScreen = BringupScreen::Menu;
+        }
+      }
+      return;
+    }
+
+    if (currentScreen == BringupScreen::SavePrompt) {
+      const dehydrator::SavePromptResult result = savePromptController.onShortPress();
+      if (result.choice == dehydrator::SavePromptChoice::Yes) {
+        openUserProfileSlots(UserProfileSlotScreenPurpose::Save,
+                             manualProgramController.associatedSlot(),
+                             manualProgramController.hasAssociatedSlot());
+      } else if (result.choice == dehydrator::SavePromptChoice::No) {
+        if (manualSaveFlowOrigin == ManualSaveFlowOrigin::StartRequest) {
+          manualSaveFlowOrigin = ManualSaveFlowOrigin::None;
+          startManualProfile(manualProgramController.profile());
+        } else if (manualSaveFlowOrigin == ManualSaveFlowOrigin::BackRequest) {
+          manualSaveFlowOrigin = ManualSaveFlowOrigin::None;
+          manualProgramController.discardChanges();
+          menuController.enterMenu();
+          currentScreen = BringupScreen::Menu;
+        } else {
+          manualSaveFlowOrigin = ManualSaveFlowOrigin::None;
+          currentScreen = BringupScreen::ManualProgram;
+        }
+      } else {
+        manualSaveFlowOrigin = ManualSaveFlowOrigin::None;
+        currentScreen = BringupScreen::ManualProgram;
+      }
+      return;
+    }
+
+    if (currentScreen == BringupScreen::UserProfileSlots) {
+      const dehydrator::UserProfileSlotResult result =
+          userProfileSlotController.onShortPress();
+      if (result.exitRequested) {
+        currentScreen = userProfileSlotScreenPurpose ==
+                                UserProfileSlotScreenPurpose::Save
+                            ? BringupScreen::ManualProgram
+                            : BringupScreen::Menu;
+        if (currentScreen == BringupScreen::Menu) {
+          menuController.enterMenu();
+        }
+        return;
+      }
+
+      if (!result.slotSelected) {
+        return;
+      }
+
+      pendingProfileSlot = userProfileSlotController.currentSlot();
+      if (userProfileSlotScreenPurpose == UserProfileSlotScreenPurpose::Browse) {
+        openUserProfileDetail(pendingProfileSlot);
+        return;
+      }
+
+      if (isOccupiedUserProfileSlot(pendingProfileSlot)) {
+        binaryConfirmPurpose = BinaryConfirmPurpose::OverwriteSlot;
+        confirmReplaceRunController.reset();
+        currentScreen = BringupScreen::BinaryConfirm;
+      } else {
+        saveManualProfileToSlot(pendingProfileSlot);
+      }
+      return;
+    }
+
+    if (currentScreen == BringupScreen::UserProfileDetail) {
+      const dehydrator::UserProfileActionResult result =
+          userProfileActionController.onShortPress();
+      if (result.startRequested &&
+          isOccupiedUserProfileSlot(activeProfileDetailSlot)) {
+        const dehydrator::ProfileConfig profile =
+            userProfileSlots[activeProfileDetailSlot].profile;
         if (presetRunController.snapshot().state == dehydrator::RunState::Idle) {
-          if (presetRunController.startProfile(profile, "manual")) {
+          if (presetRunController.startProfile(profile, "user_profile")) {
             activeOutputCommand = presetRunController.outputCommand();
             relayOutputs.apply(activeOutputCommand);
-            logEvent("run_manual", "started");
+            logEvent("run_profile", "started");
             logEvent("run_state", presetRunController.stateToken());
             menuController.returnToStatus();
             currentScreen = BringupScreen::Status;
-          } else {
-            logEvent("run_manual", "rejected");
           }
         } else {
           pendingPresetSelection = nullptr;
           pendingManualProgramStart = true;
+          pendingManualProgramProfile = profile;
+          replaceRunCancelScreen = BringupScreen::UserProfileDetail;
           confirmReplaceRunController.reset();
-          logEvent("run_replace", "prompt");
+          binaryConfirmPurpose = BinaryConfirmPurpose::ReplaceRun;
           currentScreen = BringupScreen::ConfirmReplaceRun;
         }
-      } else if (result.exitToMenu) {
-        menuController.enterMenu();
-        currentScreen = BringupScreen::Menu;
+      } else if (result.editRequested) {
+        if (isOccupiedUserProfileSlot(activeProfileDetailSlot)) {
+          manualProgramController.loadProfile(
+              userProfileSlots[activeProfileDetailSlot].profile, true,
+              activeProfileDetailSlot);
+        } else {
+          manualProgramController.resetToDefaults();
+        }
+        currentScreen = BringupScreen::ManualProgram;
+      } else if (result.deleteRequested &&
+                 isOccupiedUserProfileSlot(activeProfileDetailSlot)) {
+        pendingProfileSlot = activeProfileDetailSlot;
+        binaryConfirmPurpose = BinaryConfirmPurpose::DeleteSlot;
+        confirmReplaceRunController.reset();
+        currentScreen = BringupScreen::BinaryConfirm;
+      } else if (result.exitRequested) {
+        currentScreen = BringupScreen::UserProfileSlots;
       }
+      return;
+    }
+
+    if (currentScreen == BringupScreen::BinaryConfirm) {
+      const dehydrator::ConfirmReplaceRunResult result =
+          confirmReplaceRunController.onShortPress();
+      if (binaryConfirmPurpose == BinaryConfirmPurpose::OverwriteSlot) {
+        if (result.confirmed) {
+          saveManualProfileToSlot(pendingProfileSlot);
+        } else {
+          currentScreen = BringupScreen::UserProfileSlots;
+        }
+      } else if (binaryConfirmPurpose == BinaryConfirmPurpose::DeleteSlot) {
+        if (result.confirmed) {
+          if (userProfileStore.clear(pendingProfileSlot)) {
+            refreshUserProfileSlots();
+            logEvent("profile_delete", "done");
+          }
+        }
+        openUserProfileDetail(pendingProfileSlot);
+      } else {
+        currentScreen = BringupScreen::ManualProgram;
+      }
+      binaryConfirmPurpose = BinaryConfirmPurpose::None;
       return;
     }
 
@@ -690,35 +1122,57 @@ void updateInputTask(uint32_t nowMs) {
           logEvent("run_state", presetRunController.stateToken());
           pendingPresetSelection = nullptr;
           pendingManualProgramStart = false;
+          pendingManualProgramProfile = {};
+          replaceRunCancelScreen = BringupScreen::Status;
           currentScreen = BringupScreen::Status;
         } else {
           logEvent("preset_start", "rejected");
           pendingPresetSelection = nullptr;
           pendingManualProgramStart = false;
+          pendingManualProgramProfile = {};
+          replaceRunCancelScreen = BringupScreen::Status;
           currentScreen = BringupScreen::Status;
         }
       } else if (result.confirmed && pendingManualProgramStart) {
         if (presetRunController.stopConfirmed() &&
-            presetRunController.startProfile(manualProgramController.profile(),
+            presetRunController.startProfile(pendingManualProgramProfile,
                                             "manual")) {
           activeOutputCommand = presetRunController.outputCommand();
           relayOutputs.apply(activeOutputCommand);
           logEvent("run_manual", "started");
           logEvent("run_state", presetRunController.stateToken());
           pendingManualProgramStart = false;
+          pendingManualProgramProfile = {};
+          replaceRunCancelScreen = BringupScreen::Status;
           currentScreen = BringupScreen::Status;
         } else {
           logEvent("run_manual", "rejected");
           pendingManualProgramStart = false;
+          pendingManualProgramProfile = {};
+          replaceRunCancelScreen = BringupScreen::Status;
           currentScreen = BringupScreen::Status;
         }
       } else {
-        const bool restoreManualProgram = pendingManualProgramStart;
         pendingPresetSelection = nullptr;
         pendingManualProgramStart = false;
-        currentScreen =
-            restoreManualProgram ? BringupScreen::ManualProgram
-                                 : BringupScreen::Preset;
+        pendingManualProgramProfile = {};
+        currentScreen = replaceRunCancelScreen;
+        if (currentScreen == BringupScreen::Menu) {
+          menuController.enterMenu();
+        }
+      }
+      return;
+    }
+
+    if (currentScreen == BringupScreen::SettingsMenu) {
+      const dehydrator::SettingsMenuResult result =
+          settingsMenuController.onShortPress();
+      if (result.openTest) {
+        currentScreen = BringupScreen::Test;
+        logEvent("ui", "test_open");
+      } else if (result.exitToMainMenu) {
+        menuController.enterMenu();
+        currentScreen = BringupScreen::Menu;
       }
       return;
     }
@@ -744,6 +1198,8 @@ void updateInputTask(uint32_t nowMs) {
           } else {
             pendingPresetSelection = preset;
             pendingManualProgramStart = false;
+            pendingManualProgramProfile = {};
+            replaceRunCancelScreen = BringupScreen::Preset;
             confirmReplaceRunController.reset();
             logEvent("run_replace", "prompt");
             currentScreen = BringupScreen::ConfirmReplaceRun;
@@ -756,6 +1212,7 @@ void updateInputTask(uint32_t nowMs) {
       return;
     }
 
+    syncMainMenuContext();
     const dehydrator::UiResult result = menuController.onShortPress();
 
     if (currentScreen == BringupScreen::Status &&
@@ -784,29 +1241,49 @@ void updateInputTask(uint32_t nowMs) {
 
     if (result.action == dehydrator::UiAction::SelectItem &&
         menuController.currentToken() != nullptr &&
-        strcmp(menuController.currentToken(), "mod_manual") == 0) {
+        strcmp(menuController.currentToken(), "program_manual") == 0) {
       menuController.returnToStatus();
       currentScreen = BringupScreen::ManualProgram;
       logEvent("ui", "manual_open");
     } else if (result.action == dehydrator::UiAction::SelectItem &&
                menuController.currentToken() != nullptr &&
-               strcmp(menuController.currentToken(), "testare") == 0) {
+               strcmp(menuController.currentToken(), "programe_utilizator") == 0) {
       menuController.returnToStatus();
-      currentScreen = BringupScreen::Test;
-      logEvent("ui", "test_open");
+      openUserProfileSlots(UserProfileSlotScreenPurpose::Browse);
+      logEvent("ui", "user_profiles_open");
     } else if (result.action == dehydrator::UiAction::SelectItem &&
                menuController.currentToken() != nullptr &&
-               strcmp(menuController.currentToken(), "pornire_preset") == 0) {
+               strcmp(menuController.currentToken(), "programe_presetate") == 0) {
       menuController.returnToStatus();
       currentScreen = BringupScreen::Preset;
       logEvent("ui", "preset_open");
     } else if (result.action == dehydrator::UiAction::SelectItem &&
                menuController.currentToken() != nullptr &&
-               strcmp(menuController.currentToken(), "oprire") == 0) {
+               strcmp(menuController.currentToken(), "setari") == 0) {
+      settingsMenuController.reset();
+      currentScreen = BringupScreen::SettingsMenu;
+      logEvent("ui", "settings_open");
+    } else if (result.action == dehydrator::UiAction::SelectItem &&
+               menuController.currentToken() != nullptr &&
+               strcmp(menuController.currentToken(), "reluare_program") == 0) {
+      if (presetRunController.resume()) {
+        activeOutputCommand = presetRunController.outputCommand();
+        relayOutputs.apply(activeOutputCommand);
+        logEvent("run_resume", "confirmed");
+        logEvent("run_state", presetRunController.stateToken());
+        menuController.returnToStatus();
+        currentScreen = BringupScreen::Status;
+      } else {
+        logEvent("run_resume", "rejected");
+      }
+    } else if (result.action == dehydrator::UiAction::SelectItem &&
+               menuController.currentToken() != nullptr &&
+               strcmp(menuController.currentToken(), "oprire_program") == 0) {
       if (presetRunController.stopConfirmed()) {
         activeOutputCommand = presetRunController.outputCommand();
         relayOutputs.apply(activeOutputCommand);
         logEvent("run_stop", "confirmed");
+        logEvent("run_state", presetRunController.stateToken());
       } else {
         logEvent("run_stop", "rejected");
       }
@@ -890,6 +1367,7 @@ void setup() {
 
   latestNtc = ntcReader.read();
   latestTempRh = tempRhReader.read();
+  refreshUserProfileSlots();
 
   controlStateMachine.enterBoot();
   logEvent("run_state", controlStateMachine.stateToken());
