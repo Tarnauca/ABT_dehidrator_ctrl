@@ -117,6 +117,19 @@ changes to make first. If the user confirms there are no additional changes,
 Codex may commit, push, merge to `main`, push `main`, and report the resulting
 commit and merge hashes.
 
+## Worktree Scope Guard Rule
+
+Before starting a new user request, Codex must check `git status`.
+
+- If the worktree is clean, proceed normally.
+- If uncommitted changes exist and the new request is clearly within the same
+  change scope, Codex may continue.
+- If uncommitted changes exist and the new request is not clearly in the same
+  change scope, Codex must stop and ask whether to finish/commit/merge the
+  existing work first or intentionally continue with mixed changes.
+- This rule exists to keep branches focused and to avoid accidental mixed
+  merges.
+
 ## Backlog Impact Rule
 
 Any branch that completes, starts, splits, removes, or materially changes planned work must check `docs/backlog.md`.

@@ -165,6 +165,7 @@ Warnings are shown/logged but do not require acknowledgement.
 - After that, the user wants to perform Git operations manually for a while under Codex supervision.
 - Prefer focused branches and focused commits.
 - Before committing: check status, review diff, stage explicit paths, commit with a semantic message in the form `type(scope): short imperative summary`.
+- Before starting a new request, check `git status`. If uncommitted changes are present and the new request is not clearly in the same change scope, stop and ask whether to finish/commit/merge the existing work first or intentionally continue with mixed changes.
 - Before Codex commits or merges, Codex must ask whether the user has changes to make first.
 - Merge commits should use the project convention `merge(scope): short merge summary`.
 - Documentation impact check is required before branch merge and when a commit clearly affects requirements, architecture, safety, tests, UI, persistence, hardware assumptions, or external interfaces.
