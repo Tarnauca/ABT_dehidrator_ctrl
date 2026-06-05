@@ -97,6 +97,7 @@ class MenuController {
     }
 
     if (strcmp(currentToken(), "inapoi") == 0) {
+      selectedIndex_ = 0U;
       screen_ = UiScreen::Status;
       return {UiAction::CloseMenu, nullptr};
     }

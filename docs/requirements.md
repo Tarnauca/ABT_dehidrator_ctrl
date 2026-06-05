@@ -86,8 +86,8 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-UI-008: Encoder rotation shall navigate/change values.
 - REQ-UI-009: Encoder short press shall select/confirm.
 - REQ-UI-010: Encoder long press has no required navigation role in the current scope and may remain unused or reserved for future behavior.
-- REQ-UI-011: Every menu-like LCD screen shall provide `Inapoi` as the last selectable entry.
-- REQ-UI-012: Selecting `Inapoi` shall navigate exactly one level up in the UI hierarchy.
+- REQ-UI-011: Every menu-like LCD screen shall provide a dedicated one-level-up entry (e.g. `Back`) as the last selectable entry.
+- REQ-UI-012: Selecting the dedicated one-level-up entry (e.g. `Back`) shall navigate exactly one level up in the UI hierarchy.
 - REQ-UI-013: Menu-like LCD screens shall use the first line as the current section title and the remaining visible lines for selectable entries.
 - REQ-UI-014: Temperature displayed on the LCD shall use the `°C` suffix consistently where temperature is shown.
 - REQ-UI-015: Compact LCD duration display shall use the `Xh Ym` format where the UI shows preset summary values.
@@ -97,6 +97,7 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-UI-019: Saving over an occupied user-profile slot shall require explicit `Da / Nu` overwrite confirmation.
 - REQ-UI-020: Deleting one occupied user-profile slot shall require explicit `Da / Nu` confirmation.
 - REQ-UI-021: After saving one manual profile, the `Salveaza profil` slot list shall close automatically and return to the screen flow that triggered the save action.
+- REQ-UI-022: If a menu-like screen is exited through its dedicated one-level-up entry (e.g. `Back`), the next entry into that screen shall start at the first actionable item, not at the one-level-up entry.
 
 ## Logging And Diagnostics Requirements
 

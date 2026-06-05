@@ -92,6 +92,7 @@ void test_short_press_on_inapoi_closes_menu() {
                     static_cast<int>(result.action));
   TEST_ASSERT_EQUAL(static_cast<int>(UiScreen::Status),
                     static_cast<int>(controller.screen()));
+  TEST_ASSERT_EQUAL_UINT(0U, controller.selectedIndex());
 }
 
 void test_return_to_status_resynchronizes_menu_state() {
