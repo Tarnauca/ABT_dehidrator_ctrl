@@ -77,11 +77,11 @@ class PresetRunController {
    *
    * @param deltaSeconds Scheduler-provided elapsed time.
    * @param ntcValid Whether the primary thermistor reading may be used for control.
-   * @param ntcTempC Latest primary thermistor temperature in Celsius.
+   * @param ntcTempDeciC Latest primary thermistor temperature in deci-Celsius.
    */
-  void update(uint16_t deltaSeconds, bool ntcValid, int16_t ntcTempC) {
+  void update(uint16_t deltaSeconds, bool ntcValid, int16_t ntcTempDeciC) {
     stateMachine_.update(deltaSeconds);
-    updateCommand(deltaSeconds, ntcValid, ntcTempC);
+    updateCommand(deltaSeconds, ntcValid, ntcTempDeciC);
   }
 
   /**
@@ -288,7 +288,8 @@ class PresetRunController {
     temperatureControl_.reset(false);
   }
 
-  void updateCommand(uint16_t deltaSeconds, bool ntcValid, int16_t ntcTempC) {
+  void updateCommand(uint16_t deltaSeconds, bool ntcValid,
+                     int16_t ntcTempDeciC) {
     const RunStateSnapshot snapshot = stateMachine_.snapshot();
     const RunOutputPolicy runPolicy = stateMachine_.outputPolicy();
 
@@ -316,8 +317,9 @@ class PresetRunController {
     }
 
     TemperatureControlInput controlInput;
-    controlInput.currentTempC = ntcTempC;
-    controlInput.targetTempC = target.targetTempC;
+    controlInput.currentTempDeciC = ntcTempDeciC;
+    controlInput.targetTempDeciC =
+        static_cast<int16_t>(target.targetTempC * 10);
     controlInput.runPolicy = runPolicy;
     controlInput.deltaSeconds = deltaSeconds;
     const TemperatureControlOutput controlOutput =

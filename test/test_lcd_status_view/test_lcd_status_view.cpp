@@ -95,7 +95,7 @@ LcdStatusSnapshot validSnapshot() {
   LcdStatusSnapshot snapshot;
   snapshot.page = StatusPage::Summary;
   snapshot.programLabel = "Mere";
-  snapshot.ntcTempC = 57;
+  snapshot.ntcTempDeciC = 570;
   snapshot.ntcValid = true;
   snapshot.rhPercent = 43U;
   snapshot.rhValid = true;
@@ -118,7 +118,7 @@ void test_status_view_renders_summary_page() {
   view.render(validSnapshot());
 
   assertLinePrefixEquals(display, 0U, "Program: Mere       ", 19U);
-  assertLineEquals(display, 1U, "Temp: 57\xDF""C RH: 43%  ");
+  assertLineEquals(display, 1U, "Temp: 57.0\xDF""C RH: 43%");
   assertLineEquals(display, 2U, "Timp scurs: 1h 30m  ");
   TEST_ASSERT_TRUE(display.custom[0U][19U]);
   TEST_ASSERT_EQUAL_CHAR(static_cast<char>(LcdStatusView::PLAY_CHAR),
@@ -136,7 +136,7 @@ void test_status_view_renders_missing_sensor_values() {
 
   view.render(snapshot);
 
-  assertLineEquals(display, 1U, "Temp: --\xDF""C RH: --%  ");
+  assertLineEquals(display, 1U, "Temp: --.-\xDF""C RH: --%");
   TEST_ASSERT_FALSE(display.custom[0U][19U]);
   TEST_ASSERT_EQUAL_CHAR(' ', display.cells[0U][19U]);
 }
@@ -164,9 +164,9 @@ void test_status_view_renders_boost_parameter_page() {
 
   view.render(snapshot);
 
-  assertLineEquals(display, 0U, "Temp: 55\xDF""C          ");
+  assertLinePrefixEquals(display, 0U, "Temp: 55.0\xDF""C", 12U);
   assertLineEquals(display, 1U, "Durata: 8h 0m       ");
-  assertLineEquals(display, 2U, "Boost: +10\xDF""C        ");
+  assertLinePrefixEquals(display, 2U, "Boost: +10.0\xDF""C", 14U);
 }
 
 void test_status_view_renders_fluctuating_secondary_parameter_page() {

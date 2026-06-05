@@ -76,7 +76,7 @@ renderer. The default summary page now looks like this:
 
 ```text
 Program: Inactiv
-Temp: --C RH: --%
+Temp: --.-°C RH: --%
 Timp scurs: 0h 0m
 Timp ramas: 0h 0m
 ```

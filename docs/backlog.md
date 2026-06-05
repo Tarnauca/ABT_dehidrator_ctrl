@@ -76,6 +76,7 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 - [x] Extend `Testare` to show NTC and AM2302 sensor rows before relay toggles, with short invalid-reading text.
 - [x] Expand the main LCD status area into rotary-selectable summary, parameter, and output pages.
 - [x] Add confirmed stop and explicit pause entry to the product main menu.
+- [x] Add `Setari -> Calibrare NTC` with editable persisted offset/scale.
 - [ ] Add built-in presets after source values are confirmed.
 
 ## Phase 8: Verification And Safety Review

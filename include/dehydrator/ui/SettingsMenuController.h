@@ -8,6 +8,8 @@ namespace dehydrator {
  * @brief Selectable entries in the settings submenu.
  */
 enum class SettingsMenuItem {
+  /** Open the NTC calibration editor. */
+  NtcCalibration,
   /** Open the direct-output diagnostic screen. */
   Testare,
   /** Return to the main menu. */
@@ -20,6 +22,8 @@ enum class SettingsMenuItem {
 struct SettingsMenuResult {
   /** True when the highlighted entry changed. */
   bool selectionChanged = false;
+  /** True when the NTC calibration screen should open. */
+  bool openNtcCalibration = false;
   /** True when the direct-output test screen should open. */
   bool openTest = false;
   /** True when the submenu should close back to the main menu. */
@@ -27,12 +31,12 @@ struct SettingsMenuResult {
 };
 
 /**
- * @brief Small two-entry submenu for product settings.
+ * @brief Small settings submenu for product settings and service tools.
  */
 class SettingsMenuController {
  public:
   /** Number of visible settings-menu items. */
-  static constexpr uint8_t ITEM_COUNT = 2U;
+  static constexpr uint8_t ITEM_COUNT = 3U;
 
   /**
    * @brief Resets selection to the first actionable entry.
@@ -43,7 +47,10 @@ class SettingsMenuController {
    * @brief Returns the selected settings-menu item.
    */
   SettingsMenuItem currentItem() const {
-    return selectedIndex_ == 0U ? SettingsMenuItem::Testare
+    if (selectedIndex_ == 0U) {
+      return SettingsMenuItem::NtcCalibration;
+    }
+    return selectedIndex_ == 1U ? SettingsMenuItem::Testare
                                 : SettingsMenuItem::Back;
   }
 
@@ -59,7 +66,8 @@ class SettingsMenuController {
    * @return Romanian label or empty string when out of range.
    */
   static const char* itemLabel(uint8_t index) {
-    static constexpr const char* kLabels[ITEM_COUNT] = {"Testare", "Inapoi"};
+    static constexpr const char* kLabels[ITEM_COUNT] = {"Calibrare NTC",
+                                                        "Testare", "Inapoi"};
     return index < ITEM_COUNT ? kLabels[index] : "";
   }
 
@@ -106,7 +114,9 @@ class SettingsMenuController {
    */
   SettingsMenuResult onShortPress() {
     SettingsMenuResult result;
-    if (currentItem() == SettingsMenuItem::Testare) {
+    if (currentItem() == SettingsMenuItem::NtcCalibration) {
+      result.openNtcCalibration = true;
+    } else if (currentItem() == SettingsMenuItem::Testare) {
       result.openTest = true;
     } else {
       reset();

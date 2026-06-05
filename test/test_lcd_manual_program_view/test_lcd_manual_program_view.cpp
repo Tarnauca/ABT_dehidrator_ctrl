@@ -80,8 +80,10 @@ void test_manual_program_view_renders_mode_selector_first() {
   TEST_ASSERT_EQUAL_CHAR(':', display.cells[2U][5U]);
   TEST_ASSERT_EQUAL_CHAR('5', display.cells[2U][6U]);
   TEST_ASSERT_EQUAL_CHAR('7', display.cells[2U][7U]);
-  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[2U][8U]);
-  TEST_ASSERT_EQUAL_CHAR('C', display.cells[2U][9U]);
+  TEST_ASSERT_EQUAL_CHAR('.', display.cells[2U][8U]);
+  TEST_ASSERT_EQUAL_CHAR('0', display.cells[2U][9U]);
+  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[2U][10U]);
+  TEST_ASSERT_EQUAL_CHAR('C', display.cells[2U][11U]);
   assertLineEquals(display, 3U, " Dur:8h 0m          ");
 }
 
@@ -96,7 +98,7 @@ void test_manual_program_view_renders_boost_fields() {
 
   view.render(snapshot);
 
-  assertLineEquals(display, 1U, "*Boost:+10\xDF""C        ");
+  assertLineEquals(display, 1U, "*Boost:+10.0\xDF""C      ");
   assertLineEquals(display, 2U, " DurBoost:30m       ");
   assertLineEquals(display, 3U, " Start              ");
 }
@@ -119,9 +121,22 @@ void test_manual_program_view_renders_fluctuating_fields() {
   TEST_ASSERT_EQUAL_CHAR(':', display.cells[1U][5U]);
   TEST_ASSERT_EQUAL_CHAR('6', display.cells[1U][6U]);
   TEST_ASSERT_EQUAL_CHAR('2', display.cells[1U][7U]);
-  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[1U][8U]);
-  TEST_ASSERT_EQUAL_CHAR('C', display.cells[1U][9U]);
-  assertLineEquals(display, 2U, " Tinf:52\xDF""C          ");
+  TEST_ASSERT_EQUAL_CHAR('.', display.cells[1U][8U]);
+  TEST_ASSERT_EQUAL_CHAR('0', display.cells[1U][9U]);
+  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[1U][10U]);
+  TEST_ASSERT_EQUAL_CHAR('C', display.cells[1U][11U]);
+  TEST_ASSERT_EQUAL_CHAR(' ', display.cells[2U][0U]);
+  TEST_ASSERT_EQUAL_CHAR('T', display.cells[2U][1U]);
+  TEST_ASSERT_EQUAL_CHAR('i', display.cells[2U][2U]);
+  TEST_ASSERT_EQUAL_CHAR('n', display.cells[2U][3U]);
+  TEST_ASSERT_EQUAL_CHAR('f', display.cells[2U][4U]);
+  TEST_ASSERT_EQUAL_CHAR(':', display.cells[2U][5U]);
+  TEST_ASSERT_EQUAL_CHAR('5', display.cells[2U][6U]);
+  TEST_ASSERT_EQUAL_CHAR('2', display.cells[2U][7U]);
+  TEST_ASSERT_EQUAL_CHAR('.', display.cells[2U][8U]);
+  TEST_ASSERT_EQUAL_CHAR('0', display.cells[2U][9U]);
+  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[2U][10U]);
+  TEST_ASSERT_EQUAL_CHAR('C', display.cells[2U][11U]);
   TEST_ASSERT_FALSE(display.custom[3U][19U]);
 }
 

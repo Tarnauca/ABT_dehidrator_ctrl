@@ -44,8 +44,8 @@ struct LcdStatusSnapshot {
   StatusPage page = StatusPage::Summary;
   /** Current active program label, for example `Mere` or `Inactiv`. */
   const char* programLabel = nullptr;
-  /** Primary thermistor temperature in Celsius. Ignored when `ntcValid` is false. */
-  int16_t ntcTempC = 0;
+  /** Primary thermistor temperature in deci-Celsius. Ignored when `ntcValid` is false. */
+  int16_t ntcTempDeciC = 0;
   /** Whether primary thermistor temperature is available for display. */
   bool ntcValid = false;
   /** Relative humidity in percent. Ignored when `rhValid` is false. */
@@ -176,13 +176,24 @@ class LcdStatusView {
    *
    * @param line Destination LCD line.
    * @param label Prefix label, including colon.
-   * @param tempC Integer Celsius value.
+   * @param tempDeciC Temperature in deci-Celsius.
    */
-  static void writeTemperatureLine(char* line, const char* label, int16_t tempC) {
+  static void writeTemperatureLine(char* line, const char* label,
+                                   int16_t tempDeciC) {
     char value[16] = {};
     writeToken(line, label, 0U);
-    snprintf(value, sizeof(value), "%d\xDF""C", static_cast<int>(tempC));
+    formatDeciTemperature(tempDeciC, value, sizeof(value));
     writeToken(line, value, static_cast<uint8_t>(strlen(label)));
+  }
+
+  static void formatDeciTemperature(int16_t tempDeciC, char* buffer,
+                                    size_t bufferSize) {
+    const bool negative = tempDeciC < 0;
+    const int16_t magnitude =
+        static_cast<int16_t>(negative ? -tempDeciC : tempDeciC);
+    snprintf(buffer, bufferSize, "%s%d.%d\xDF""C", negative ? "-" : "",
+             static_cast<int>(magnitude / 10),
+             static_cast<int>(magnitude % 10));
   }
 
   /**
@@ -196,20 +207,19 @@ class LcdStatusView {
     char value[16] = {};
     writeToken(line, "Temp:", 0U);
     if (snapshot.ntcValid) {
-      snprintf(value, sizeof(value), "%d\xDF""C",
-               static_cast<int>(snapshot.ntcTempC));
+      formatDeciTemperature(snapshot.ntcTempDeciC, value, sizeof(value));
       writeToken(line, value, 6U);
     } else {
-      writeToken(line, "--\xDF""C", 6U);
+      writeToken(line, "--.-\xDF""C", 6U);
     }
 
-    writeToken(line, "RH: ", 11U);
+    writeToken(line, "RH: ", 13U);
     if (snapshot.rhValid) {
       snprintf(value, sizeof(value), "%u%%",
                static_cast<unsigned int>(snapshot.rhPercent));
-      writeToken(line, value, 15U);
+      writeToken(line, value, 17U);
     } else {
-      writeToken(line, "--%", 15U);
+      writeToken(line, "--%", 17U);
     }
   }
 
@@ -308,7 +318,9 @@ class LcdStatusView {
     }
 
     if (snapshot.profile.mode == ProfileMode::Fixed) {
-      writeTemperatureLine(line, "Temp: ", snapshot.profile.targetTempC);
+      writeTemperatureLine(
+          line, "Temp: ",
+          static_cast<int16_t>(snapshot.profile.targetTempC * 10));
       writeLine(0U, line);
       fillLine(line);
       writeDurationLine(line, "Durata: ", snapshot.profile.durationMinutes);
@@ -321,14 +333,19 @@ class LcdStatusView {
     }
 
     if (snapshot.profile.mode == ProfileMode::Boost) {
-      writeTemperatureLine(line, "Temp: ", snapshot.profile.targetTempC);
+      writeTemperatureLine(
+          line, "Temp: ",
+          static_cast<int16_t>(snapshot.profile.targetTempC * 10));
       writeLine(0U, line);
       fillLine(line);
       writeDurationLine(line, "Durata: ", snapshot.profile.durationMinutes);
       writeLine(1U, line);
       fillLine(line);
-      writeTemperatureLine(line, "Boost: +", snapshot.profile.highTempC -
-                                                snapshot.profile.targetTempC);
+      writeTemperatureLine(
+          line, "Boost: +",
+          static_cast<int16_t>((snapshot.profile.highTempC -
+                                snapshot.profile.targetTempC) *
+                               10));
       writeLine(2U, line);
       fillLine(line);
       writeDurationLine(line, "Dur.boost: ", snapshot.profile.highPhaseMinutes);
@@ -336,16 +353,22 @@ class LcdStatusView {
       return;
     }
 
-    writeTemperatureLine(line, "T.ref: ", snapshot.profile.targetTempC);
+    writeTemperatureLine(
+        line, "T.ref: ",
+        static_cast<int16_t>(snapshot.profile.targetTempC * 10));
     writeLine(0U, line);
     fillLine(line);
     writeDurationLine(line, "Durata: ", snapshot.profile.durationMinutes);
     writeLine(1U, line);
     fillLine(line);
-    writeTemperatureLine(line, "Tsup: ", snapshot.profile.highTempC);
+    writeTemperatureLine(
+        line, "Tsup: ",
+        static_cast<int16_t>(snapshot.profile.highTempC * 10));
     writeLine(2U, line);
     fillLine(line);
-    writeTemperatureLine(line, "Tinf: ", snapshot.profile.lowTempC);
+    writeTemperatureLine(
+        line, "Tinf: ",
+        static_cast<int16_t>(snapshot.profile.lowTempC * 10));
     writeLine(3U, line);
   }
 

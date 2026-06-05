@@ -119,27 +119,39 @@ class LcdManualProgramView {
     return "Constant";
   }
 
+  static void formatWholeTemperature(char* buffer, size_t bufferSize,
+                                     int16_t tempC) {
+    snprintf(buffer, bufferSize, "%d.0\xDF""C", static_cast<int>(tempC));
+  }
+
   static void formatField(char* line, const LcdManualProgramSnapshot& snapshot,
                           ManualProgramField field) {
     char value[20] = {};
     if (field == ManualProgramField::Mode) {
       snprintf(value, sizeof(value), "Mod:%s", modeLabel(snapshot.mode));
     } else if (field == ManualProgramField::Temperature) {
-      snprintf(value, sizeof(value), "Temp:%d\xDF""C", snapshot.targetTempC);
+      char tempValue[12] = {};
+      formatWholeTemperature(tempValue, sizeof(tempValue), snapshot.targetTempC);
+      snprintf(value, sizeof(value), "Temp:%s", tempValue);
     } else if (field == ManualProgramField::Duration) {
       snprintf(value, sizeof(value), "Dur:%uh %um",
                snapshot.durationMinutes / 60U,
                snapshot.durationMinutes % 60U);
     } else if (field == ManualProgramField::BoostDelta) {
-      snprintf(value, sizeof(value), "Boost:+%d\xDF""C",
-               snapshot.boostDeltaC);
+      char tempValue[12] = {};
+      formatWholeTemperature(tempValue, sizeof(tempValue), snapshot.boostDeltaC);
+      snprintf(value, sizeof(value), "Boost:+%s", tempValue);
     } else if (field == ManualProgramField::BoostDuration) {
       snprintf(value, sizeof(value), "DurBoost:%um",
                snapshot.boostDurationMinutes);
     } else if (field == ManualProgramField::UpperTemp) {
-      snprintf(value, sizeof(value), "Tsup:%d\xDF""C", snapshot.upperTempC);
+      char tempValue[12] = {};
+      formatWholeTemperature(tempValue, sizeof(tempValue), snapshot.upperTempC);
+      snprintf(value, sizeof(value), "Tsup:%s", tempValue);
     } else if (field == ManualProgramField::LowerTemp) {
-      snprintf(value, sizeof(value), "Tinf:%d\xDF""C", snapshot.lowerTempC);
+      char tempValue[12] = {};
+      formatWholeTemperature(tempValue, sizeof(tempValue), snapshot.lowerTempC);
+      snprintf(value, sizeof(value), "Tinf:%s", tempValue);
     } else if (field == ManualProgramField::UpperDuration) {
       snprintf(value, sizeof(value), "Dur Tsup:%um",
                snapshot.upperDurationMinutes);

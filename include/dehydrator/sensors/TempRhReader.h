@@ -11,8 +11,8 @@ namespace dehydrator {
  * @brief Calibrated secondary temperature/RH reading.
  */
 struct TempRhReading {
-  /** Calibrated integer temperature in Celsius. */
-  int16_t tempC = 0;
+  /** Calibrated temperature in deci-Celsius. */
+  int16_t tempDeciC = 0;
   /** Calibrated integer relative humidity in percent. */
   uint8_t rhPercent = 0;
   /** True when both temperature and RH are plausible. */
@@ -57,22 +57,33 @@ class TempRhReader {
         static_cast<int32_t>(raw.rhCentiPercent) +
         calibration_.tempRhRhOffsetCentiPercent;
 
-    const int32_t tempC = roundCentiToInteger(calibratedTempCentiC);
+    const int32_t tempDeciC = roundCentiToDeci(calibratedTempCentiC);
     const int32_t rhPercent = roundCentiToInteger(calibratedRhCentiPercent);
 
-    if (tempC < calibration_.tempRhMinValidTempC ||
-        tempC > calibration_.tempRhMaxValidTempC || rhPercent < 0 ||
+    if (tempDeciC <
+            static_cast<int32_t>(calibration_.tempRhMinValidTempC) * 10L ||
+        tempDeciC >
+            static_cast<int32_t>(calibration_.tempRhMaxValidTempC) * 10L ||
+        rhPercent < 0 ||
         rhPercent > 100) {
       return reading;
     }
 
-    reading.tempC = static_cast<int16_t>(tempC);
+    reading.tempDeciC = static_cast<int16_t>(tempDeciC);
     reading.rhPercent = static_cast<uint8_t>(rhPercent);
     reading.valid = true;
     return reading;
   }
 
  private:
+  static int32_t roundCentiToDeci(int32_t centiValue) {
+    if (centiValue >= 0) {
+      return (centiValue + 5) / 10;
+    }
+
+    return (centiValue - 5) / 10;
+  }
+
   static int32_t roundCentiToInteger(int32_t centiValue) {
     if (centiValue >= 0) {
       return (centiValue + 50) / 100;

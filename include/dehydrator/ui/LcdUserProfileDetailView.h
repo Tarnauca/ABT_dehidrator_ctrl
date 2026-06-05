@@ -99,13 +99,13 @@ class LcdUserProfileDetailView {
     const uint16_t hours = profile.durationMinutes / 60U;
     const uint16_t minutes = profile.durationMinutes % 60U;
     if (profile.mode == ProfileMode::Boost) {
-      snprintf(line, LcdStatusView::COLUMNS + 1U, "%d/%d\xDF""C %uh %um",
+      snprintf(line, LcdStatusView::COLUMNS + 1U, "%d.0/%d.0\xDF""C %uh %um",
                profile.targetTempC, profile.highTempC, hours, minutes);
     } else if (profile.mode == ProfileMode::Fluctuating) {
-      snprintf(line, LcdStatusView::COLUMNS + 1U, "%d-%d\xDF""C %uh %um",
+      snprintf(line, LcdStatusView::COLUMNS + 1U, "%d.0-%d.0\xDF""C %uh %um",
                profile.lowTempC, profile.highTempC, hours, minutes);
     } else {
-      snprintf(line, LcdStatusView::COLUMNS + 1U, "%d\xDF""C %uh %um",
+      snprintf(line, LcdStatusView::COLUMNS + 1U, "%d.0\xDF""C %uh %um",
                profile.targetTempC, hours, minutes);
     }
   }

@@ -51,6 +51,59 @@ What caused the action or decision.
 
 ## Entries
 
+### 2026-06-05 - Runtime Temperature Precision Raised To 0.1 C
+
+**Context**
+`Calibrare NTC` had just introduced 0.1 C offset editing, and the user then
+asked to stop faking decimal display on one screen and instead move the whole
+temperature path to real one-decimal precision.
+
+**Trigger**
+The user explicitly asked for "tot lantul modificat" so temperature behaves as
+one real value with one decimal rather than integer Celsius plus UI-only `.0`.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Converted runtime-measured temperatures from integer Celsius to fixed-point
+  deci-Celsius after sensor conversion.
+- Updated the NTC model, secondary temp/RH reader, control path, and fault
+  detector to use deci-Celsius internally while keeping user setpoints at 1 C
+  steps.
+- Updated LCD status/test/manual/preset/user-profile temperature formatting to
+  show one decimal place consistently.
+- Updated structured logs so temperature values are emitted with one decimal.
+- Aligned requirements, architecture, project context, UI notes, and the test
+  plan with the new precision model.
+
+**Decisions**
+- Keep float math only inside the thermistor conversion formula.
+- Use fixed-point deci-Celsius through the wider firmware because it is easier
+  to reason about on AVR, clearer in tests, and safer around control/fault
+  thresholds.
+- Leave user-editable setpoints at 1 C steps for now, rendering them as
+  `57.0°C` in the UI.
+
+**Verification**
+- `PLATFORMIO_CORE_DIR=/workspaces/ABT_dehidrator_ctrl/.pio-core platformio test -e native`: 258/258 passed.
+- `PLATFORMIO_CORE_DIR=/workspaces/ABT_dehidrator_ctrl/.pio-core platformio run -e megaatmega2560`: success.
+
+**Links**
+- `include/dehydrator/domain/NtcSensorModel.h`
+- `include/dehydrator/sensors/TempRhReader.h`
+- `include/dehydrator/domain/TemperatureControl.h`
+- `include/dehydrator/domain/FaultDetector.h`
+- `include/dehydrator/app/PresetRunController.h`
+- `include/dehydrator/ui/LcdStatusView.h`
+- `include/dehydrator/ui/LcdTestView.h`
+- `include/dehydrator/ui/LcdManualProgramView.h`
+- `include/dehydrator/ui/LcdPresetView.h`
+- `include/dehydrator/ui/LcdUserProfileDetailView.h`
+- `include/dehydrator/logging/LogFormatter.h`
+- `src/main.cpp`
+
 ### 2026-06-05 - Product-Oriented Menu Hierarchy
 
 **Context**
@@ -2257,3 +2310,30 @@ Why this shape:
 - It keeps branches more focused without making the process rigid.
 - It catches scope drift earlier, before unrelated work is mixed into one
   branch by accident.
+## 2026-06-05 - NTC calibration menu
+
+The user wanted a first practical NTC calibration path inside the product UI,
+starting with direct manual entry rather than a multi-point assisted workflow.
+
+What changed:
+
+- Added `Calibrare NTC` under `Setari`, before `Testare`.
+- Added an editor for persisted user NTC `Offset` and `Scala`.
+- `Offset` edits in 0.1 C steps over `-20.0 C ... +20.0 C`.
+- `Scala` edits in 0.01 steps over `0.80 ... 1.20`.
+- Added `Salveaza`, `Restabileste`, and `Inapoi`.
+- `Salveaza` writes the values to a dedicated EEPROM store with
+  version/checksum validation.
+- `Restabileste` reloads firmware defaults into the editor, while `Inapoi`
+  discards unsaved changes.
+- Boot now loads persisted NTC offset/scale overrides before the first sensor
+  sample.
+
+Why this shape:
+
+- It gives the user a practical first calibration workflow without overloading
+  the LCD UI with full thermistor-model parameters.
+- Persisting only offset/scale keeps the EEPROM schema small and easier to
+  validate.
+- The deferred reference-assisted calibration path remains available for a
+  later, more data-driven iteration.

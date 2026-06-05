@@ -101,8 +101,13 @@ Warnings are shown/logged but do not require acknowledgement.
 - Main menu is product-oriented and dynamic: `Oprire program` and
   `Pauza program` / `Reluare program` appear only when applicable, while
   `Testare` lives under `Setari`.
+- `Setari` starts with `Calibrare NTC`, then `Testare`, then `Inapoi`.
 - `Testare` begins with read-only sensor rows for NTC temperature, AM2302
   temperature, and AM2302 humidity before the direct-output toggle rows.
+- Runtime-measured temperatures are carried internally as deci-Celsius and are
+  rendered/logged with one decimal place.
+- `Calibrare NTC` exposes editable NTC `Offset` in 0.1 C steps and `Scala`
+  in 0.01 steps, plus `Salveaza`, `Restabileste`, and `Inapoi`.
 - `Oprire program` is a confirmed action, not an immediate stop.
 - `Pauza program` is shown only in `RULARE`; once paused, resume uses the same
   resumable-program flow as any other resumable interruption.
@@ -128,6 +133,8 @@ Warnings are shown/logged but do not require acknowledgement.
 
 - EEPROM stores configuration/calibration and minimal interrupted-run state.
 - EEPROM also stores 10 reusable manual user profiles as a separate concern from interrupted-run resume state.
+- EEPROM also stores persisted user NTC calibration overrides for `Offset` and
+  `Scala` as a separate concern from user profiles and resume state.
 - EEPROM writes must be minimized.
 - Do not write in fast loops.
 - Use versioning and validation/checksum.

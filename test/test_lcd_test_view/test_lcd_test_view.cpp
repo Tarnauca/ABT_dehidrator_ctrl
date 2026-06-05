@@ -64,9 +64,9 @@ void test_test_view_renders_sensor_rows_first() {
   LcdTestSnapshot snapshot;
   snapshot.selectedField = TestField::NtcTemp;
   snapshot.ntc.valid = true;
-  snapshot.ntc.tempC = 52;
+  snapshot.ntc.tempDeciC = 520;
   snapshot.tempRh.valid = true;
-  snapshot.tempRh.tempC = 38;
+  snapshot.tempRh.tempDeciC = 380;
   snapshot.tempRh.rhPercent = 41;
   snapshot.command.fanOn = true;
   snapshot.command.heaterOn = false;
@@ -74,12 +74,12 @@ void test_test_view_renders_sensor_rows_first() {
   view.render(snapshot);
 
   assertLineEquals(display, 0U, "Testare             ");
-  assertLinePrefixEquals(display, 1U, ">NTC: 52", 8U);
-  assertDegreeSymbolAt(display, 1U, 8U);
-  TEST_ASSERT_EQUAL_CHAR('C', display.cells[1U][9U]);
-  assertLinePrefixEquals(display, 2U, " AM2302 T: 38", 13U);
-  assertDegreeSymbolAt(display, 2U, 13U);
-  TEST_ASSERT_EQUAL_CHAR('C', display.cells[2U][14U]);
+  assertLinePrefixEquals(display, 1U, ">NTC: 52.0", 10U);
+  assertDegreeSymbolAt(display, 1U, 10U);
+  TEST_ASSERT_EQUAL_CHAR('C', display.cells[1U][11U]);
+  assertLinePrefixEquals(display, 2U, " AM2302 T: 38.0", 15U);
+  assertDegreeSymbolAt(display, 2U, 15U);
+  TEST_ASSERT_EQUAL_CHAR('C', display.cells[2U][16U]);
   assertLineEquals(display, 3U, " AM2302 RH: 41%     ");
 }
 
@@ -89,9 +89,9 @@ void test_test_view_renders_output_rows_when_scrolled() {
   LcdTestSnapshot snapshot;
   snapshot.selectedField = TestField::Back;
   snapshot.ntc.valid = true;
-  snapshot.ntc.tempC = 52;
+  snapshot.ntc.tempDeciC = 520;
   snapshot.tempRh.valid = true;
-  snapshot.tempRh.tempC = 38;
+  snapshot.tempRh.tempDeciC = 380;
   snapshot.tempRh.rhPercent = 41;
   snapshot.command.fanOn = true;
   snapshot.command.heaterOn = true;

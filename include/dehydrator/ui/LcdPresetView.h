@@ -108,11 +108,11 @@ class LcdPresetView {
     const uint16_t durationMinutes = preset->profile.durationMinutes % 60U;
 
     if (preset->profile.mode == ProfileMode::Fixed) {
-      snprintf(line, sizeof(line), "%d\xDF""C %uh %um",
+      snprintf(line, sizeof(line), "%d.0\xDF""C %uh %um",
                preset->profile.targetTempC,
                durationHours, durationMinutes);
     } else {
-      snprintf(line, sizeof(line), "%d-%d\xDF""C %uh %um",
+      snprintf(line, sizeof(line), "%d.0-%d.0\xDF""C %uh %um",
                preset->profile.lowTempC,
                preset->profile.highTempC, durationHours, durationMinutes);
     }

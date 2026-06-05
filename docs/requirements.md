@@ -34,6 +34,8 @@ Status: draft baseline from discovery conversation. Requirement IDs are stable a
 - REQ-FUNC-027: `Setari` shall expose `Testare` and `Inapoi` as a dedicated submenu instead of showing `Testare` in the main menu.
 - REQ-FUNC-028: `Testare` shall show the latest NTC temperature, AM2302 temperature, and AM2302 humidity as the first read-only entries before any output toggles.
 - REQ-FUNC-029: If a `Testare` sensor reading is invalid, the corresponding row shall show a short error indication instead of a value.
+- REQ-FUNC-030: `Setari` shall expose `Calibrare NTC` before `Testare`.
+- REQ-FUNC-031: `Calibrare NTC` shall provide editable `Offset` in 0.1 C steps over -20.0 C to +20.0 C, editable `Scala` in 0.01 steps over 0.80 to 1.20, plus `Salveaza`, `Restabileste`, and `Inapoi`.
 - REQ-FUNC-011: Pause shall command heater OFF and fan OFF immediately, suspend program timer/profile progression, and keep the active run resumable.
 - REQ-FUNC-012: Resume from pause shall continue the same profile from the paused point.
 - REQ-FUNC-013: Confirmed user stop/cancel shall command heater OFF and fan OFF immediately, shall not run cooldown, and shall clear or mark resume state non-resumable.
@@ -92,6 +94,7 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-UI-012: Selecting the dedicated one-level-up entry (e.g. `Back`) shall navigate exactly one level up in the UI hierarchy.
 - REQ-UI-013: Menu-like LCD screens shall use the first line as the current section title and the remaining visible lines for selectable entries.
 - REQ-UI-014: Temperature displayed on the LCD shall use the `°C` suffix consistently where temperature is shown.
+- REQ-UI-029: Temperature values shown on the LCD shall be rendered with one decimal place.
 - REQ-UI-015: Compact LCD duration display shall use the `Xh Ym` format where the UI shows preset summary values, status elapsed/remaining time, or program parameters.
 - REQ-UI-016: The main status screen summary page shall show `Program: <program>`, `Temp:` with primary temperature, `RH:` when available, `Timp scurs:`, and `Timp ramas:` on the four LCD lines.
 - REQ-UI-017: When the finish alarm state is active on the status screen, a short press shall acknowledge completion and return the controller to idle.
@@ -105,6 +108,7 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-UI-025: The status screen may use compact program labels when the full source label would not fit after the `Program:` prefix on one 20-character line.
 - REQ-UI-026: Selecting `Oprire program` from the main menu shall require explicit `Da / Nu` confirmation before the run is stopped.
 - REQ-UI-027: `Pauza program` shall appear only while a run is in `RULARE`, and its resume flow shall reuse the same `Reluare program` behavior as other resumable interruptions.
+- REQ-UI-028: `Calibrare NTC` shall behave as an editor screen: short press enters/leaves edit mode on `Offset` and `Scala`, `Salveaza` persists the current values, `Restabileste` reloads firmware defaults into the editor, and `Inapoi` returns one level up.
 
 ## Logging And Diagnostics Requirements
 
@@ -116,6 +120,7 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-LOG-006: Raw ADC values shall be emitted only in verbose/debug mode.
 - REQ-LOG-007: Reset cause shall be logged at boot when feasible.
 - REQ-LOG-008: Stable English fault and warning codes shall be used in serial logs, while LCD messages shall use compact Romanian text.
+- REQ-LOG-009: Logged temperature values shall be emitted with one decimal place when present.
 
 ## Persistence Requirements
 
@@ -133,6 +138,7 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-PERSIST-012: Each stored user-profile slot shall include versioning and validation/checksum so invalid/corrupt records are treated as vacant rather than executable.
 - REQ-PERSIST-013: Saving one user-defined profile shall update only the selected EEPROM slot bytes rather than rewriting unrelated slots.
 - REQ-PERSIST-014: User-profile storage and interrupted-run resume storage shall remain separate concerns in code and schema.
+- REQ-PERSIST-015: EEPROM shall persist user NTC `Offset` and `Scala` in a dedicated validated schema separate from user-profile storage.
 
 ## Testing And Verification Requirements
 
@@ -145,5 +151,5 @@ Product-minded recommendation: add independent hardware thermal protection in th
 
 - REQ-FUTURE-001: Humidity-based stop is deferred.
 - REQ-FUTURE-002: Serial command interface is deferred.
-- REQ-FUTURE-003: UI calibration screen is deferred.
+- REQ-FUTURE-003: Reference-assisted or multi-point NTC calibration workflow is deferred.
 - REQ-FUTURE-004: Food preset values are TBD and may be sourced from a product manual PDF.

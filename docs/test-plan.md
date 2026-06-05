@@ -102,6 +102,7 @@ Status values:
 | REQ-UI-012 | Unit/Bench | Selecting `Inapoi` returns one UI level up | Menu, preset, test, and manual-program controller tests; bench navigation check pending | Implemented |
 | REQ-UI-013 | Unit/Bench | Menu-like screens use line 1 as section title and lower lines for items | `test_lcd_menu_view`, `test_lcd_preset_view`, `test_lcd_test_view`, `test_lcd_manual_program_view`; LCD bench check pending | Implemented |
 | REQ-UI-014 | Unit/Bench | LCD temperatures use `°C` consistently | `test_lcd_status_view`, `test_lcd_preset_view`, `test_lcd_manual_program_view`; LCD bench check pending | Implemented |
+| REQ-UI-029 | Unit/Bench | LCD temperatures render with one decimal place | `test_lcd_status_view`, `test_lcd_preset_view`, `test_lcd_manual_program_view`, `test_lcd_test_view`; LCD bench check pending | Implemented |
 | REQ-UI-015 | Unit/Bench | Compact LCD durations use `Xh Ym` in preset, status, and parameter views | `test_lcd_status_view`, `test_lcd_preset_view`, `test_lcd_manual_program_view`; LCD bench check pending | Implemented |
 | REQ-FUNC-001 | Unit/Bench | Test mode supports direct on/off control shell | `test_test_mode_controller`, `test_lcd_test_view`; bench test-mode check pending | Implemented |
 | REQ-FUNC-004 | Unit/Bench | Built-in preset selection shell is available from the menu | `test_preset_select_controller`, `test_lcd_preset_view`; bench preset check pending | Implemented |
@@ -120,6 +121,8 @@ Status values:
 | REQ-FUNC-027 | Unit/Bench | `Setari` exposes `Testare` as a submenu instead of a top-level main-menu entry | Native UI wiring plus LCD/menu tests; bench settings navigation pending | Implemented |
 | REQ-FUNC-028 | Unit/Bench | `Testare` shows NTC temperature, AM2302 temperature, and AM2302 humidity before the output toggles | `test_test_mode_controller`, `test_lcd_test_view`; bench LCD/sensor check pending | Implemented |
 | REQ-FUNC-029 | Unit/Bench | Invalid `Testare` sensor rows show a compact error string instead of a value | `test_lcd_test_view`; bench invalid-sensor display check pending | Implemented |
+| REQ-FUNC-030 | Unit/Bench | `Setari` exposes `Calibrare NTC` before `Testare` | `test_settings_menu_controller`; bench settings navigation pending | Implemented |
+| REQ-FUNC-031 | Unit/Bench | `Calibrare NTC` edits offset/scale and exposes save/restore/back actions | `test_ntc_calibration_controller`, `test_lcd_ntc_calibration_view`; bench calibration-editor check pending | Implemented |
 | REQ-UI-016 | Unit/Bench | Status summary page shows program, Temp/RH, elapsed time, and remaining time | `test_lcd_status_view`; LCD bench check pending | Implemented |
 | REQ-UI-017 | Unit/Bench | Finished state can be acknowledged from the status screen with short press | `test_preset_run_controller`; status acknowledgement bench check pending | Implemented |
 | REQ-UI-018 | Unit/Bench | User-profile slot list shows all 10 slots as `Profil N` or `Profil N (nedef.)` | `test_user_profile_controllers`, `test_lcd_user_profile_slot_view`; LCD bench check pending | Implemented |
@@ -131,13 +134,14 @@ Status values:
 | REQ-UI-025 | Review/Bench | Status uses compact program labels when the full source label would overflow `Program:` line width | Code review plus LCD bench check pending | Implemented |
 | REQ-UI-026 | Unit/Bench | `Oprire program` requires explicit confirmation before stopping the run | Native UI wiring; bench stop-confirm flow pending | Implemented |
 | REQ-UI-027 | Unit/Bench | `Pauza program` appears only in `RULARE` and resumes through the existing resume flow | `test_menu_controller`, `test_lcd_menu_view`, `test_preset_run_controller`; bench pause/resume flow pending | Implemented |
-| REQ-PERSIST-001 | Unit | Calibration defaults are explicit and later persistable | `test_config` thermistor calibration default tests; EEPROM persistence pending | Implemented |
+| REQ-PERSIST-001 | Unit | Calibration defaults are explicit and persistable | `test_config` thermistor calibration default tests plus `test_ntc_calibration_store` | Implemented |
 | REQ-UI-005 | Unit/Bench | Status summary shows blinking play/pause indicator top-right in `RULARE`/`PAUZA`, blank otherwise | `test_lcd_status_view`; LCD bench test pending | Implemented |
 | REQ-UI-006 | Unit/Bench | Finish alarm starts after cooldown | State machine plus buzzer/backlight bench check | Planned |
 | REQ-UI-007 | Unit/Bench | Fault alarm continues until acknowledgement | State machine plus buzzer/backlight bench check | Planned |
 | REQ-LOG-004 | Unit | Events, parameters, outputs, warnings, faults are logged | `FakeLogSink` | Planned |
 | REQ-LOG-005 | Unit | Periodic state log interval is 5 s | `FakeClock`, `FakeLogSink` | Planned |
 | REQ-LOG-008 | Unit | English codes in logs, compact Romanian LCD messages | `test_log_formatter`, UI view tests | Planned |
+| REQ-LOG-009 | Unit | Logged temperatures render with one decimal place | `test_log_formatter` | Passing |
 | REQ-PERSIST-004 | Unit | Resume snapshots no more often than 15 min except lifecycle events | `FakeClock`, `FakePersistentStore` | Planned |
 | REQ-PERSIST-005 | Unit | EEPROM version/checksum validation | `test_persistence_validation` | Planned |
 | REQ-PERSIST-009 | Unit | Power loss/brown-out offers resume only after confirmation | `test_control_state_machine`, `FakePersistentStore` | Planned |
@@ -146,6 +150,7 @@ Status values:
 | REQ-PERSIST-012 | Unit | Invalid/corrupt user-profile records are treated as vacant | `test_user_profile_store` checksum corruption case | Passing |
 | REQ-PERSIST-013 | Unit | Saving one user profile updates only the selected slot layout | `test_user_profile_store`; byte-wise EEPROM adapter design review | Implemented |
 | REQ-PERSIST-014 | Review/Unit | User-profile storage remains separate from interrupted-run persistence | `docs/architecture.md`, `test_user_profile_store` scope, code review | Implemented |
+| REQ-PERSIST-015 | Unit | EEPROM persists user NTC offset/scale in a dedicated validated schema | `test_ntc_calibration_store`; EEPROM bench save/load pending | Implemented |
 
 ## Manual Bench Tests
 
@@ -158,7 +163,9 @@ Before connecting real heater power:
 - Verify encoder rotation, short press, `Inapoi` navigation, and stuck-button detection.
 - Verify `Salveaza`, `Da / Nu / Renunta`, overwrite, delete, and `Programe utilizator` browse/edit/start flows.
 - Verify `Setari -> Testare` navigation and the dynamic visibility/order of `Oprire program` and `Reluare program`.
+- Verify `Setari -> Calibrare NTC -> Inapoi` navigation and confirm the next entry starts from `Calibrare NTC`, not from `Inapoi`.
 - Verify `Testare` shows the three sensor rows first and renders `Eroare` per row when a sensor reading is invalid.
+- Verify `Calibrare NTC` can change `Offset` in 0.1 C steps and `Scala` in 0.01 steps, save them, power-cycle, and reload the same values.
 - Verify primary thermistor analog readings and calibration visibility.
 - Verify DHT22/AM2302 temperature/RH reporting and warning on disconnect.
 - Verify serial logs on USB and secondary serial.

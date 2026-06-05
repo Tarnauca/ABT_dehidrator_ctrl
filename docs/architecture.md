@@ -78,8 +78,12 @@ Pure logic modules:
 - `PresetRunController`: bridges preset/manual profiles into the run lifecycle,
   keeps the active profile independent from the optional active preset pointer,
   and coordinates profile evaluation with hysteresis control.
+- `NtcCalibrationController`: owns the LCD editor behavior for persisted user
+  NTC offset/scale calibration.
 - `UserProfileStore`: owns the EEPROM schema for 10 user-defined manual
   profiles, including slot occupancy, version, and checksum handling.
+- `NtcCalibrationStore`: owns the EEPROM schema for persisted user NTC offset
+  and scale overrides.
 - `TemperatureControl`: hysteresis and relay minimum timing decisions.
 - `FaultDetector`: primary thermistor validity, over-temperature, no-rise, stuck-heater, stuck-input checks.
 - `RunTimer`: elapsed/remaining time and pause behavior.
@@ -188,6 +192,11 @@ reset recovery. This separation keeps the EEPROM schema easier to reason about
 and avoids mixing "library of profiles" behavior with "recover active run"
 behavior.
 
+Persisted NTC calibration is also kept separate from both user-profile storage
+and interrupted-run persistence. The current firmware stores only the user
+editable offset/scale pair in EEPROM; the rest of the thermistor model remains
+owned by firmware defaults in `CalibrationConfig`.
+
 Proposed configuration ownership:
 
 - `HardwareConfig`: pins, relay polarity, LCD I2C address, serial port selection, baud rate.
@@ -198,6 +207,12 @@ Proposed configuration ownership:
 - `PersistenceConfig`: EEPROM schema version, checkpoint interval, validation settings.
 - `CalibrationConfig`: default primary thermistor and secondary temp/RH calibration constants.
 - `PresetCatalog`: built-in drying presets.
+
+Measured temperature values should be carried through the runtime as fixed-point
+deci-Celsius values (`0.1 C`) after sensor conversion. Float math is acceptable
+inside the thermistor conversion formula itself, but the wider firmware should
+use fixed-point values for control, fault thresholds, UI formatting, logs, and
+EEPROM-facing state.
 
 ## Interfaces
 
