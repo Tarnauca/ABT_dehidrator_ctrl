@@ -90,14 +90,17 @@ Product-minded recommendation: add independent hardware thermal protection in th
 - REQ-UI-012: Selecting the dedicated one-level-up entry (e.g. `Back`) shall navigate exactly one level up in the UI hierarchy.
 - REQ-UI-013: Menu-like LCD screens shall use the first line as the current section title and the remaining visible lines for selectable entries.
 - REQ-UI-014: Temperature displayed on the LCD shall use the `°C` suffix consistently where temperature is shown.
-- REQ-UI-015: Compact LCD duration display shall use the `Xh Ym` format where the UI shows preset summary values.
-- REQ-UI-016: During an active preset run, the status screen shall show the current Romanian lifecycle label, including at least idle, running, finish cooldown, and finished states.
+- REQ-UI-015: Compact LCD duration display shall use the `Xh Ym` format where the UI shows preset summary values, status elapsed/remaining time, or program parameters.
+- REQ-UI-016: The main status screen summary page shall show `Program: <program>`, `Temp:` with primary temperature, `RH:` when available, `Timp scurs:`, and `Timp ramas:` on the four LCD lines.
 - REQ-UI-017: When the finish alarm state is active on the status screen, a short press shall acknowledge completion and return the controller to idle.
 - REQ-UI-018: User-profile slot lists shall show all 10 slots plus `Inapoi`; occupied slots shall be labeled as `Profil N`, while vacant slots shall be labeled as `Profil N (nedef.)`.
 - REQ-UI-019: Saving over an occupied user-profile slot shall require explicit `Da / Nu` overwrite confirmation.
 - REQ-UI-020: Deleting one occupied user-profile slot shall require explicit `Da / Nu` confirmation.
 - REQ-UI-021: After saving one manual profile, the `Salveaza profil` slot list shall close automatically and return to the screen flow that triggered the save action.
 - REQ-UI-022: If a menu-like screen is exited through its dedicated one-level-up entry (e.g. `Back`), the next entry into that screen shall start at the first actionable item, not at the one-level-up entry.
+- REQ-UI-023: While the main status screen is active, encoder rotation shall cycle between logical status pages without opening the menu.
+- REQ-UI-024: Additional status pages shall show active-program parameters and logical output states, using one parameter or output per LCD line where practical.
+- REQ-UI-025: The status screen may use compact program labels when the full source label would not fit after the `Program:` prefix on one 20-character line.
 
 ## Logging And Diagnostics Requirements
 

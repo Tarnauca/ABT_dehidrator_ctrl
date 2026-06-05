@@ -5,6 +5,9 @@
 using dehydrator::CharacterDisplay;
 using dehydrator::LcdStatusSnapshot;
 using dehydrator::LcdStatusView;
+using dehydrator::ProfileConfig;
+using dehydrator::ProfileMode;
+using dehydrator::StatusPage;
 
 class FakeDisplay : public CharacterDisplay {
  public:
@@ -13,11 +16,22 @@ class FakeDisplay : public CharacterDisplay {
   uint8_t cursorColumn = 0U;
   uint8_t cursorRow = 0U;
 
+  /**
+   * @brief Moves the emulated LCD cursor.
+   *
+   * @param column Zero-based target column.
+   * @param row Zero-based target row.
+   */
   void setCursor(uint8_t column, uint8_t row) override {
     cursorColumn = column;
     cursorRow = row;
   }
 
+  /**
+   * @brief Writes one normal character into the emulated LCD buffer.
+   *
+   * @param value Character byte to store.
+   */
   void writeChar(char value) override {
     if (cursorRow < LcdStatusView::ROWS &&
         cursorColumn < LcdStatusView::COLUMNS) {
@@ -27,6 +41,11 @@ class FakeDisplay : public CharacterDisplay {
     cursorColumn++;
   }
 
+  /**
+   * @brief Writes one custom character marker into the emulated LCD buffer.
+   *
+   * @param code Custom character slot code.
+   */
   void writeCustom(uint8_t code) override {
     if (cursorRow < LcdStatusView::ROWS &&
         cursorColumn < LcdStatusView::COLUMNS) {
@@ -37,6 +56,13 @@ class FakeDisplay : public CharacterDisplay {
   }
 };
 
+/**
+ * @brief Asserts that one LCD row matches the provided fixed-width text.
+ *
+ * @param display Emulated LCD buffer.
+ * @param row Zero-based row index.
+ * @param expected Full 20-character expected row contents.
+ */
 void assertLineEquals(const FakeDisplay& display, uint8_t row,
                       const char* expected) {
   for (uint8_t column = 0U; column < LcdStatusView::COLUMNS; column++) {
@@ -44,37 +70,40 @@ void assertLineEquals(const FakeDisplay& display, uint8_t row,
   }
 }
 
+/**
+ * @brief Creates one representative status snapshot for renderer tests.
+ *
+ * @return Snapshot populated with valid sensor and program values.
+ */
 LcdStatusSnapshot validSnapshot() {
   LcdStatusSnapshot snapshot;
-  snapshot.stateLabel = "INACTIV";
+  snapshot.page = StatusPage::Summary;
+  snapshot.programLabel = "Mere";
   snapshot.ntcTempC = 57;
   snapshot.ntcValid = true;
   snapshot.rhPercent = 43U;
   snapshot.rhValid = true;
+  snapshot.elapsedMinutes = 90U;
+  snapshot.remainingMinutes = 510U;
+  snapshot.profileValid = true;
+  snapshot.profile =
+      ProfileConfig{ProfileMode::Fluctuating, 57, 50, 65, 600U, 20U, 20U};
   snapshot.heaterOn = false;
   snapshot.fanOn = true;
   snapshot.heartbeatOn = true;
   return snapshot;
 }
 
-void test_status_view_renders_romanian_4x20_status_lines() {
+void test_status_view_renders_summary_page() {
   FakeDisplay display;
   LcdStatusView view(display);
 
   view.render(validSnapshot());
 
-  assertLineEquals(display, 0U, "Stare: INACTIV      ");
-  TEST_ASSERT_EQUAL_CHAR('5', display.cells[1U][2U]);
-  TEST_ASSERT_EQUAL_CHAR('7', display.cells[1U][3U]);
-  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[1U][4U]);
-  TEST_ASSERT_EQUAL_CHAR('C', display.cells[1U][5U]);
-  TEST_ASSERT_EQUAL_CHAR(' ', display.cells[1U][6U]);
-  TEST_ASSERT_EQUAL_CHAR(' ', display.cells[1U][7U]);
-  TEST_ASSERT_EQUAL_CHAR(' ', display.cells[1U][8U]);
-  assertLineEquals(display, 2U, "H:OFF     F:ON      ");
+  assertLineEquals(display, 0U, "Program: Mere       ");
+  assertLineEquals(display, 1U, "Temp: 57\xDF""C RH: 43%  ");
+  assertLineEquals(display, 2U, "Timp scurs: 1h 30m  ");
   TEST_ASSERT_TRUE(display.custom[3U][19U]);
-  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(LcdStatusView::HEARTBEAT_CHAR),
-                         display.cells[3U][19U]);
 }
 
 void test_status_view_renders_missing_sensor_values() {
@@ -87,32 +116,59 @@ void test_status_view_renders_missing_sensor_values() {
 
   view.render(snapshot);
 
-  TEST_ASSERT_EQUAL_CHAR('-', display.cells[1U][2U]);
-  TEST_ASSERT_EQUAL_CHAR('-', display.cells[1U][3U]);
-  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(0xDF), display.cells[1U][4U]);
-  TEST_ASSERT_EQUAL_CHAR('C', display.cells[1U][5U]);
+  assertLineEquals(display, 1U, "Temp: --\xDF""C RH: --%  ");
   TEST_ASSERT_FALSE(display.custom[3U][19U]);
   TEST_ASSERT_EQUAL_CHAR(' ', display.cells[3U][19U]);
 }
 
-void test_status_view_renders_running_state_label() {
+void test_status_view_renders_boost_parameter_page() {
   FakeDisplay display;
   LcdStatusView view(display);
   LcdStatusSnapshot snapshot = validSnapshot();
-  snapshot.stateLabel = "RULARE";
-  snapshot.heaterOn = true;
+  snapshot.page = StatusPage::ParametersPrimary;
+  snapshot.profile =
+      ProfileConfig{ProfileMode::Boost, 55, 0, 65, 480U, 30U, 0U};
 
   view.render(snapshot);
 
-  assertLineEquals(display, 0U, "Stare: RULARE       ");
-  assertLineEquals(display, 2U, "H:ON      F:ON      ");
+  assertLineEquals(display, 0U, "Temp: 55\xDF""C          ");
+  assertLineEquals(display, 1U, "Durata: 8h 0m       ");
+  assertLineEquals(display, 2U, "Boost: +10\xDF""C        ");
+}
+
+void test_status_view_renders_fluctuating_secondary_parameter_page() {
+  FakeDisplay display;
+  LcdStatusView view(display);
+  LcdStatusSnapshot snapshot = validSnapshot();
+  snapshot.page = StatusPage::ParametersSecondary;
+
+  view.render(snapshot);
+
+  assertLineEquals(display, 0U, "Dur. Tsup: 0h 20m   ");
+  assertLineEquals(display, 1U, "Dur. Tinf: 0h 20m   ");
+}
+
+void test_status_view_renders_outputs_page() {
+  FakeDisplay display;
+  LcdStatusView view(display);
+  LcdStatusSnapshot snapshot = validSnapshot();
+  snapshot.page = StatusPage::Outputs;
+  snapshot.heaterOn = true;
+  snapshot.fanOn = false;
+
+  view.render(snapshot);
+
+  assertLineEquals(display, 0U, "Incalzitor: Pornit  ");
+  assertLineEquals(display, 1U, "Ventilator: Oprit   ");
 }
 
 void setup() {
   UNITY_BEGIN();
-  RUN_TEST(test_status_view_renders_romanian_4x20_status_lines);
+  RUN_TEST(test_status_view_renders_summary_page);
   RUN_TEST(test_status_view_renders_missing_sensor_values);
-  RUN_TEST(test_status_view_renders_running_state_label);
+  RUN_TEST(test_status_view_renders_boost_parameter_page);
+  RUN_TEST(test_status_view_renders_fluctuating_secondary_parameter_page);
+  RUN_TEST(test_status_view_renders_outputs_page);
   UNITY_END();
 }
 

@@ -69,22 +69,23 @@ Product-minded recommendation: use independent hardware thermal protection in th
 
 ## UI Bring-Up Notes
 
-The firmware now includes a first hardware bring-up screen for the 4x20 LCD.
-It uses `LiquidCrystal_I2C` for the HD44780 I2C backpack, a project-owned
-`CharacterDisplay` interface, and a testable `LcdStatusView` renderer. The
-current screen is intentionally minimal:
+The firmware now includes a paged product-oriented status screen for the 4x20
+LCD. It uses `LiquidCrystal_I2C` for the HD44780 I2C backpack, a
+project-owned `CharacterDisplay` interface, and a testable `LcdStatusView`
+renderer. The default summary page now looks like this:
 
 ```text
-Stare: INACTIV
-T:--C    RH:--%
-H:OFF     F:OFF
-                   <heartbeat>
+Program: Inactiv
+Temp: --C RH: --%
+Timp scurs: 0h 0m
+Timp ramas: 0h 0m <heartbeat>
 ```
 
 The heartbeat is a custom LCD character in the bottom-right cell. The renderer
 redraws fixed-width lines so shorter values do not leave stale characters.
-When the secondary temp/RH sensor is present and initializes correctly, `RH:--%` is replaced
-by the live humidity percentage.
+When the secondary temp/RH sensor is present and initializes correctly,
+`RH: --%` is replaced by the live humidity percentage. Encoder rotation on the
+status screen cycles additional parameter and output pages.
 
 Encoder rotation is read through the proven `Encoder` library and the
 pushbutton is debounced through `Bounce2`. In this slice, input events are only

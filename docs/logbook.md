@@ -1917,6 +1917,60 @@ boot, not only the final `passed` or `fault` outcome.
 
 ---
 
+## Paged main status screen
+
+**Trigger**
+The user wanted the main LCD page to stop looking like a bring-up screen and
+become a product-style runtime dashboard. The new summary had to show program,
+temperature/RH, elapsed time, and remaining time, while rotary movement on the
+status screen itself should switch to additional parameter and output pages.
+
+**Participants**
+- User
+- Codex
+
+**Actions**
+- Reworked `LcdStatusView` from one fixed status screen into a paged renderer
+  with summary, parameter, and output pages.
+- Added runtime page selection in `main.cpp`, driven by encoder rotation only
+  while the status screen is active.
+- Added compact active-program display context so the summary can show preset,
+  user-profile, manual, or inactive program names.
+- Tracked enough run context to show the active profile parameters and elapsed /
+  remaining time on the status pages.
+- Updated native LCD tests and reran the full native suite plus Mega2560 build.
+- Updated requirements, UI draft, test plan, backlog, and project context so
+  future work and future agent sessions treat the paged status screen as the
+  new baseline.
+
+**Decisions**
+- Keep short press on the status screen mapped to menu entry, and use rotary
+  movement alone for status-page switching.
+- Use compact labels such as `Man. Const` and `Profil 1` on the status summary
+  because the full long-form names do not fit after the `Program:` prefix on a
+  20-character LCD line.
+- Show program parameters one per line where practical, even if that means
+  fluctuating mode occupies two separate parameter pages.
+
+**Commits / Branches**
+- Branch: pending
+- Commit: pending
+- Merge commit: pending
+
+**Verification**
+- `PLATFORMIO_CORE_DIR=/workspaces/ABT_dehidrator_ctrl/.pio-core platformio test -e native`
+- `PLATFORMIO_CORE_DIR=/workspaces/ABT_dehidrator_ctrl/.pio-core platformio run -e megaatmega2560`
+
+**Links**
+- `include/dehydrator/ui/LcdStatusView.h`
+- `include/dehydrator/app/PresetRunController.h`
+- `src/main.cpp`
+- `test/test_lcd_status_view/test_lcd_status_view.cpp`
+- `docs/requirements.md`
+- `docs/user-ui-ro.md`
+
+---
+
 ## Preset stop menu wiring fix
 
 **Trigger**

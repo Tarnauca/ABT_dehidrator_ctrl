@@ -3,31 +3,57 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
+#include "dehydrator/domain/ProfileEngine.h"
 #include "dehydrator/interfaces/CharacterDisplay.h"
 
 namespace dehydrator {
 
 /**
+ * @brief Logical pages available on the main Romanian status screen.
+ */
+enum class StatusPage {
+  /** Summary page with program, sensors, and elapsed/remaining time. */
+  Summary,
+  /** First parameter page for the active program. */
+  ParametersPrimary,
+  /** Second parameter page when the program has more than four parameters. */
+  ParametersSecondary,
+  /** Output-state page. */
+  Outputs,
+};
+
+/**
  * @brief Snapshot rendered by the Romanian 4x20 status screen.
  */
 struct LcdStatusSnapshot {
-  /** Romanian state label, for example `INACTIV` or `RULARE`. */
-  const char* stateLabel;
+  /** Current logical page selected by the user. */
+  StatusPage page = StatusPage::Summary;
+  /** Current active program label, for example `Mere` or `Inactiv`. */
+  const char* programLabel = nullptr;
   /** Primary thermistor temperature in Celsius. Ignored when `ntcValid` is false. */
-  int16_t ntcTempC;
+  int16_t ntcTempC = 0;
   /** Whether primary thermistor temperature is available for display. */
-  bool ntcValid;
+  bool ntcValid = false;
   /** Relative humidity in percent. Ignored when `rhValid` is false. */
-  uint8_t rhPercent;
+  uint8_t rhPercent = 0U;
   /** Whether RH is available for display. */
-  bool rhValid;
+  bool rhValid = false;
+  /** Elapsed active program time in minutes. */
+  uint16_t elapsedMinutes = 0U;
+  /** Remaining active program time in minutes. */
+  uint16_t remainingMinutes = 0U;
+  /** True when an active program profile is available for parameter pages. */
+  bool profileValid = false;
+  /** Current active program profile for parameter rendering. */
+  ProfileConfig profile;
   /** Logical heater command shown on the status screen. */
-  bool heaterOn;
+  bool heaterOn = false;
   /** Logical fan command shown on the status screen. */
-  bool fanOn;
+  bool fanOn = false;
   /** Whether the heartbeat custom symbol should be visible. */
-  bool heartbeatOn;
+  bool heartbeatOn = false;
 };
 
 /**
@@ -61,22 +87,21 @@ class LcdStatusView {
   void render(const LcdStatusSnapshot& snapshot) {
     char line[COLUMNS + 1U] = {};
 
-    fillLine(line);
-    writeToken(line, "Stare:", 0U);
-    writeToken(line, safeText(snapshot.stateLabel), 7U);
-    writeLine(0U, line, false);
-
-    fillLine(line);
-    writeTemperatureAndHumidity(line, snapshot);
-    writeLine(1U, line, false);
-
-    fillLine(line);
-    writeOutputState(line, "H:", snapshot.heaterOn, 0U);
-    writeOutputState(line, "F:", snapshot.fanOn, 10U);
-    writeLine(2U, line, false);
-
-    fillLine(line);
-    writeLine(3U, line, snapshot.heartbeatOn);
+    switch (snapshot.page) {
+      case StatusPage::ParametersPrimary:
+        renderPrimaryParameters(snapshot, line);
+        break;
+      case StatusPage::ParametersSecondary:
+        renderSecondaryParameters(snapshot, line);
+        break;
+      case StatusPage::Outputs:
+        renderOutputs(snapshot, line);
+        break;
+      case StatusPage::Summary:
+      default:
+        renderSummary(snapshot, line);
+        break;
+    }
   }
 
  private:
@@ -100,32 +125,241 @@ class LcdStatusView {
     }
   }
 
+  /**
+   * @brief Formats one whole-number duration as `8h 15m`.
+   *
+   * @param minutesValue Duration in minutes.
+   * @param buffer Destination string buffer.
+   * @param bufferSize Destination buffer size.
+   */
+  static void formatDuration(uint16_t minutesValue, char* buffer,
+                             size_t bufferSize) {
+    snprintf(buffer, bufferSize, "%uh %um",
+             static_cast<unsigned int>(minutesValue / 60U),
+             static_cast<unsigned int>(minutesValue % 60U));
+  }
+
+  /**
+   * @brief Writes `Label: duration` using the project display format.
+   *
+   * @param line Destination LCD line.
+   * @param label Prefix label, including colon.
+   * @param minutesValue Duration in minutes.
+   */
+  static void writeDurationLine(char* line, const char* label,
+                                uint16_t minutesValue) {
+    char value[12] = {};
+    writeToken(line, label, 0U);
+    formatDuration(minutesValue, value, sizeof(value));
+    writeToken(line, value, static_cast<uint8_t>(strlen(label)));
+  }
+
+  /**
+   * @brief Writes `Label: temp°C` using the shared LCD temperature format.
+   *
+   * @param line Destination LCD line.
+   * @param label Prefix label, including colon.
+   * @param tempC Integer Celsius value.
+   */
+  static void writeTemperatureLine(char* line, const char* label, int16_t tempC) {
+    char value[16] = {};
+    writeToken(line, label, 0U);
+    snprintf(value, sizeof(value), "%d\xDF""C", static_cast<int>(tempC));
+    writeToken(line, value, static_cast<uint8_t>(strlen(label)));
+  }
+
+  /**
+   * @brief Writes `Label: temp` / `Label: --` for the summary sensor row.
+   *
+   * @param line Destination LCD line.
+   * @param snapshot Current sensor snapshot.
+   */
   static void writeTemperatureAndHumidity(char* line,
                                           const LcdStatusSnapshot& snapshot) {
     char value[16] = {};
-    writeToken(line, "T:", 0U);
+    writeToken(line, "Temp:", 0U);
     if (snapshot.ntcValid) {
       snprintf(value, sizeof(value), "%d\xDF""C",
                static_cast<int>(snapshot.ntcTempC));
-      writeToken(line, value, 2U);
+      writeToken(line, value, 6U);
     } else {
-      writeToken(line, "--\xDF""C", 2U);
+      writeToken(line, "--\xDF""C", 6U);
     }
 
-    writeToken(line, "RH:", 9U);
+    writeToken(line, "RH: ", 11U);
     if (snapshot.rhValid) {
       snprintf(value, sizeof(value), "%u%%",
                static_cast<unsigned int>(snapshot.rhPercent));
-      writeToken(line, value, 12U);
+      writeToken(line, value, 15U);
     } else {
-      writeToken(line, "--%", 12U);
+      writeToken(line, "--%", 15U);
     }
   }
 
-  static void writeOutputState(char* line, const char* label, bool on,
-                               uint8_t column) {
-    writeToken(line, label, column);
-    writeToken(line, on ? "ON" : "OFF", static_cast<uint8_t>(column + 2U));
+  /**
+   * @brief Writes the current program line on the summary page.
+   *
+   * The LCD width cannot always fit the full long-form label after the
+   * `Program:` prefix, so callers should already provide a compact status label.
+   *
+   * @param line Destination LCD line.
+   * @param programLabel Compact program label to show.
+   */
+  static void writeProgramLine(char* line, const char* programLabel) {
+    writeToken(line, "Program:", 0U);
+    writeToken(line, safeText(programLabel), 9U);
+  }
+
+  /**
+   * @brief Writes one output-state line.
+   *
+   * @param line Destination LCD line.
+   * @param label Romanian output label.
+   * @param on Whether the output is currently active.
+   */
+  static void writeOutputStateLine(char* line, const char* label, bool on) {
+    writeToken(line, label, 0U);
+    writeToken(line, on ? "Pornit" : "Oprit",
+               static_cast<uint8_t>(strlen(label)));
+  }
+
+  /**
+   * @brief Renders the summary page.
+   *
+   * @param snapshot Current status data.
+   * @param line Reusable line buffer.
+   */
+  void renderSummary(const LcdStatusSnapshot& snapshot, char* line) {
+    fillLine(line);
+    writeProgramLine(line, snapshot.programLabel);
+    writeLine(0U, line, false);
+
+    fillLine(line);
+    writeTemperatureAndHumidity(line, snapshot);
+    writeLine(1U, line, false);
+
+    fillLine(line);
+    writeDurationLine(line, "Timp scurs: ", snapshot.elapsedMinutes);
+    writeLine(2U, line, false);
+
+    fillLine(line);
+    writeDurationLine(line, "Timp ramas: ", snapshot.remainingMinutes);
+    writeLine(3U, line, snapshot.heartbeatOn);
+  }
+
+  /**
+   * @brief Renders the first parameter page for the active profile.
+   *
+   * @param snapshot Current status/profile data.
+   * @param line Reusable line buffer.
+   */
+  void renderPrimaryParameters(const LcdStatusSnapshot& snapshot, char* line) {
+    fillLine(line);
+    if (!snapshot.profileValid) {
+      writeToken(line, "Fara program activ", 0U);
+      writeLine(0U, line, false);
+      fillLine(line);
+      writeLine(1U, line, false);
+      fillLine(line);
+      writeLine(2U, line, false);
+      fillLine(line);
+      writeLine(3U, line, snapshot.heartbeatOn);
+      return;
+    }
+
+    if (snapshot.profile.mode == ProfileMode::Fixed) {
+      writeTemperatureLine(line, "Temp: ", snapshot.profile.targetTempC);
+      writeLine(0U, line, false);
+      fillLine(line);
+      writeDurationLine(line, "Durata: ", snapshot.profile.durationMinutes);
+      writeLine(1U, line, false);
+      fillLine(line);
+      writeLine(2U, line, false);
+      fillLine(line);
+      writeLine(3U, line, snapshot.heartbeatOn);
+      return;
+    }
+
+    if (snapshot.profile.mode == ProfileMode::Boost) {
+      writeTemperatureLine(line, "Temp: ", snapshot.profile.targetTempC);
+      writeLine(0U, line, false);
+      fillLine(line);
+      writeDurationLine(line, "Durata: ", snapshot.profile.durationMinutes);
+      writeLine(1U, line, false);
+      fillLine(line);
+      writeTemperatureLine(line, "Boost: +", snapshot.profile.highTempC -
+                                                snapshot.profile.targetTempC);
+      writeLine(2U, line, false);
+      fillLine(line);
+      writeDurationLine(line, "Dur.boost: ", snapshot.profile.highPhaseMinutes);
+      writeLine(3U, line, snapshot.heartbeatOn);
+      return;
+    }
+
+    writeTemperatureLine(line, "T.ref: ", snapshot.profile.targetTempC);
+    writeLine(0U, line, false);
+    fillLine(line);
+    writeDurationLine(line, "Durata: ", snapshot.profile.durationMinutes);
+    writeLine(1U, line, false);
+    fillLine(line);
+    writeTemperatureLine(line, "Tsup: ", snapshot.profile.highTempC);
+    writeLine(2U, line, false);
+    fillLine(line);
+    writeTemperatureLine(line, "Tinf: ", snapshot.profile.lowTempC);
+    writeLine(3U, line, snapshot.heartbeatOn);
+  }
+
+  /**
+   * @brief Renders the secondary fluctuating-parameter page when needed.
+   *
+   * @param snapshot Current status/profile data.
+   * @param line Reusable line buffer.
+   */
+  void renderSecondaryParameters(const LcdStatusSnapshot& snapshot, char* line) {
+    fillLine(line);
+    if (!(snapshot.profileValid &&
+          snapshot.profile.mode == ProfileMode::Fluctuating)) {
+      writeLine(0U, line, false);
+      fillLine(line);
+      writeLine(1U, line, false);
+      fillLine(line);
+      writeLine(2U, line, false);
+      fillLine(line);
+      writeLine(3U, line, snapshot.heartbeatOn);
+      return;
+    }
+
+    writeDurationLine(line, "Dur. Tsup: ", snapshot.profile.highPhaseMinutes);
+    writeLine(0U, line, false);
+    fillLine(line);
+    writeDurationLine(line, "Dur. Tinf: ", snapshot.profile.lowPhaseMinutes);
+    writeLine(1U, line, false);
+    fillLine(line);
+    writeLine(2U, line, false);
+    fillLine(line);
+    writeLine(3U, line, snapshot.heartbeatOn);
+  }
+
+  /**
+   * @brief Renders the heater/fan output page.
+   *
+   * @param snapshot Current output state data.
+   * @param line Reusable line buffer.
+   */
+  void renderOutputs(const LcdStatusSnapshot& snapshot, char* line) {
+    fillLine(line);
+    writeOutputStateLine(line, "Incalzitor: ", snapshot.heaterOn);
+    writeLine(0U, line, false);
+
+    fillLine(line);
+    writeOutputStateLine(line, "Ventilator: ", snapshot.fanOn);
+    writeLine(1U, line, false);
+
+    fillLine(line);
+    writeLine(2U, line, false);
+
+    fillLine(line);
+    writeLine(3U, line, snapshot.heartbeatOn);
   }
 
   void writeLine(uint8_t row, const char* line, bool heartbeatOn) {

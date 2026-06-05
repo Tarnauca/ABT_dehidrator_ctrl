@@ -73,6 +73,7 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 - [x] Wire preset selection into the real run lifecycle and status screen.
 - [x] Add manual `Constant`, `Boost`, and `Fluctuant` program variants.
 - [x] Reshape the LCD menu hierarchy to product-oriented labels and move `Testare` under `Setari`.
+- [x] Expand the main LCD status area into rotary-selectable summary, parameter, and output pages.
 - [ ] Add built-in presets after source values are confirmed.
 
 ## Phase 8: Verification And Safety Review

@@ -109,6 +109,35 @@ enum class BinaryConfirmPurpose {
   DeleteSlot,
 };
 
+/**
+ * @brief Source/category displayed for the current active program.
+ */
+enum class ActiveProgramDisplayKind {
+  /** No active program is currently associated with the status screen. */
+  Inactive,
+  /** One built-in preset is active. */
+  Preset,
+  /** One saved user profile slot is active. */
+  UserProfile,
+  /** One unsaved/manual editor program is active. */
+  Manual,
+};
+
+/**
+ * @brief Compact status-screen identity for the active program.
+ */
+struct ActiveProgramDisplayContext {
+  /** Current status identity category. */
+  ActiveProgramDisplayKind kind = ActiveProgramDisplayKind::Inactive;
+  /** Preset label when @ref kind is `Preset`. */
+  const char* presetLabel = nullptr;
+  /** One-based user profile slot number when @ref kind is `UserProfile`. */
+  uint8_t userProfileNumber = 0U;
+  /** Manual-program mode when @ref kind is `Manual`. */
+  dehydrator::ManualProgramMode manualMode =
+      dehydrator::ManualProgramMode::Constant;
+};
+
 BringupScreen currentScreen = BringupScreen::Status;
 
 LiquidCrystal_I2C lcd(dehydrator::config::HARDWARE.lcdI2cAddress,
@@ -230,6 +259,9 @@ UserProfileSlotScreenPurpose userProfileSlotScreenPurpose =
 BinaryConfirmPurpose binaryConfirmPurpose = BinaryConfirmPurpose::None;
 uint8_t pendingProfileSlot = 0U;
 uint8_t activeProfileDetailSlot = 0U;
+ActiveProgramDisplayContext activeProgramDisplay;
+ActiveProgramDisplayContext pendingRunDisplay;
+uint8_t statusPageIndex = 0U;
 
 /**
  * @brief Arduino `Stream` adapter for the project log sink interface.
@@ -597,21 +629,203 @@ void syncMainMenuContext() {
 }
 
 /**
+ * @brief Clears the active program identity shown on the status screen.
+ */
+void clearActiveProgramDisplay() { activeProgramDisplay = {}; }
+
+/**
+ * @brief Returns the compact manual-mode label used on the 20-column status LCD.
+ *
+ * @param mode Current manual mode.
+ * @return Compact label that still communicates the selected manual variant.
+ */
+const char* manualStatusLabel(dehydrator::ManualProgramMode mode) {
+  switch (mode) {
+    case dehydrator::ManualProgramMode::Boost:
+      return "Man. Boost";
+    case dehydrator::ManualProgramMode::Fluctuating:
+      return "Man. Fluct";
+    case dehydrator::ManualProgramMode::Constant:
+    default:
+      return "Man. Const";
+  }
+}
+
+/**
+ * @brief Builds the display/run-token context for launching the manual editor profile.
+ *
+ * Saved user slots launched without unsaved changes are shown as user profiles;
+ * all other manual-editor launches are shown as manual programs.
+ *
+ * @return Compact display identity and log token for the pending run.
+ */
+ActiveProgramDisplayContext manualEditorDisplayContext() {
+  ActiveProgramDisplayContext context;
+  if (manualProgramController.hasAssociatedSlot() && !manualProgramController.dirty()) {
+    context.kind = ActiveProgramDisplayKind::UserProfile;
+    context.userProfileNumber =
+        static_cast<uint8_t>(manualProgramController.associatedSlot() + 1U);
+    return context;
+  }
+
+  context.kind = ActiveProgramDisplayKind::Manual;
+  context.manualMode = manualProgramController.mode();
+  return context;
+}
+
+/**
+ * @brief Returns the run token matching one active-program display context.
+ *
+ * @param context Program identity selected for the launch.
+ * @return Stable English-ish token for logs.
+ */
+const char* runTokenForDisplayContext(const ActiveProgramDisplayContext& context) {
+  return context.kind == ActiveProgramDisplayKind::UserProfile ? "user_profile"
+                                                               : "manual";
+}
+
+/**
+ * @brief Resets status-page navigation to the summary page.
+ */
+void resetStatusPage() { statusPageIndex = 0U; }
+
+/**
+ * @brief Returns the current number of status pages available to the user.
+ *
+ * @return Page count including summary and outputs.
+ */
+uint8_t statusPageCount() {
+  uint8_t count = 2U;
+  const dehydrator::ProfileConfig* profile = presetRunController.activeProfile();
+  if (profile == nullptr) {
+    return count;
+  }
+
+  count++;
+  if (profile->mode == dehydrator::ProfileMode::Fluctuating) {
+    count++;
+  }
+  return count;
+}
+
+/**
+ * @brief Clamps the current status-page index to the available page count.
+ */
+void clampStatusPage() {
+  const uint8_t count = statusPageCount();
+  if (statusPageIndex >= count) {
+    statusPageIndex = static_cast<uint8_t>(count - 1U);
+  }
+}
+
+/**
+ * @brief Advances or rewinds the status-page selection.
+ *
+ * @param delta Positive for clockwise, negative for counter-clockwise.
+ */
+void navigateStatusPage(int8_t delta) {
+  clampStatusPage();
+  const uint8_t count = statusPageCount();
+  const uint8_t previous = statusPageIndex;
+
+  if (delta > 0 && statusPageIndex + 1U < count) {
+    statusPageIndex++;
+  } else if (delta < 0 && statusPageIndex > 0U) {
+    statusPageIndex--;
+  }
+
+  if (statusPageIndex != previous) {
+    logEvent("ui", delta > 0 ? "status_page_next" : "status_page_prev");
+  }
+}
+
+/**
+ * @brief Maps the current status-page index to the corresponding LCD page.
+ *
+ * @return Logical LCD page to render.
+ */
+dehydrator::StatusPage currentStatusPage() {
+  clampStatusPage();
+  const dehydrator::ProfileConfig* profile = presetRunController.activeProfile();
+  if (statusPageIndex == 0U) {
+    return dehydrator::StatusPage::Summary;
+  }
+
+  if (profile == nullptr) {
+    return dehydrator::StatusPage::Outputs;
+  }
+
+  if (statusPageIndex == 1U) {
+    return dehydrator::StatusPage::ParametersPrimary;
+  }
+
+  if (profile->mode == dehydrator::ProfileMode::Fluctuating &&
+      statusPageIndex == 2U) {
+    return dehydrator::StatusPage::ParametersSecondary;
+  }
+
+  return dehydrator::StatusPage::Outputs;
+}
+
+/**
+ * @brief Formats the compact active-program label for the status summary page.
+ *
+ * @param buffer Caller-owned destination buffer.
+ * @param bufferSize Destination buffer size.
+ * @return Pointer to the formatted buffer contents.
+ */
+const char* formatActiveProgramLabel(char* buffer, size_t bufferSize) {
+  if (bufferSize == 0U) {
+    return "";
+  }
+
+  buffer[0] = '\0';
+  switch (activeProgramDisplay.kind) {
+    case ActiveProgramDisplayKind::Preset:
+      snprintf(buffer, bufferSize, "%s",
+               activeProgramDisplay.presetLabel == nullptr
+                   ? ""
+                   : activeProgramDisplay.presetLabel);
+      break;
+    case ActiveProgramDisplayKind::UserProfile:
+      snprintf(buffer, bufferSize, "Profil %u",
+               static_cast<unsigned int>(activeProgramDisplay.userProfileNumber));
+      break;
+    case ActiveProgramDisplayKind::Manual:
+      snprintf(buffer, bufferSize, "%s",
+               manualStatusLabel(activeProgramDisplay.manualMode));
+      break;
+    case ActiveProgramDisplayKind::Inactive:
+    default:
+      snprintf(buffer, bufferSize, "Inactiv");
+      break;
+  }
+  return buffer;
+}
+
+/**
  * @brief Starts the current manual editor profile or prompts to replace a run.
  *
  * @param profile Manual profile to run.
  */
 void startManualProfile(const dehydrator::ProfileConfig& profile) {
+  const ActiveProgramDisplayContext launchDisplay = manualEditorDisplayContext();
+  const char* runToken = runTokenForDisplayContext(launchDisplay);
+  const char* logType = launchDisplay.kind == ActiveProgramDisplayKind::UserProfile
+                            ? "run_profile"
+                            : "run_manual";
   if (presetRunController.snapshot().state == dehydrator::RunState::Idle) {
-    if (presetRunController.startProfile(profile, "manual")) {
+    if (presetRunController.startProfile(profile, runToken)) {
+      activeProgramDisplay = launchDisplay;
       activeOutputCommand = presetRunController.outputCommand();
       relayOutputs.apply(activeOutputCommand);
-      logEvent("run_manual", "started");
+      resetStatusPage();
+      logEvent(logType, "started");
       logEvent("run_state", presetRunController.stateToken());
       menuController.returnToStatus();
       currentScreen = BringupScreen::Status;
     } else {
-      logEvent("run_manual", "rejected");
+      logEvent(logType, "rejected");
     }
     return;
   }
@@ -619,6 +833,7 @@ void startManualProfile(const dehydrator::ProfileConfig& profile) {
   pendingPresetSelection = nullptr;
   pendingManualProgramStart = true;
   pendingManualProgramProfile = profile;
+  pendingRunDisplay = launchDisplay;
   replaceRunCancelScreen = BringupScreen::ManualProgram;
   confirmReplaceRunController.reset();
   binaryConfirmPurpose = BinaryConfirmPurpose::ReplaceRun;
@@ -874,12 +1089,29 @@ void updateLcdTask(uint32_t nowMs) {
     return;
   }
 
+  clampStatusPage();
   dehydrator::LcdStatusSnapshot snapshot;
-  snapshot.stateLabel = presetRunController.stateLabelRo();
+  char programLabel[20] = {};
+  const dehydrator::RunStateSnapshot runSnapshot = presetRunController.snapshot();
+  const dehydrator::ProfileConfig* activeProfile = presetRunController.activeProfile();
+  const uint16_t elapsedMinutes =
+      static_cast<uint16_t>(runSnapshot.activeElapsedSeconds / 60UL);
+  const uint16_t remainingMinutes =
+      activeProfile != nullptr && elapsedMinutes < activeProfile->durationMinutes
+          ? static_cast<uint16_t>(activeProfile->durationMinutes - elapsedMinutes)
+          : 0U;
+  snapshot.page = currentStatusPage();
+  snapshot.programLabel = formatActiveProgramLabel(programLabel, sizeof(programLabel));
   snapshot.ntcTempC = latestNtc.tempC;
   snapshot.ntcValid = latestNtc.valid;
   snapshot.rhPercent = latestTempRh.rhPercent;
   snapshot.rhValid = latestTempRh.valid;
+  snapshot.elapsedMinutes = activeProfile != nullptr ? elapsedMinutes : 0U;
+  snapshot.remainingMinutes = remainingMinutes;
+  snapshot.profileValid = activeProfile != nullptr;
+  if (activeProfile != nullptr) {
+    snapshot.profile = *activeProfile;
+  }
   snapshot.heaterOn = activeOutputCommand.heaterOn;
   snapshot.fanOn = activeOutputCommand.fanOn;
   snapshot.heartbeatOn = heartbeatOn;
@@ -900,7 +1132,9 @@ void updateInputTask(uint32_t nowMs) {
   const int8_t delta = encoderStepFilter.update(position);
   if (delta != 0) {
     logEvent("input", delta > 0 ? "encoder_cw" : "encoder_ccw");
-    if (currentScreen == BringupScreen::Test) {
+    if (currentScreen == BringupScreen::Status) {
+      navigateStatusPage(delta);
+    } else if (currentScreen == BringupScreen::Test) {
       logTestResult(testModeController.onRotate(delta));
     } else if (currentScreen == BringupScreen::ManualProgram) {
       logManualProgramResult(manualProgramController.onRotate(delta));
@@ -1048,8 +1282,12 @@ void updateInputTask(uint32_t nowMs) {
             userProfileSlots[activeProfileDetailSlot].profile;
         if (presetRunController.snapshot().state == dehydrator::RunState::Idle) {
           if (presetRunController.startProfile(profile, "user_profile")) {
+            activeProgramDisplay.kind = ActiveProgramDisplayKind::UserProfile;
+            activeProgramDisplay.userProfileNumber =
+                static_cast<uint8_t>(activeProfileDetailSlot + 1U);
             activeOutputCommand = presetRunController.outputCommand();
             relayOutputs.apply(activeOutputCommand);
+            resetStatusPage();
             logEvent("run_profile", "started");
             logEvent("run_state", presetRunController.stateToken());
             menuController.returnToStatus();
@@ -1059,6 +1297,9 @@ void updateInputTask(uint32_t nowMs) {
           pendingPresetSelection = nullptr;
           pendingManualProgramStart = true;
           pendingManualProgramProfile = profile;
+          pendingRunDisplay.kind = ActiveProgramDisplayKind::UserProfile;
+          pendingRunDisplay.userProfileNumber =
+              static_cast<uint8_t>(activeProfileDetailSlot + 1U);
           replaceRunCancelScreen = BringupScreen::UserProfileDetail;
           confirmReplaceRunController.reset();
           binaryConfirmPurpose = BinaryConfirmPurpose::ReplaceRun;
@@ -1116,13 +1357,17 @@ void updateInputTask(uint32_t nowMs) {
       if (result.confirmed && pendingPresetSelection != nullptr) {
         if (presetRunController.stopConfirmed() &&
             presetRunController.startPreset(*pendingPresetSelection)) {
+          activeProgramDisplay.kind = ActiveProgramDisplayKind::Preset;
+          activeProgramDisplay.presetLabel = pendingPresetSelection->label;
           activeOutputCommand = presetRunController.outputCommand();
           relayOutputs.apply(activeOutputCommand);
+          resetStatusPage();
           logEvent("preset_start", pendingPresetSelection->token);
           logEvent("run_state", presetRunController.stateToken());
           pendingPresetSelection = nullptr;
           pendingManualProgramStart = false;
           pendingManualProgramProfile = {};
+          pendingRunDisplay = {};
           replaceRunCancelScreen = BringupScreen::Status;
           currentScreen = BringupScreen::Status;
         } else {
@@ -1130,25 +1375,37 @@ void updateInputTask(uint32_t nowMs) {
           pendingPresetSelection = nullptr;
           pendingManualProgramStart = false;
           pendingManualProgramProfile = {};
+          pendingRunDisplay = {};
           replaceRunCancelScreen = BringupScreen::Status;
           currentScreen = BringupScreen::Status;
         }
       } else if (result.confirmed && pendingManualProgramStart) {
         if (presetRunController.stopConfirmed() &&
-            presetRunController.startProfile(pendingManualProgramProfile,
-                                            "manual")) {
+            presetRunController.startProfile(
+                pendingManualProgramProfile,
+                runTokenForDisplayContext(pendingRunDisplay))) {
+          activeProgramDisplay = pendingRunDisplay;
           activeOutputCommand = presetRunController.outputCommand();
           relayOutputs.apply(activeOutputCommand);
-          logEvent("run_manual", "started");
+          resetStatusPage();
+          logEvent(activeProgramDisplay.kind == ActiveProgramDisplayKind::UserProfile
+                       ? "run_profile"
+                       : "run_manual",
+                   "started");
           logEvent("run_state", presetRunController.stateToken());
           pendingManualProgramStart = false;
           pendingManualProgramProfile = {};
+          pendingRunDisplay = {};
           replaceRunCancelScreen = BringupScreen::Status;
           currentScreen = BringupScreen::Status;
         } else {
-          logEvent("run_manual", "rejected");
+          logEvent(pendingRunDisplay.kind == ActiveProgramDisplayKind::UserProfile
+                       ? "run_profile"
+                       : "run_manual",
+                   "rejected");
           pendingManualProgramStart = false;
           pendingManualProgramProfile = {};
+          pendingRunDisplay = {};
           replaceRunCancelScreen = BringupScreen::Status;
           currentScreen = BringupScreen::Status;
         }
@@ -1156,6 +1413,7 @@ void updateInputTask(uint32_t nowMs) {
         pendingPresetSelection = nullptr;
         pendingManualProgramStart = false;
         pendingManualProgramProfile = {};
+        pendingRunDisplay = {};
         currentScreen = replaceRunCancelScreen;
         if (currentScreen == BringupScreen::Menu) {
           menuController.enterMenu();
@@ -1186,8 +1444,11 @@ void updateInputTask(uint32_t nowMs) {
         if (preset != nullptr) {
           if (presetRunController.snapshot().state == dehydrator::RunState::Idle) {
             if (presetRunController.startPreset(*preset)) {
+              activeProgramDisplay.kind = ActiveProgramDisplayKind::Preset;
+              activeProgramDisplay.presetLabel = preset->label;
               activeOutputCommand = presetRunController.outputCommand();
               relayOutputs.apply(activeOutputCommand);
+              resetStatusPage();
               logEvent("preset_start", preset->token);
               logEvent("run_state", presetRunController.stateToken());
               menuController.returnToStatus();
@@ -1220,8 +1481,10 @@ void updateInputTask(uint32_t nowMs) {
             dehydrator::RunState::FinishedAlarm &&
         result.action == dehydrator::UiAction::OpenMenu) {
       if (presetRunController.acknowledgeFinished()) {
+        clearActiveProgramDisplay();
         activeOutputCommand = presetRunController.outputCommand();
         relayOutputs.apply(activeOutputCommand);
+        resetStatusPage();
         logEvent("run_ack", "finished");
         menuController.returnToStatus();
       }
@@ -1269,6 +1532,7 @@ void updateInputTask(uint32_t nowMs) {
       if (presetRunController.resume()) {
         activeOutputCommand = presetRunController.outputCommand();
         relayOutputs.apply(activeOutputCommand);
+        resetStatusPage();
         logEvent("run_resume", "confirmed");
         logEvent("run_state", presetRunController.stateToken());
         menuController.returnToStatus();
@@ -1280,8 +1544,10 @@ void updateInputTask(uint32_t nowMs) {
                menuController.currentToken() != nullptr &&
                strcmp(menuController.currentToken(), "oprire_program") == 0) {
       if (presetRunController.stopConfirmed()) {
+        clearActiveProgramDisplay();
         activeOutputCommand = presetRunController.outputCommand();
         relayOutputs.apply(activeOutputCommand);
+        resetStatusPage();
         logEvent("run_stop", "confirmed");
         logEvent("run_state", presetRunController.stateToken());
       } else {

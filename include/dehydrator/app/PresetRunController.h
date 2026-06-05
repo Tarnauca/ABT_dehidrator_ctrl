@@ -162,6 +162,25 @@ class PresetRunController {
   constexpr const PresetDefinition* activePreset() const { return activePreset_; }
 
   /**
+   * @brief Returns whether one active profile context is still available.
+   *
+   * The profile remains available through paused/cooldown/finished/fault states
+   * until the run is explicitly acknowledged or stopped.
+   *
+   * @return true when parameter/timer pages may inspect the active profile.
+   */
+  constexpr bool hasActiveProfile() const { return activeProfileValid_; }
+
+  /**
+   * @brief Returns the active profile, if any.
+   *
+   * @return Pointer to the active profile or null when no run context exists.
+   */
+  constexpr const ProfileConfig* activeProfile() const {
+    return activeProfileValid_ ? &activeProfile_ : nullptr;
+  }
+
+  /**
    * @brief Returns the current active run token, preset-based or manual.
    *
    * @return Stable ASCII token or null when idle.
