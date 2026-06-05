@@ -88,6 +88,9 @@ unless they actually apply.
 - `Salveaza profil` now closes automatically after a successful save and
   returns to the flow that triggered it, so save slot selection behaves like a
   transient step rather than a destination.
+- Re-entering any menu-like screen after leaving through its dedicated
+  one-level-up entry (e.g. `Back`) must start at the first actionable item,
+  not on the one-level-up entry itself.
 
 **Commits / Branches**
 - Branch: `feat/manual-program-modes`

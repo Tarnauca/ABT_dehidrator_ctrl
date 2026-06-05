@@ -101,6 +101,9 @@ Warnings are shown/logged but do not require acknowledgement.
 - Main menu is product-oriented and dynamic: `Oprire program` and
   `Reluare program` appear only when applicable, while `Testare` lives under
   `Setari`.
+- UI navigation rule: the dedicated one-level-up entry (e.g. `Back`) of any
+  menu-like screen must not remain selected across re-entry. When the screen is
+  opened again, selection starts on the first actionable item.
 - Bottom-right LCD cell is reserved for an always-running heartbeat symbol.
 - Heartbeat should use a custom character if supported.
 - Serial logs, code, comments, and docs are English.
