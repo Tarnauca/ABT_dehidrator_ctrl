@@ -38,8 +38,6 @@ struct LcdManualProgramSnapshot {
   uint16_t upperDurationMinutes = 0;
   /** Current fluctuating lower phase duration. */
   uint16_t lowerDurationMinutes = 0;
-  /** Whether the heartbeat custom symbol should be visible. */
-  bool heartbeatOn = false;
 };
 
 /**
@@ -64,7 +62,7 @@ class LcdManualProgramView {
 
     fillLine(line);
     writeToken(line, "Program manual", 0U);
-    writeLine(0U, line, false);
+    writeLine(0U, line);
 
     const uint8_t count =
         ManualProgramController::fieldCountForMode(snapshot.mode);
@@ -78,8 +76,7 @@ class LcdManualProgramView {
         line[0] = marker(snapshot, field);
         formatField(line, snapshot, field);
       }
-      writeLine(static_cast<uint8_t>(visibleRow + 1U), line,
-                visibleRow == 2U && snapshot.heartbeatOn);
+      writeLine(static_cast<uint8_t>(visibleRow + 1U), line);
     }
   }
 
@@ -159,15 +156,10 @@ class LcdManualProgramView {
     writeToken(line, value, 1U);
   }
 
-  void writeLine(uint8_t row, const char* line, bool heartbeatOn) {
+  void writeLine(uint8_t row, const char* line) {
     display_.setCursor(0U, row);
     for (uint8_t column = 0U; column < LcdStatusView::COLUMNS; column++) {
-      if (row == LcdStatusView::ROWS - 1U &&
-          column == LcdStatusView::COLUMNS - 1U && heartbeatOn) {
-        display_.writeCustom(LcdStatusView::HEARTBEAT_CHAR);
-      } else {
-        display_.writeChar(line[column]);
-      }
+      display_.writeChar(line[column]);
     }
   }
 

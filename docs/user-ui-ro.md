@@ -7,7 +7,6 @@ Status: draft. LCD labels are Romanian, ASCII-only by default, and must fit a 4x
 - LCD size: 4 lines x 20 characters.
 - User-facing text: Romanian.
 - Use ASCII-only Romanian initially because HD44780 diacritics are uncertain.
-- Reserve bottom-right cell for the heartbeat symbol.
 - Update changed fields instead of full-screen redraws where practical.
 - Buzzer is used only for finish and fault alarms.
 - Backlight blinking is controlled through a dedicated FET output pin.
@@ -15,9 +14,8 @@ Status: draft. LCD labels are Romanian, ASCII-only by default, and must fit a 4x
 ## Draft Status Screen
 
 The main status screen is now a small group of rotary-selectable pages rather
-than one fixed screen. The heartbeat occupies the bottom-right LCD cell on
-every page. Sensor values are shown as `--` until real readings are connected
-to the status snapshot.
+than one fixed screen. Sensor values are shown as `--` until real readings are
+connected to the status snapshot.
 
 ### Summary page
 
@@ -27,6 +25,13 @@ Temp: 57°C RH: 43%
 Timp scurs: 1h 30m
 Timp ramas: 8h 30m
 ```
+
+The top-right LCD corner is used as a blinking state indicator on the summary
+page:
+
+- `Play` while a run is `RULARE`
+- `Pause` while a run is `PAUZA`
+- blank in other states
 
 The first line always shows the active program in compact form:
 
@@ -110,6 +115,7 @@ Apasa pt. OK
 ## Draft Menu Items
 
 - `Oprire program` - shown only when a running or stoppable program exists
+- `Pauza program` - shown only while a program is actively running
 - `Reluare program` - shown only when a resumable program exists
 - `Programe presetate`
 - `Programe utilizator`
@@ -148,8 +154,21 @@ Meniu
  Programe presetate
 ```
 
+Example menu layout while a program is actively running:
+
+```text
+Meniu
+>Oprire program
+ Pauza program
+ Programe presetate
+```
+
 The menu does not wrap around at the ends. The selected item stays on the
 second line, with the remaining visible items listed below it.
+
+`Oprire program` now opens a `Da / Nu` confirmation before the run is actually
+stopped. `Pauza program` is shown only in `RULARE`; after pausing, the normal
+`Reluare program` flow is used.
 
 ## Implemented Preset Selection Shell
 
@@ -288,22 +307,27 @@ Setari
 Current bring-up behavior:
 
 - Select `Testare` from `Setari` to open the direct output test screen.
-- Encoder rotation switches between `Fan`, `Heat`, and `Inapoi`.
-- Short press toggles the selected output.
+- The first three rows are read-only sensor entries for NTC temperature,
+  AM2302 temperature, and AM2302 humidity.
+- Encoder rotation moves through the sensor rows first, then `Fan`, `Heat`,
+  and `Inapoi`.
+- Short press on a sensor row has no effect.
+- Short press toggles the selected output on `Fan` and `Heat`.
 - `Inapoi` is always the last selectable entry and returns to the menu.
 - If the user exits with `Inapoi`, the next entry into test mode starts again
-  from `Fan`, not from `Inapoi`.
+  from the first sensor row, not from `Inapoi`.
 - Turning `Heat` ON also forces `Fan` ON.
 - Turning `Fan` OFF also forces `Heat` OFF.
+- Invalid sensor rows show `Eroare` instead of a value.
 - Long press currently has no assigned action.
 
 Current test layout:
 
 ```text
 Testare
->Fan: OFF
- Heat: OFF
- Inapoi
+>NTC: 52°C
+ AM2302 T: 38°C
+ AM2302 RH: 41%
 ```
 
 ## Implemented Save Prompt

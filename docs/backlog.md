@@ -64,7 +64,7 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 ## Phase 7: UI And Presets
 
 - [x] Document Romanian 4x20 menu flow.
-- [x] Implement initial status screen with bottom-right heartbeat.
+- [x] Implement initial status screen and later replace the generic heartbeat with a meaningful run-state indicator.
 - [x] Implement initial encoder-driven menu shell.
 - [x] Implement initial manual mode screen shell.
 - [x] Split the original manual shell into `Mod manual` program setup and `Testare` direct-output bring-up.
@@ -73,7 +73,9 @@ This backlog is a living plan. Keep items focused enough that each branch can ma
 - [x] Wire preset selection into the real run lifecycle and status screen.
 - [x] Add manual `Constant`, `Boost`, and `Fluctuant` program variants.
 - [x] Reshape the LCD menu hierarchy to product-oriented labels and move `Testare` under `Setari`.
+- [x] Extend `Testare` to show NTC and AM2302 sensor rows before relay toggles, with short invalid-reading text.
 - [x] Expand the main LCD status area into rotary-selectable summary, parameter, and output pages.
+- [x] Add confirmed stop and explicit pause entry to the product main menu.
 - [ ] Add built-in presets after source values are confirmed.
 
 ## Phase 8: Verification And Safety Review

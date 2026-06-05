@@ -116,8 +116,10 @@ Status values:
 | REQ-FUNC-023 | Unit/Bench | Unsaved manual `Inapoi` asks `Da / Nu / Renunta` and discards only on confirmed `Nu` | `test_save_prompt_controller`, `test_manual_program_controller`; bench flow pending | Implemented |
 | REQ-FUNC-024 | Unit/Bench | Main menu exposes `Programe utilizator` with all 10 slots | `test_menu_controller`, `test_lcd_menu_view`, `test_user_profile_controllers`; bench browse pending | Implemented |
 | REQ-FUNC-025 | Unit/Bench | Occupied/vacant saved profiles expose the correct actions | `test_user_profile_controllers`, new LCD/detail wiring; bench browse/edit/delete pending | Implemented |
-| REQ-FUNC-026 | Unit/Bench | Main menu order and dynamic stop/resume visibility match the product flow | `test_menu_controller`, `test_lcd_menu_view`; bench menu hierarchy check pending | Implemented |
+| REQ-FUNC-026 | Unit/Bench | Main menu order and dynamic stop/pause/resume visibility match the product flow | `test_menu_controller`, `test_lcd_menu_view`; bench menu hierarchy check pending | Implemented |
 | REQ-FUNC-027 | Unit/Bench | `Setari` exposes `Testare` as a submenu instead of a top-level main-menu entry | Native UI wiring plus LCD/menu tests; bench settings navigation pending | Implemented |
+| REQ-FUNC-028 | Unit/Bench | `Testare` shows NTC temperature, AM2302 temperature, and AM2302 humidity before the output toggles | `test_test_mode_controller`, `test_lcd_test_view`; bench LCD/sensor check pending | Implemented |
+| REQ-FUNC-029 | Unit/Bench | Invalid `Testare` sensor rows show a compact error string instead of a value | `test_lcd_test_view`; bench invalid-sensor display check pending | Implemented |
 | REQ-UI-016 | Unit/Bench | Status summary page shows program, Temp/RH, elapsed time, and remaining time | `test_lcd_status_view`; LCD bench check pending | Implemented |
 | REQ-UI-017 | Unit/Bench | Finished state can be acknowledged from the status screen with short press | `test_preset_run_controller`; status acknowledgement bench check pending | Implemented |
 | REQ-UI-018 | Unit/Bench | User-profile slot list shows all 10 slots as `Profil N` or `Profil N (nedef.)` | `test_user_profile_controllers`, `test_lcd_user_profile_slot_view`; LCD bench check pending | Implemented |
@@ -127,8 +129,10 @@ Status values:
 | REQ-UI-023 | Unit/Bench | Encoder rotation on status cycles between the available status pages | Native UI wiring plus LCD/status bench check pending | Implemented |
 | REQ-UI-024 | Unit/Bench | Additional status pages show program parameters and output states line-by-line | `test_lcd_status_view`; LCD bench check pending | Implemented |
 | REQ-UI-025 | Review/Bench | Status uses compact program labels when the full source label would overflow `Program:` line width | Code review plus LCD bench check pending | Implemented |
+| REQ-UI-026 | Unit/Bench | `Oprire program` requires explicit confirmation before stopping the run | Native UI wiring; bench stop-confirm flow pending | Implemented |
+| REQ-UI-027 | Unit/Bench | `Pauza program` appears only in `RULARE` and resumes through the existing resume flow | `test_menu_controller`, `test_lcd_menu_view`, `test_preset_run_controller`; bench pause/resume flow pending | Implemented |
 | REQ-PERSIST-001 | Unit | Calibration defaults are explicit and later persistable | `test_config` thermistor calibration default tests; EEPROM persistence pending | Implemented |
-| REQ-UI-005 | Unit/Bench | Heartbeat visible bottom-right and runs in all states | `test_lcd_status_view`; LCD bench test pending | Implemented |
+| REQ-UI-005 | Unit/Bench | Status summary shows blinking play/pause indicator top-right in `RULARE`/`PAUZA`, blank otherwise | `test_lcd_status_view`; LCD bench test pending | Implemented |
 | REQ-UI-006 | Unit/Bench | Finish alarm starts after cooldown | State machine plus buzzer/backlight bench check | Planned |
 | REQ-UI-007 | Unit/Bench | Fault alarm continues until acknowledgement | State machine plus buzzer/backlight bench check | Planned |
 | REQ-LOG-004 | Unit | Events, parameters, outputs, warnings, faults are logged | `FakeLogSink` | Planned |
@@ -150,10 +154,11 @@ Before connecting real heater power:
 - Verify relay polarity with safe low-voltage load.
 - Verify fan relay behavior.
 - Verify buzzer and backlight FET.
-- Verify LCD 4x20 layout and heartbeat.
+- Verify LCD 4x20 layout and top-right `Play/Pause` activity symbol behavior on the summary page.
 - Verify encoder rotation, short press, `Inapoi` navigation, and stuck-button detection.
 - Verify `Salveaza`, `Da / Nu / Renunta`, overwrite, delete, and `Programe utilizator` browse/edit/start flows.
 - Verify `Setari -> Testare` navigation and the dynamic visibility/order of `Oprire program` and `Reluare program`.
+- Verify `Testare` shows the three sensor rows first and renders `Eroare` per row when a sensor reading is invalid.
 - Verify primary thermistor analog readings and calibration visibility.
 - Verify DHT22/AM2302 temperature/RH reporting and warning on disconnect.
 - Verify serial logs on USB and secondary serial.
@@ -187,4 +192,4 @@ Initial acceptance criteria:
 - Power loss/brown-out during active run offers resume only after user confirmation.
 - Watchdog reset during active run does not allow resume.
 - Logs are emitted on USB and secondary serial in the required structured English format.
-- LCD UI remains Romanian, fits 4x20 constraints, and shows heartbeat bottom-right.
+- LCD UI remains Romanian, fits 4x20 constraints, and shows the top-right `Play/Pause` activity symbol only on the summary page when applicable.

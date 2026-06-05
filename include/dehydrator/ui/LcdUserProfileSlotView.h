@@ -19,8 +19,6 @@ struct LcdUserProfileSlotSnapshot {
   const UserProfileSlotRecord* slots = nullptr;
   /** Currently selected index, or BACK_INDEX for `Inapoi`. */
   uint8_t selectedIndex = 0U;
-  /** Whether the heartbeat custom symbol should be visible. */
-  bool heartbeatOn = false;
 };
 
 /**
@@ -45,7 +43,7 @@ class LcdUserProfileSlotView {
 
     fillLine(line);
     writeToken(line, snapshot.title, 0U);
-    writeLine(0U, line, false);
+    writeLine(0U, line);
 
     const uint8_t firstVisible = snapshot.selectedIndex;
     for (uint8_t row = 0U; row < 3U; row++) {
@@ -59,8 +57,7 @@ class LcdUserProfileSlotView {
           formatSlot(line, entryIndex, snapshot.slots);
         }
       }
-      writeLine(static_cast<uint8_t>(row + 1U), line,
-                row == 2U && snapshot.heartbeatOn);
+      writeLine(static_cast<uint8_t>(row + 1U), line);
     }
   }
 
@@ -111,15 +108,10 @@ class LcdUserProfileSlotView {
     }
   }
 
-  void writeLine(uint8_t row, const char* line, bool heartbeatOn) {
+  void writeLine(uint8_t row, const char* line) {
     display_.setCursor(0U, row);
     for (uint8_t column = 0U; column < LcdStatusView::COLUMNS; column++) {
-      if (row == LcdStatusView::ROWS - 1U &&
-          column == LcdStatusView::COLUMNS - 1U && heartbeatOn) {
-        display_.writeCustom(LcdStatusView::HEARTBEAT_CHAR);
-      } else {
-        display_.writeChar(line[column]);
-      }
+      display_.writeChar(line[column]);
     }
   }
 

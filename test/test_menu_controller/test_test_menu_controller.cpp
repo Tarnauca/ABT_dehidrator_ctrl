@@ -126,12 +126,16 @@ void test_dynamic_stop_and_resume_entries_appear_only_when_enabled() {
   MenuController controller;
   MainMenuContext context;
   context.showStopProgram = true;
+  context.showPauseProgram = true;
   context.showResumeProgram = true;
   controller.setContext(context);
   controller.onShortPress();
 
-  TEST_ASSERT_EQUAL_UINT(7U, controller.itemCount());
+  TEST_ASSERT_EQUAL_UINT(8U, controller.itemCount());
   TEST_ASSERT_EQUAL_STRING("Oprire program", controller.currentItem());
+
+  controller.onRotate(1);
+  TEST_ASSERT_EQUAL_STRING("Pauza program", controller.currentItem());
 
   controller.onRotate(1);
   TEST_ASSERT_EQUAL_STRING("Reluare program", controller.currentItem());

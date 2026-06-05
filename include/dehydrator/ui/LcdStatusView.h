@@ -25,6 +25,18 @@ enum class StatusPage {
 };
 
 /**
+ * @brief Blinking activity indicator shown on the main status screen.
+ */
+enum class StatusActivityIndicator {
+  /** No activity indicator is shown. */
+  None,
+  /** Blinking play indicator while a run is actively executing. */
+  Running,
+  /** Blinking pause indicator while a run is paused. */
+  Paused,
+};
+
+/**
  * @brief Snapshot rendered by the Romanian 4x20 status screen.
  */
 struct LcdStatusSnapshot {
@@ -52,8 +64,10 @@ struct LcdStatusSnapshot {
   bool heaterOn = false;
   /** Logical fan command shown on the status screen. */
   bool fanOn = false;
-  /** Whether the heartbeat custom symbol should be visible. */
-  bool heartbeatOn = false;
+  /** Blinking run/pause indicator shown in the summary top-right corner. */
+  StatusActivityIndicator activityIndicator = StatusActivityIndicator::None;
+  /** Whether the current activity indicator should be visible on this refresh. */
+  bool activityIndicatorOn = false;
 };
 
 /**
@@ -69,8 +83,10 @@ class LcdStatusView {
   static constexpr uint8_t COLUMNS = 20U;
   /** Number of rows on the configured LCD. */
   static constexpr uint8_t ROWS = 4U;
-  /** HD44780 custom character slot used for the heartbeat symbol. */
-  static constexpr uint8_t HEARTBEAT_CHAR = 0U;
+  /** HD44780 custom character slot used for the blinking play symbol. */
+  static constexpr uint8_t PLAY_CHAR = 0U;
+  /** HD44780 custom character slot used for the blinking pause symbol. */
+  static constexpr uint8_t PAUSE_CHAR = 1U;
 
   /**
    * @brief Creates a status view for the provided character display.
@@ -85,6 +101,7 @@ class LcdStatusView {
    * @param snapshot Current device status values.
    */
   void render(const LcdStatusSnapshot& snapshot) {
+    lastSnapshot_ = snapshot;
     char line[COLUMNS + 1U] = {};
 
     switch (snapshot.page) {
@@ -211,6 +228,29 @@ class LcdStatusView {
   }
 
   /**
+   * @brief Returns the custom-character code for the current activity indicator.
+   *
+   * @param snapshot Current status snapshot.
+   * @return Custom-character code, or 0xFF when no indicator should be drawn.
+   */
+  static uint8_t activityIndicatorCode(const LcdStatusSnapshot& snapshot) {
+    if (snapshot.page != StatusPage::Summary) {
+      return 0xFFU;
+    }
+    if (!snapshot.activityIndicatorOn) {
+      return 0xFFU;
+    }
+
+    if (snapshot.activityIndicator == StatusActivityIndicator::Running) {
+      return PLAY_CHAR;
+    }
+    if (snapshot.activityIndicator == StatusActivityIndicator::Paused) {
+      return PAUSE_CHAR;
+    }
+    return 0xFFU;
+  }
+
+  /**
    * @brief Writes one output-state line.
    *
    * @param line Destination LCD line.
@@ -232,19 +272,19 @@ class LcdStatusView {
   void renderSummary(const LcdStatusSnapshot& snapshot, char* line) {
     fillLine(line);
     writeProgramLine(line, snapshot.programLabel);
-    writeLine(0U, line, false);
+    writeLine(0U, line);
 
     fillLine(line);
     writeTemperatureAndHumidity(line, snapshot);
-    writeLine(1U, line, false);
+    writeLine(1U, line);
 
     fillLine(line);
     writeDurationLine(line, "Timp scurs: ", snapshot.elapsedMinutes);
-    writeLine(2U, line, false);
+    writeLine(2U, line);
 
     fillLine(line);
     writeDurationLine(line, "Timp ramas: ", snapshot.remainingMinutes);
-    writeLine(3U, line, snapshot.heartbeatOn);
+    writeLine(3U, line);
   }
 
   /**
@@ -257,56 +297,56 @@ class LcdStatusView {
     fillLine(line);
     if (!snapshot.profileValid) {
       writeToken(line, "Fara program activ", 0U);
-      writeLine(0U, line, false);
+      writeLine(0U, line);
       fillLine(line);
-      writeLine(1U, line, false);
+      writeLine(1U, line);
       fillLine(line);
-      writeLine(2U, line, false);
+      writeLine(2U, line);
       fillLine(line);
-      writeLine(3U, line, snapshot.heartbeatOn);
+      writeLine(3U, line);
       return;
     }
 
     if (snapshot.profile.mode == ProfileMode::Fixed) {
       writeTemperatureLine(line, "Temp: ", snapshot.profile.targetTempC);
-      writeLine(0U, line, false);
+      writeLine(0U, line);
       fillLine(line);
       writeDurationLine(line, "Durata: ", snapshot.profile.durationMinutes);
-      writeLine(1U, line, false);
+      writeLine(1U, line);
       fillLine(line);
-      writeLine(2U, line, false);
+      writeLine(2U, line);
       fillLine(line);
-      writeLine(3U, line, snapshot.heartbeatOn);
+      writeLine(3U, line);
       return;
     }
 
     if (snapshot.profile.mode == ProfileMode::Boost) {
       writeTemperatureLine(line, "Temp: ", snapshot.profile.targetTempC);
-      writeLine(0U, line, false);
+      writeLine(0U, line);
       fillLine(line);
       writeDurationLine(line, "Durata: ", snapshot.profile.durationMinutes);
-      writeLine(1U, line, false);
+      writeLine(1U, line);
       fillLine(line);
       writeTemperatureLine(line, "Boost: +", snapshot.profile.highTempC -
                                                 snapshot.profile.targetTempC);
-      writeLine(2U, line, false);
+      writeLine(2U, line);
       fillLine(line);
       writeDurationLine(line, "Dur.boost: ", snapshot.profile.highPhaseMinutes);
-      writeLine(3U, line, snapshot.heartbeatOn);
+      writeLine(3U, line);
       return;
     }
 
     writeTemperatureLine(line, "T.ref: ", snapshot.profile.targetTempC);
-    writeLine(0U, line, false);
+    writeLine(0U, line);
     fillLine(line);
     writeDurationLine(line, "Durata: ", snapshot.profile.durationMinutes);
-    writeLine(1U, line, false);
+    writeLine(1U, line);
     fillLine(line);
     writeTemperatureLine(line, "Tsup: ", snapshot.profile.highTempC);
-    writeLine(2U, line, false);
+    writeLine(2U, line);
     fillLine(line);
     writeTemperatureLine(line, "Tinf: ", snapshot.profile.lowTempC);
-    writeLine(3U, line, snapshot.heartbeatOn);
+    writeLine(3U, line);
   }
 
   /**
@@ -319,25 +359,25 @@ class LcdStatusView {
     fillLine(line);
     if (!(snapshot.profileValid &&
           snapshot.profile.mode == ProfileMode::Fluctuating)) {
-      writeLine(0U, line, false);
+      writeLine(0U, line);
       fillLine(line);
-      writeLine(1U, line, false);
+      writeLine(1U, line);
       fillLine(line);
-      writeLine(2U, line, false);
+      writeLine(2U, line);
       fillLine(line);
-      writeLine(3U, line, snapshot.heartbeatOn);
+      writeLine(3U, line);
       return;
     }
 
     writeDurationLine(line, "Dur. Tsup: ", snapshot.profile.highPhaseMinutes);
-    writeLine(0U, line, false);
+    writeLine(0U, line);
     fillLine(line);
     writeDurationLine(line, "Dur. Tinf: ", snapshot.profile.lowPhaseMinutes);
-    writeLine(1U, line, false);
+    writeLine(1U, line);
     fillLine(line);
-    writeLine(2U, line, false);
+    writeLine(2U, line);
     fillLine(line);
-    writeLine(3U, line, snapshot.heartbeatOn);
+    writeLine(3U, line);
   }
 
   /**
@@ -349,24 +389,26 @@ class LcdStatusView {
   void renderOutputs(const LcdStatusSnapshot& snapshot, char* line) {
     fillLine(line);
     writeOutputStateLine(line, "Incalzitor: ", snapshot.heaterOn);
-    writeLine(0U, line, false);
+    writeLine(0U, line);
 
     fillLine(line);
     writeOutputStateLine(line, "Ventilator: ", snapshot.fanOn);
-    writeLine(1U, line, false);
+    writeLine(1U, line);
 
     fillLine(line);
-    writeLine(2U, line, false);
+    writeLine(2U, line);
 
     fillLine(line);
-    writeLine(3U, line, snapshot.heartbeatOn);
+    writeLine(3U, line);
   }
 
-  void writeLine(uint8_t row, const char* line, bool heartbeatOn) {
+  void writeLine(uint8_t row, const char* line) {
+    const uint8_t indicatorCode =
+        row == 0U ? activityIndicatorCode(lastSnapshot_) : 0xFFU;
     display_.setCursor(0U, row);
     for (uint8_t column = 0U; column < COLUMNS; column++) {
-      if (row == ROWS - 1U && column == COLUMNS - 1U && heartbeatOn) {
-        display_.writeCustom(HEARTBEAT_CHAR);
+      if (row == 0U && column == COLUMNS - 1U && indicatorCode != 0xFFU) {
+        display_.writeCustom(indicatorCode);
       } else {
         display_.writeChar(line[column]);
       }
@@ -374,6 +416,7 @@ class LcdStatusView {
   }
 
   CharacterDisplay& display_;
+  LcdStatusSnapshot lastSnapshot_;
 };
 
 }  // namespace dehydrator

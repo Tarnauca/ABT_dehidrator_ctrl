@@ -46,6 +46,11 @@ void assertLineEquals(const FakeDisplay& display, uint8_t row,
   }
 }
 
+void assertDegreeSymbolAt(const FakeDisplay& display, uint8_t row,
+                          uint8_t column) {
+  TEST_ASSERT_EQUAL_CHAR(static_cast<char>(223), display.cells[row][column]);
+}
+
 void assertLinePrefixEquals(const FakeDisplay& display, uint8_t row,
                             const char* expected, uint8_t length) {
   for (uint8_t column = 0U; column < length; column++) {
@@ -53,56 +58,71 @@ void assertLinePrefixEquals(const FakeDisplay& display, uint8_t row,
   }
 }
 
-void test_test_view_renders_fan_selected() {
+void test_test_view_renders_sensor_rows_first() {
   FakeDisplay display;
   LcdTestView view(display);
   LcdTestSnapshot snapshot;
-  snapshot.selectedField = TestField::Fan;
+  snapshot.selectedField = TestField::NtcTemp;
+  snapshot.ntc.valid = true;
+  snapshot.ntc.tempC = 52;
+  snapshot.tempRh.valid = true;
+  snapshot.tempRh.tempC = 38;
+  snapshot.tempRh.rhPercent = 41;
   snapshot.command.fanOn = true;
   snapshot.command.heaterOn = false;
-  snapshot.heartbeatOn = true;
 
   view.render(snapshot);
 
   assertLineEquals(display, 0U, "Testare             ");
-  assertLineEquals(display, 1U, ">Fan: ON            ");
-  assertLineEquals(display, 2U, " Heat: OFF          ");
-  assertLinePrefixEquals(display, 3U, " Inapoi", 7U);
-  TEST_ASSERT_TRUE(display.custom[3U][19U]);
+  assertLinePrefixEquals(display, 1U, ">NTC: 52", 8U);
+  assertDegreeSymbolAt(display, 1U, 8U);
+  TEST_ASSERT_EQUAL_CHAR('C', display.cells[1U][9U]);
+  assertLinePrefixEquals(display, 2U, " AM2302 T: 38", 13U);
+  assertDegreeSymbolAt(display, 2U, 13U);
+  TEST_ASSERT_EQUAL_CHAR('C', display.cells[2U][14U]);
+  assertLineEquals(display, 3U, " AM2302 RH: 41%     ");
 }
 
-void test_test_view_renders_heater_selected() {
+void test_test_view_renders_output_rows_when_scrolled() {
   FakeDisplay display;
   LcdTestView view(display);
   LcdTestSnapshot snapshot;
-  snapshot.selectedField = TestField::Heater;
+  snapshot.selectedField = TestField::Back;
+  snapshot.ntc.valid = true;
+  snapshot.ntc.tempC = 52;
+  snapshot.tempRh.valid = true;
+  snapshot.tempRh.tempC = 38;
+  snapshot.tempRh.rhPercent = 41;
   snapshot.command.fanOn = true;
   snapshot.command.heaterOn = true;
 
   view.render(snapshot);
 
   assertLineEquals(display, 1U, " Fan: ON            ");
-  assertLineEquals(display, 2U, ">Heat: ON           ");
+  assertLineEquals(display, 2U, " Heat: ON           ");
+  assertLineEquals(display, 3U, ">Inapoi             ");
 }
 
-void test_test_view_renders_back_selected() {
+void test_test_view_renders_sensor_errors_succinctly() {
   FakeDisplay display;
   LcdTestView view(display);
   LcdTestSnapshot snapshot;
-  snapshot.selectedField = TestField::Back;
+  snapshot.selectedField = TestField::TempRhTemp;
   snapshot.command.fanOn = false;
   snapshot.command.heaterOn = false;
 
   view.render(snapshot);
 
-  assertLinePrefixEquals(display, 3U, ">Inapoi", 7U);
+  assertLineEquals(display, 1U, " NTC: Eroare        ");
+  assertLineEquals(display, 2U, ">AM2302 T: Eroare   ");
+  assertLineEquals(display, 3U, " AM2302 RH: Eroare  ");
 }
 
 void setup() {
   UNITY_BEGIN();
-  RUN_TEST(test_test_view_renders_fan_selected);
-  RUN_TEST(test_test_view_renders_heater_selected);
-  RUN_TEST(test_test_view_renders_back_selected);
+  RUN_TEST(test_test_view_renders_sensor_rows_first);
+  RUN_TEST(test_test_view_renders_output_rows_when_scrolled);
+  RUN_TEST(test_test_view_renders_sensor_errors_succinctly);
   UNITY_END();
 }
 

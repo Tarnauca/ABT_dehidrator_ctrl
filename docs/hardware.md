@@ -78,14 +78,15 @@ renderer. The default summary page now looks like this:
 Program: Inactiv
 Temp: --C RH: --%
 Timp scurs: 0h 0m
-Timp ramas: 0h 0m <heartbeat>
+Timp ramas: 0h 0m
 ```
 
-The heartbeat is a custom LCD character in the bottom-right cell. The renderer
-redraws fixed-width lines so shorter values do not leave stale characters.
-When the secondary temp/RH sensor is present and initializes correctly,
-`RH: --%` is replaced by the live humidity percentage. Encoder rotation on the
-status screen cycles additional parameter and output pages.
+The renderer redraws fixed-width lines so shorter values do not leave stale
+characters. When the secondary temp/RH sensor is present and initializes
+correctly, `RH: --%` is replaced by the live humidity percentage. Encoder
+rotation on the status screen cycles additional parameter and output pages. On
+the summary page, the top-right LCD corner blinks a custom `Play` symbol while
+a run is active and a custom `Pause` symbol while the run is paused.
 
 Encoder rotation is read through the proven `Encoder` library and the
 pushbutton is debounced through `Bounce2`. In this slice, input events are only

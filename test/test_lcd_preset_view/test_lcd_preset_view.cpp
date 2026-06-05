@@ -53,12 +53,11 @@ void assertLinePrefixEquals(const FakeDisplay& display, uint8_t row,
   }
 }
 
-LcdPresetSnapshot snapshotForIndex(size_t selectedIndex, bool heartbeatOn) {
+LcdPresetSnapshot snapshotForIndex(size_t selectedIndex) {
   LcdPresetSnapshot snapshot;
   snapshot.presets = dehydrator::PresetCatalog::items();
   snapshot.presetCount = dehydrator::PresetCatalog::PRESET_COUNT;
   snapshot.selectedIndex = selectedIndex;
-  snapshot.heartbeatOn = heartbeatOn;
   return snapshot;
 }
 
@@ -66,7 +65,7 @@ void test_preset_view_renders_selected_preset_details() {
   FakeDisplay display;
   LcdPresetView view(display);
 
-  view.render(snapshotForIndex(0U, true));
+  view.render(snapshotForIndex(0U));
 
   assertLineEquals(display, 0U, "Programe presetate  ");
   assertLineEquals(display, 1U, ">Mere               ");
@@ -85,14 +84,14 @@ void test_preset_view_renders_selected_preset_details() {
   TEST_ASSERT_EQUAL_CHAR(' ', display.cells[3U][11U]);
   TEST_ASSERT_EQUAL_CHAR('0', display.cells[3U][12U]);
   TEST_ASSERT_EQUAL_CHAR('m', display.cells[3U][13U]);
-  TEST_ASSERT_TRUE(display.custom[3U][19U]);
+  TEST_ASSERT_FALSE(display.custom[3U][19U]);
 }
 
 void test_preset_view_renders_other_selection() {
   FakeDisplay display;
   LcdPresetView view(display);
 
-  view.render(snapshotForIndex(2U, false));
+  view.render(snapshotForIndex(2U));
 
   assertLineEquals(display, 1U, ">Jerky              ");
   assertLineEquals(display, 2U, "Mod fix             ");
@@ -111,8 +110,8 @@ void test_preset_view_renders_other_selection() {
 void test_preset_view_renders_back_row() {
   FakeDisplay display;
   LcdPresetView view(display);
-  LcdPresetSnapshot snapshot = snapshotForIndex(dehydrator::PresetCatalog::PRESET_COUNT,
-                                                false);
+  LcdPresetSnapshot snapshot =
+      snapshotForIndex(dehydrator::PresetCatalog::PRESET_COUNT);
 
   view.render(snapshot);
 

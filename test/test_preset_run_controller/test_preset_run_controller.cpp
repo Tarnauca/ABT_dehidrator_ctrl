@@ -81,6 +81,21 @@ void test_confirmed_stop_returns_running_preset_to_idle() {
   TEST_ASSERT_FALSE(controller.outputCommand().buzzerOn);
 }
 
+void test_pause_moves_running_preset_to_paused_and_keeps_resume_allowed() {
+  PresetRunController controller;
+  TEST_ASSERT_TRUE(controller.startPreset(PresetCatalog::items()[0]));
+
+  controller.update(30U, true, 58);
+
+  TEST_ASSERT_TRUE(controller.pause());
+  TEST_ASSERT_EQUAL_INT(static_cast<int>(RunState::Paused),
+                        static_cast<int>(controller.snapshot().state));
+  TEST_ASSERT_TRUE(controller.snapshot().resumeAllowed);
+  TEST_ASSERT_FALSE(controller.outputCommand().fanOn);
+  TEST_ASSERT_FALSE(controller.outputCommand().heaterOn);
+  TEST_ASSERT_EQUAL_STRING("PAUZA", controller.stateLabelRo());
+}
+
 void test_manual_boost_profile_updates_without_active_preset() {
   PresetRunController controller;
   ProfileConfig profile;
@@ -178,6 +193,7 @@ int main() {
   RUN_TEST(test_invalid_ntc_keeps_heater_off_while_run_continues);
   RUN_TEST(test_finish_alarm_can_be_acknowledged_back_to_idle);
   RUN_TEST(test_confirmed_stop_returns_running_preset_to_idle);
+  RUN_TEST(test_pause_moves_running_preset_to_paused_and_keeps_resume_allowed);
   RUN_TEST(test_manual_boost_profile_updates_without_active_preset);
   RUN_TEST(test_manual_constant_profile_uses_base_target_without_active_preset);
   RUN_TEST(test_manual_fluctuating_profile_switches_between_upper_and_lower_targets);

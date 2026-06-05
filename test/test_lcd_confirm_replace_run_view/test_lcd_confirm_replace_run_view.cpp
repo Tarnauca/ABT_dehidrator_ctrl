@@ -56,7 +56,6 @@ void test_confirm_view_renders_no_as_default_selection() {
   dehydrator::LcdConfirmReplaceRunView view(display);
   dehydrator::LcdConfirmReplaceRunSnapshot snapshot;
   snapshot.confirmSelected = false;
-  snapshot.heartbeatOn = false;
 
   view.render(snapshot);
 
@@ -71,7 +70,6 @@ void test_confirm_view_renders_yes_selected() {
   dehydrator::LcdConfirmReplaceRunView view(display);
   dehydrator::LcdConfirmReplaceRunSnapshot snapshot;
   snapshot.confirmSelected = true;
-  snapshot.heartbeatOn = true;
 
   view.render(snapshot);
 
@@ -83,7 +81,7 @@ void test_confirm_view_renders_yes_selected() {
   TEST_ASSERT_EQUAL_CHAR('>', display.line(3U)[6]);
   TEST_ASSERT_EQUAL_CHAR('D', display.line(3U)[7]);
   TEST_ASSERT_EQUAL_CHAR('a', display.line(3U)[8]);
-  TEST_ASSERT_EQUAL_CHAR('#', display.line(3U)[19]);
+  TEST_ASSERT_EQUAL_CHAR(' ', display.line(3U)[19]);
 }
 
 int main() {

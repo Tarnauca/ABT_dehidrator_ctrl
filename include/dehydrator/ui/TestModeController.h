@@ -10,6 +10,12 @@ namespace dehydrator {
  * @brief Selectable fields on the direct-output test screen.
  */
 enum class TestField {
+  /** Primary NTC temperature read-only row. */
+  NtcTemp,
+  /** Secondary AM2302 temperature read-only row. */
+  TempRhTemp,
+  /** Secondary AM2302 humidity read-only row. */
+  TempRhRh,
   /** Fan ON/OFF selection field. */
   Fan,
   /** Heater ON/OFF selection field. */
@@ -66,7 +72,13 @@ class TestModeController {
     }
 
     if (delta > 0) {
-      if (selectedField_ == TestField::Fan) {
+      if (selectedField_ == TestField::NtcTemp) {
+        selectedField_ = TestField::TempRhTemp;
+      } else if (selectedField_ == TestField::TempRhTemp) {
+        selectedField_ = TestField::TempRhRh;
+      } else if (selectedField_ == TestField::TempRhRh) {
+        selectedField_ = TestField::Fan;
+      } else if (selectedField_ == TestField::Fan) {
         selectedField_ = TestField::Heater;
       } else if (selectedField_ == TestField::Heater) {
         selectedField_ = TestField::Back;
@@ -76,6 +88,12 @@ class TestModeController {
         selectedField_ = TestField::Heater;
       } else if (selectedField_ == TestField::Heater) {
         selectedField_ = TestField::Fan;
+      } else if (selectedField_ == TestField::Fan) {
+        selectedField_ = TestField::TempRhRh;
+      } else if (selectedField_ == TestField::TempRhRh) {
+        selectedField_ = TestField::TempRhTemp;
+      } else if (selectedField_ == TestField::TempRhTemp) {
+        selectedField_ = TestField::NtcTemp;
       }
     }
 
@@ -91,10 +109,16 @@ class TestModeController {
    */
   TestUiResult onShortPress() {
     if (selectedField_ == TestField::Back) {
-      selectedField_ = TestField::Fan;
+      selectedField_ = TestField::NtcTemp;
       TestUiResult result;
       result.exitToMenu = true;
       return result;
+    }
+
+    if (selectedField_ == TestField::NtcTemp ||
+        selectedField_ == TestField::TempRhTemp ||
+        selectedField_ == TestField::TempRhRh) {
+      return {};
     }
 
     const OutputCommand previous = command_;
@@ -124,7 +148,7 @@ class TestModeController {
   TestUiResult onLongPress() const { return {}; }
 
  private:
-  TestField selectedField_ = TestField::Fan;
+  TestField selectedField_ = TestField::NtcTemp;
   OutputCommand command_;
 };
 

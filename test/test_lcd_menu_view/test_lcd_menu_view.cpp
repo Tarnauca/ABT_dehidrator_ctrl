@@ -54,14 +54,16 @@ void assertLinePrefixEquals(const FakeDisplay& display, uint8_t row,
   }
 }
 
-LcdMenuSnapshot snapshotForIndex(size_t selectedIndex, bool heartbeatOn,
+LcdMenuSnapshot snapshotForIndex(size_t selectedIndex,
                                  bool showStop = false,
+                                 bool showPause = false,
                                  bool showResume = false,
                                  const char* title = "Meniu") {
   static const char* labels[MenuController::MAX_ITEM_COUNT] = {};
   MenuController controller;
   dehydrator::MainMenuContext context;
   context.showStopProgram = showStop;
+  context.showPauseProgram = showPause;
   context.showResumeProgram = showResume;
   controller.setContext(context);
   controller.fillVisibleItems(labels);
@@ -70,7 +72,6 @@ LcdMenuSnapshot snapshotForIndex(size_t selectedIndex, bool heartbeatOn,
   snapshot.items = labels;
   snapshot.itemCount = controller.itemCount();
   snapshot.selectedIndex = selectedIndex;
-  snapshot.heartbeatOn = heartbeatOn;
   return snapshot;
 }
 
@@ -78,7 +79,7 @@ void test_menu_view_renders_first_items_and_hint() {
   FakeDisplay display;
   LcdMenuView view(display);
 
-  view.render(snapshotForIndex(0U, true));
+  view.render(snapshotForIndex(0U));
 
   assertLineEquals(display, 0U, "Meniu               ");
   assertLineEquals(display, 1U, ">Programe presetate ");
@@ -90,7 +91,7 @@ void test_menu_view_scrolls_when_selection_moves_down() {
   FakeDisplay display;
   LcdMenuView view(display);
 
-  view.render(snapshotForIndex(3U, false));
+  view.render(snapshotForIndex(3U));
 
   assertLineEquals(display, 0U, "Meniu               ");
   assertLineEquals(display, 1U, ">Setari             ");
@@ -102,7 +103,7 @@ void test_menu_view_keeps_last_item_on_first_line() {
   FakeDisplay display;
   LcdMenuView view(display);
 
-  view.render(snapshotForIndex(4U, false));
+  view.render(snapshotForIndex(4U));
 
   assertLineEquals(display, 0U, "Meniu               ");
   assertLineEquals(display, 1U, ">Inapoi             ");
@@ -114,12 +115,12 @@ void test_menu_view_renders_dynamic_stop_and_resume_entries() {
   FakeDisplay display;
   LcdMenuView view(display);
 
-  view.render(snapshotForIndex(0U, false, true, true));
+  view.render(snapshotForIndex(0U, true, true, true));
 
   assertLineEquals(display, 0U, "Meniu               ");
   assertLineEquals(display, 1U, ">Oprire program     ");
-  assertLineEquals(display, 2U, " Reluare program    ");
-  assertLineEquals(display, 3U, " Programe presetate ");
+  assertLineEquals(display, 2U, " Pauza program      ");
+  assertLineEquals(display, 3U, " Reluare program    ");
 }
 
 void setup() {

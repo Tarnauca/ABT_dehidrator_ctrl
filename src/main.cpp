@@ -65,7 +65,7 @@ dehydrator::PeriodicTask runControlTask(
     dehydrator::config::SCHEDULER.sensorSampleIntervalMs);
 
 bool ledOn = false;
-bool heartbeatOn = false;
+bool activityBlinkOn = false;
 long lastEncoderPosition = 0L;
 uint32_t buttonPressedAtMs = 0UL;
 bool buttonPressed = false;
@@ -105,6 +105,7 @@ enum class UserProfileSlotScreenPurpose {
 enum class BinaryConfirmPurpose {
   None,
   ReplaceRun,
+  StopProgram,
   OverwriteSlot,
   DeleteSlot,
 };
@@ -146,13 +147,23 @@ LiquidCrystal_I2C lcd(dehydrator::config::HARDWARE.lcdI2cAddress,
 Encoder rotaryEncoder(dehydrator::config::HARDWARE.pins.encoderA,
                       dehydrator::config::HARDWARE.pins.encoderB);
 Bounce buttonDebouncer;
-byte heartbeatGlyph[8] = {
+byte playGlyph[8] = {
+    B00100,
+    B00110,
+    B00111,
+    B00111,
+    B00111,
+    B00110,
+    B00100,
+    B00000,
+};
+byte pauseGlyph[8] = {
     B00000,
     B01010,
-    B11111,
-    B11111,
-    B01110,
-    B00100,
+    B01010,
+    B01010,
+    B01010,
+    B01010,
     B00000,
     B00000,
 };
@@ -420,10 +431,27 @@ void logUiResult(const dehydrator::UiResult& result) {
  */
 void logTestResult(const dehydrator::TestUiResult& result) {
   if (result.selectionChanged) {
-    logEvent("ui", testModeController.selectedField() ==
-                           dehydrator::TestField::Fan
-                       ? "test_fan"
-                       : "test_heat");
+    switch (testModeController.selectedField()) {
+      case dehydrator::TestField::NtcTemp:
+        logEvent("ui", "test_ntc");
+        break;
+      case dehydrator::TestField::TempRhTemp:
+        logEvent("ui", "test_temp_rh_temp");
+        break;
+      case dehydrator::TestField::TempRhRh:
+        logEvent("ui", "test_temp_rh_rh");
+        break;
+      case dehydrator::TestField::Fan:
+        logEvent("ui", "test_fan");
+        break;
+      case dehydrator::TestField::Heater:
+        logEvent("ui", "test_heat");
+        break;
+      case dehydrator::TestField::Back:
+      default:
+        logEvent("ui", "test_back");
+        break;
+    }
   }
 
   if (result.outputChanged) {
@@ -619,11 +647,19 @@ bool hasResumableProgram() {
 }
 
 /**
+ * @brief Returns whether one active run may currently be paused by the user.
+ */
+bool hasPausableProgram() {
+  return presetRunController.snapshot().state == dehydrator::RunState::Running;
+}
+
+/**
  * @brief Refreshes dynamic main-menu visibility flags from run state.
  */
 void syncMainMenuContext() {
   dehydrator::MainMenuContext context;
   context.showStopProgram = hasStoppableProgram();
+  context.showPauseProgram = hasPausableProgram();
   context.showResumeProgram = hasResumableProgram();
   menuController.setContext(context);
 }
@@ -957,12 +993,13 @@ void updateLcdTask(uint32_t nowMs) {
     return;
   }
 
-  heartbeatOn = !heartbeatOn;
+  activityBlinkOn = !activityBlinkOn;
   if (currentScreen == BringupScreen::Test) {
     dehydrator::LcdTestSnapshot testSnapshot;
     testSnapshot.selectedField = testModeController.selectedField();
+    testSnapshot.ntc = latestNtc;
+    testSnapshot.tempRh = latestTempRh;
     testSnapshot.command = testModeController.command();
-    testSnapshot.heartbeatOn = heartbeatOn;
     testView.render(testSnapshot);
     return;
   }
@@ -985,7 +1022,6 @@ void updateLcdTask(uint32_t nowMs) {
         manualProgramController.upperDurationMinutes();
     manualProgramSnapshot.lowerDurationMinutes =
         manualProgramController.lowerDurationMinutes();
-    manualProgramSnapshot.heartbeatOn = heartbeatOn;
     manualProgramView.render(manualProgramSnapshot);
     return;
   }
@@ -995,7 +1031,6 @@ void updateLcdTask(uint32_t nowMs) {
     presetSnapshot.presets = dehydrator::PresetCatalog::items();
     presetSnapshot.presetCount = dehydrator::PresetCatalog::PRESET_COUNT;
     presetSnapshot.selectedIndex = presetSelectController.selectedIndex();
-    presetSnapshot.heartbeatOn = heartbeatOn;
     presetView.render(presetSnapshot);
     return;
   }
@@ -1009,7 +1044,6 @@ void updateLcdTask(uint32_t nowMs) {
     settingsSnapshot.items = labels;
     settingsSnapshot.itemCount = dehydrator::SettingsMenuController::ITEM_COUNT;
     settingsSnapshot.selectedIndex = settingsMenuController.selectedIndex();
-    settingsSnapshot.heartbeatOn = heartbeatOn;
     menuView.render(settingsSnapshot);
     return;
   }
@@ -1018,7 +1052,6 @@ void updateLcdTask(uint32_t nowMs) {
     dehydrator::LcdConfirmReplaceRunSnapshot confirmSnapshot;
     confirmSnapshot.confirmSelected =
         confirmReplaceRunController.confirmSelected();
-    confirmSnapshot.heartbeatOn = heartbeatOn;
     confirmReplaceRunView.render(confirmSnapshot);
     return;
   }
@@ -1026,7 +1059,6 @@ void updateLcdTask(uint32_t nowMs) {
   if (currentScreen == BringupScreen::SavePrompt) {
     dehydrator::LcdSavePromptSnapshot saveSnapshot;
     saveSnapshot.choice = savePromptController.currentChoice();
-    saveSnapshot.heartbeatOn = heartbeatOn;
     savePromptView.render(saveSnapshot);
     return;
   }
@@ -1039,7 +1071,6 @@ void updateLcdTask(uint32_t nowMs) {
             : "Programe utilizator";
     slotSnapshot.slots = userProfileSlots;
     slotSnapshot.selectedIndex = userProfileSlotController.selectedIndex();
-    slotSnapshot.heartbeatOn = heartbeatOn;
     userProfileSlotView.render(slotSnapshot);
     return;
   }
@@ -1050,7 +1081,6 @@ void updateLcdTask(uint32_t nowMs) {
     detailSnapshot.occupied = isOccupiedUserProfileSlot(activeProfileDetailSlot);
     detailSnapshot.profile = userProfileSlots[activeProfileDetailSlot].profile;
     detailSnapshot.action = userProfileActionController.currentAction();
-    detailSnapshot.heartbeatOn = heartbeatOn;
     userProfileDetailView.render(detailSnapshot);
     return;
   }
@@ -1059,10 +1089,12 @@ void updateLcdTask(uint32_t nowMs) {
     dehydrator::LcdBinaryConfirmSnapshot confirmSnapshot;
     confirmSnapshot.confirmSelected =
         confirmReplaceRunController.confirmSelected();
-    confirmSnapshot.heartbeatOn = heartbeatOn;
     if (binaryConfirmPurpose == BinaryConfirmPurpose::OverwriteSlot) {
       confirmSnapshot.title = "Suprascriere";
       confirmSnapshot.prompt = "Locatie ocupata?";
+    } else if (binaryConfirmPurpose == BinaryConfirmPurpose::StopProgram) {
+      confirmSnapshot.title = "Confirmare";
+      confirmSnapshot.prompt = "Opresti programul?";
     } else if (binaryConfirmPurpose == BinaryConfirmPurpose::DeleteSlot) {
       confirmSnapshot.title = "Stergere";
       confirmSnapshot.prompt = "Stergi profilul?";
@@ -1084,7 +1116,6 @@ void updateLcdTask(uint32_t nowMs) {
     menuSnapshot.items = labels;
     menuSnapshot.itemCount = menuController.itemCount();
     menuSnapshot.selectedIndex = menuController.selectedIndex();
-    menuSnapshot.heartbeatOn = heartbeatOn;
     menuView.render(menuSnapshot);
     return;
   }
@@ -1114,7 +1145,14 @@ void updateLcdTask(uint32_t nowMs) {
   }
   snapshot.heaterOn = activeOutputCommand.heaterOn;
   snapshot.fanOn = activeOutputCommand.fanOn;
-  snapshot.heartbeatOn = heartbeatOn;
+  const dehydrator::RunState currentRunState = runSnapshot.state;
+  snapshot.activityIndicator =
+      currentRunState == dehydrator::RunState::Running
+          ? dehydrator::StatusActivityIndicator::Running
+          : (currentRunState == dehydrator::RunState::Paused
+                 ? dehydrator::StatusActivityIndicator::Paused
+                 : dehydrator::StatusActivityIndicator::None);
+  snapshot.activityIndicatorOn = activityBlinkOn;
   statusView.render(snapshot);
 }
 
@@ -1335,6 +1373,24 @@ void updateInputTask(uint32_t nowMs) {
         } else {
           currentScreen = BringupScreen::UserProfileSlots;
         }
+      } else if (binaryConfirmPurpose == BinaryConfirmPurpose::StopProgram) {
+        if (result.confirmed) {
+          if (presetRunController.stopConfirmed()) {
+            clearActiveProgramDisplay();
+            activeOutputCommand = presetRunController.outputCommand();
+            relayOutputs.apply(activeOutputCommand);
+            resetStatusPage();
+            logEvent("run_stop", "confirmed");
+            logEvent("run_state", presetRunController.stateToken());
+          } else {
+            logEvent("run_stop", "rejected");
+          }
+          menuController.returnToStatus();
+          currentScreen = BringupScreen::Status;
+        } else {
+          menuController.enterMenu();
+          currentScreen = BringupScreen::Menu;
+        }
       } else if (binaryConfirmPurpose == BinaryConfirmPurpose::DeleteSlot) {
         if (result.confirmed) {
           if (userProfileStore.clear(pendingProfileSlot)) {
@@ -1528,6 +1584,20 @@ void updateInputTask(uint32_t nowMs) {
       logEvent("ui", "settings_open");
     } else if (result.action == dehydrator::UiAction::SelectItem &&
                menuController.currentToken() != nullptr &&
+               strcmp(menuController.currentToken(), "pauza_program") == 0) {
+      if (presetRunController.pause()) {
+        activeOutputCommand = presetRunController.outputCommand();
+        relayOutputs.apply(activeOutputCommand);
+        resetStatusPage();
+        logEvent("run_pause", "confirmed");
+        logEvent("run_state", presetRunController.stateToken());
+        menuController.returnToStatus();
+        currentScreen = BringupScreen::Status;
+      } else {
+        logEvent("run_pause", "rejected");
+      }
+    } else if (result.action == dehydrator::UiAction::SelectItem &&
+               menuController.currentToken() != nullptr &&
                strcmp(menuController.currentToken(), "reluare_program") == 0) {
       if (presetRunController.resume()) {
         activeOutputCommand = presetRunController.outputCommand();
@@ -1543,18 +1613,9 @@ void updateInputTask(uint32_t nowMs) {
     } else if (result.action == dehydrator::UiAction::SelectItem &&
                menuController.currentToken() != nullptr &&
                strcmp(menuController.currentToken(), "oprire_program") == 0) {
-      if (presetRunController.stopConfirmed()) {
-        clearActiveProgramDisplay();
-        activeOutputCommand = presetRunController.outputCommand();
-        relayOutputs.apply(activeOutputCommand);
-        resetStatusPage();
-        logEvent("run_stop", "confirmed");
-        logEvent("run_state", presetRunController.stateToken());
-      } else {
-        logEvent("run_stop", "rejected");
-      }
-      menuController.returnToStatus();
-      currentScreen = BringupScreen::Status;
+      binaryConfirmPurpose = BinaryConfirmPurpose::StopProgram;
+      confirmReplaceRunController.reset();
+      currentScreen = BringupScreen::BinaryConfirm;
     } else if (result.action == dehydrator::UiAction::CloseMenu) {
       menuController.returnToStatus();
       currentScreen = BringupScreen::Status;
@@ -1626,7 +1687,8 @@ void setup() {
   lcd.init();
   lcd.backlight();
   lcd.clear();
-  lcd.createChar(dehydrator::LcdStatusView::HEARTBEAT_CHAR, heartbeatGlyph);
+  lcd.createChar(dehydrator::LcdStatusView::PLAY_CHAR, playGlyph);
+  lcd.createChar(dehydrator::LcdStatusView::PAUSE_CHAR, pauseGlyph);
   relayOutputs.begin();
   lastEncoderPosition = rotaryEncoder.read();
   encoderStepFilter.reset(lastEncoderPosition);
