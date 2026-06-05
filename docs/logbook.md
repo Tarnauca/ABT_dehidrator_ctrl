@@ -2236,3 +2236,24 @@ Why this shape:
 
 - It lets the operator confirm sensor health before toggling outputs.
 - The short per-row error text keeps the screen readable on a 4x20 LCD.
+## 2026-06-05 - Worktree scope guard rule
+
+The user noticed that two unrelated UI changes were allowed to accumulate in
+the same uncommitted worktree and asked for a durable workflow rule so this is
+flagged earlier next time.
+
+What changed:
+
+- Added an explicit workflow rule to check `git status` before starting a new
+  request.
+- If uncommitted changes exist and the next request is not clearly in the same
+  scope, Codex must stop and ask whether to finish/commit/merge the current
+  work first or intentionally continue with mixed changes.
+- Added the rule to durable project context, agent workflow guidance, and the
+  workflow ADR.
+
+Why this shape:
+
+- It keeps branches more focused without making the process rigid.
+- It catches scope drift earlier, before unrelated work is mixed into one
+  branch by accident.
