@@ -15,8 +15,8 @@ struct NtcReading {
   uint16_t adcCount = 0;
   /** Calculated thermistor resistance in milliohms. */
   int32_t resistanceMilliOhms = 0;
-  /** Calibrated integer temperature in Celsius. */
-  int16_t tempC = 0;
+  /** Calibrated temperature in deci-Celsius. */
+  int16_t tempDeciC = 0;
   /** True when ADC, resistance, and temperature are plausible. */
   bool valid = false;
 };
@@ -60,14 +60,17 @@ class NtcSensorModel {
         (static_cast<int64_t>(rawCentiC + config.ntcOffsetCentiC) *
          config.ntcScalePpm) /
         1000000L;
-    const int32_t calibratedTempC = roundCentiCToCelsius(calibratedCentiC);
-    reading.valid = calibratedTempC >= config.ntcMinValidTempC &&
-                    calibratedTempC <= config.ntcMaxValidTempC &&
-                    calibratedTempC >= INT16_MIN &&
-                    calibratedTempC <= INT16_MAX;
+    const int32_t calibratedTempDeciC = roundCentiCToDeciC(calibratedCentiC);
+    reading.valid =
+        calibratedTempDeciC >=
+            static_cast<int32_t>(config.ntcMinValidTempC) * 10L &&
+        calibratedTempDeciC <=
+            static_cast<int32_t>(config.ntcMaxValidTempC) * 10L &&
+        calibratedTempDeciC >= INT16_MIN &&
+        calibratedTempDeciC <= INT16_MAX;
 
     if (reading.valid) {
-      reading.tempC = static_cast<int16_t>(calibratedTempC);
+      reading.tempDeciC = static_cast<int16_t>(calibratedTempDeciC);
     }
     return reading;
   }
@@ -103,12 +106,12 @@ class NtcSensorModel {
     return static_cast<int32_t>(tempC * 100.0f + (tempC >= 0.0f ? 0.5f : -0.5f));
   }
 
-  static int32_t roundCentiCToCelsius(int32_t centiC) {
+  static int32_t roundCentiCToDeciC(int32_t centiC) {
     if (centiC >= 0) {
-      return (centiC + 50) / 100;
+      return (centiC + 5) / 10;
     }
 
-    return (centiC - 50) / 100;
+    return (centiC - 5) / 10;
   }
 };
 

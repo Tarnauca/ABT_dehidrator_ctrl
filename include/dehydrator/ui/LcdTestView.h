@@ -108,9 +108,16 @@ class LcdTestView {
     }
   }
 
-  static void writeSignedTemperature(char* line, uint8_t column, int16_t tempC) {
-    char value[8] = {};
-    const int printed = snprintf(value, sizeof(value), "%d", tempC);
+  static void writeSignedTemperature(char* line, uint8_t column,
+                                     int16_t tempDeciC) {
+    char value[12] = {};
+    const bool negative = tempDeciC < 0;
+    const int16_t magnitude =
+        static_cast<int16_t>(negative ? -tempDeciC : tempDeciC);
+    const int printed =
+        snprintf(value, sizeof(value), "%s%d.%d", negative ? "-" : "",
+                 static_cast<int>(magnitude / 10),
+                 static_cast<int>(magnitude % 10));
     if (printed <= 0) {
       return;
     }
@@ -133,7 +140,7 @@ class LcdTestView {
       case TestField::NtcTemp:
         writeToken(line, "NTC:", 1U);
         if (snapshot.ntc.valid) {
-          writeSignedTemperature(line, 6U, snapshot.ntc.tempC);
+          writeSignedTemperature(line, 6U, snapshot.ntc.tempDeciC);
         } else {
           writeToken(line, "Eroare", 6U);
         }
@@ -141,7 +148,7 @@ class LcdTestView {
       case TestField::TempRhTemp:
         writeToken(line, "AM2302 T:", 1U);
         if (snapshot.tempRh.valid) {
-          writeSignedTemperature(line, 11U, snapshot.tempRh.tempC);
+          writeSignedTemperature(line, 11U, snapshot.tempRh.tempDeciC);
         } else {
           writeToken(line, "Eroare", 11U);
         }

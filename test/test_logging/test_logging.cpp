@@ -46,13 +46,13 @@ void test_format_bringup_state_includes_valid_ntc_fields() {
   char line[160] = {};
 
   const bool ok = LogFormatter::formatBringupState(line, sizeof(line), 5000U,
-                                                   true, true, 57, 512U, true,
-                                                   24, 43U, "running", "mere",
+                                                   true, true, 570, 512U, true,
+                                                   240, 43U, "running", "mere",
                                                    false, true);
 
   TEST_ASSERT_TRUE(ok);
   TEST_ASSERT_EQUAL_STRING(
-      "STATE app=bringup uptime_ms=5000 led=on run=running preset=mere h=off f=on ntc=57 adc=512 env_t=24 rh=43",
+      "STATE app=bringup uptime_ms=5000 led=on run=running preset=mere h=off f=on ntc=57.0 adc=512 env_t=24.0 rh=43",
       line);
 }
 
@@ -74,13 +74,13 @@ void test_format_bringup_state_marks_invalid_temp_rh_as_null() {
   char line[160] = {};
 
   const bool ok = LogFormatter::formatBringupState(line, sizeof(line), 5000U,
-                                                   true, true, 57, 512U, false,
+                                                   true, true, 570, 512U, false,
                                                    0, 0U, "finish_cooldown",
                                                    "ierburi", false, true);
 
   TEST_ASSERT_TRUE(ok);
   TEST_ASSERT_EQUAL_STRING(
-      "STATE app=bringup uptime_ms=5000 led=on run=finish_cooldown preset=ierburi h=off f=on ntc=57 adc=512 env_t=null rh=null",
+      "STATE app=bringup uptime_ms=5000 led=on run=finish_cooldown preset=ierburi h=off f=on ntc=57.0 adc=512 env_t=null rh=null",
       line);
 }
 

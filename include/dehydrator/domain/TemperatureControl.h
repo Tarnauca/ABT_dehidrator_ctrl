@@ -11,10 +11,10 @@ namespace dehydrator {
  * @brief Inputs needed for one temperature-control evaluation.
  */
 struct TemperatureControlInput {
-  /** Primary thermistor temperature in integer Celsius. */
-  int16_t currentTempC = 0;
-  /** Current profile target temperature in integer Celsius. */
-  int16_t targetTempC = 0;
+  /** Primary thermistor temperature in deci-Celsius. */
+  int16_t currentTempDeciC = 0;
+  /** Current profile target temperature in deci-Celsius. */
+  int16_t targetTempDeciC = 0;
   /** Lifecycle-level output policy from the run state machine. */
   RunOutputPolicy runPolicy;
   /** Scheduler-provided elapsed time since the previous control update. */
@@ -66,8 +66,9 @@ class TemperatureControl {
    * @brief Evaluates hysteresis and safety policy for one control tick.
    *
    * The heater turns ON when temperature is at or below
-   * `targetTempC - hysteresisC`, and turns OFF when temperature reaches or
-   * exceeds `targetTempC`. Temperatures above `heaterForceOffAboveTempC` force
+   * `targetTempDeciC - hysteresisC`, and turns OFF when temperature reaches or
+   * exceeds `targetTempDeciC`. Temperatures above `heaterForceOffAboveTempC`
+   * force
    * heater OFF immediately, even if minimum relay timing would normally hold
    * the current command.
    *
@@ -81,7 +82,8 @@ class TemperatureControl {
 
     TemperatureControlOutput output;
     output.forcedOffByTemperature =
-        input.currentTempC > config.heaterForceOffAboveTempC;
+        input.currentTempDeciC >
+        static_cast<int32_t>(config.heaterForceOffAboveTempC) * 10L;
 
     if (!input.runPolicy.fanOn || !input.runPolicy.heaterControlAllowed) {
       forceHeaterOff();
@@ -95,14 +97,16 @@ class TemperatureControl {
     }
 
     if (heaterOn_) {
-      if (input.currentTempC >= input.targetTempC) {
+      if (input.currentTempDeciC >= input.targetTempDeciC) {
         if (secondsSinceSwitch_ >= config.minHeaterOnSeconds) {
           switchHeater(false);
         } else {
           output.waitingForMinOnTime = true;
         }
       }
-    } else if (input.currentTempC <= input.targetTempC - config.hysteresisC) {
+    } else if (input.currentTempDeciC <=
+               input.targetTempDeciC -
+                   static_cast<int32_t>(config.hysteresisC) * 10L) {
       if (secondsSinceSwitch_ >= config.minHeaterOffSeconds) {
         switchHeater(true);
       } else {

@@ -27,8 +27,8 @@ RunOutputPolicy runningPolicy() {
 
 TemperatureControlInput inputAt(int16_t currentTempC, int16_t targetTempC) {
   TemperatureControlInput input;
-  input.currentTempC = currentTempC;
-  input.targetTempC = targetTempC;
+  input.currentTempDeciC = static_cast<int16_t>(currentTempC * 10);
+  input.targetTempDeciC = static_cast<int16_t>(targetTempC * 10);
   input.runPolicy = runningPolicy();
   input.deltaSeconds = 1;
   return input;

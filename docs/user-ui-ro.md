@@ -21,7 +21,7 @@ connected to the status snapshot.
 
 ```text
 Program: Mere
-Temp: 57°C RH: 43%
+Temp: 57.0°C RH: 43%
 Timp scurs: 1h 30m
 Timp ramas: 8h 30m
 ```
@@ -48,7 +48,7 @@ page when needed.
 Constant-mode example:
 
 ```text
-Temp: 57°C
+Temp: 57.0°C
 Durata: 8h 0m
 
 
@@ -57,19 +57,19 @@ Durata: 8h 0m
 Boost-mode example:
 
 ```text
-Temp: 55°C
+Temp: 55.0°C
 Durata: 8h 0m
-Boost: +10°C
+Boost: +10.0°C
 Dur.boost: 0h 30m
 ```
 
 Fluctuating-mode page 1 example:
 
 ```text
-T.ref: 57°C
+T.ref: 57.0°C
 Durata: 10h 0m
-Tsup: 65°C
-Tinf: 50°C
+Tsup: 65.0°C
+Tinf: 50.0°C
 ```
 
 Fluctuating-mode page 2 example:
@@ -193,7 +193,7 @@ Current preset layout:
 Programe presetate
 >Mere
 Mod fluctuat
-50-65°C 10h 0m
+50.0-65.0°C 10h 0m
 ```
 
 The preset list currently contains starter values that can be replaced later
@@ -262,7 +262,7 @@ Current manual layout:
 ```text
 Program manual
 >Mod:Constant
- Temp:57°C
+ Temp:57.0°C
  Dur:8h 0m
 ```
 
@@ -270,7 +270,7 @@ Example `Boost` scrolled layout:
 
 ```text
 Program manual
->Boost:+10°C
+>Boost:+10.0°C
  DurBoost:30m
  Start
 ```
@@ -279,8 +279,8 @@ Example `Fluctuant` scrolled layout:
 
 ```text
 Program manual
->Tsup:62°C
- Tinf:52°C
+>Tsup:62.0°C
+ Tinf:52.0°C
  Dur Tsup:10m
 ```
 
@@ -289,7 +289,7 @@ Program manual
 Current behavior:
 
 - Select `Setari` from the main menu to open the settings submenu.
-- `Setari` currently exposes only `Testare` and `Inapoi`.
+- `Setari` currently exposes `Calibrare NTC`, `Testare`, and `Inapoi`.
 - `Inapoi` returns to the main menu.
 - Long press currently has no assigned action.
 
@@ -297,9 +297,33 @@ Current settings layout:
 
 ```text
 Setari
->Testare
+>Calibrare NTC
+ Testare
  Inapoi
 
+```
+
+## Implemented NTC Calibration
+
+Current behavior:
+
+- Select `Calibrare NTC` from `Setari` to open the NTC calibration editor.
+- `Offset` is edited in 0.1 C steps from `-20.0 C` to `+20.0 C`.
+- `Scala` is edited in 0.01 steps from `0.80` to `1.20`.
+- Short press on `Offset` or `Scala` enters/leaves edit mode.
+- `Salveaza` persists the current values to EEPROM and applies them to future
+  NTC reads.
+- `Restabileste` loads the firmware-default offset/scale into the editor.
+- `Inapoi` returns to `Setari` and discards unsaved edits.
+- Long press currently has no assigned action.
+
+Current NTC calibration layout:
+
+```text
+Calibrare NTC
+>Offset:+0.0°C
+ Scala:1.00
+ Salveaza
 ```
 
 ## Implemented Test Shell
@@ -325,8 +349,8 @@ Current test layout:
 
 ```text
 Testare
->NTC: 52°C
- AM2302 T: 38°C
+>NTC: 52.0°C
+ AM2302 T: 38.0°C
  AM2302 RH: 41%
 ```
 
@@ -382,6 +406,6 @@ Example occupied detail layout:
 ```text
 Profil 2
 Boost
-55/65°C 6h 0m
+55.0/65.0°C 6h 0m
 >Pornire
 ```

@@ -25,8 +25,10 @@
 #include "dehydrator/sensors/TempRhReader.h"
 #include "dehydrator/sensors/NtcReader.h"
 #include "dehydrator/presets/PresetCatalog.h"
+#include "dehydrator/persistence/NtcCalibrationStore.h"
 #include "dehydrator/persistence/UserProfileStore.h"
 #include "dehydrator/ui/LcdBinaryConfirmView.h"
+#include "dehydrator/ui/LcdNtcCalibrationView.h"
 #include "dehydrator/ui/LcdTestView.h"
 #include "dehydrator/ui/LcdConfirmReplaceRunView.h"
 #include "dehydrator/ui/LcdManualProgramView.h"
@@ -38,6 +40,7 @@
 #include "dehydrator/ui/LcdUserProfileSlotView.h"
 #include "dehydrator/ui/ConfirmReplaceRunController.h"
 #include "dehydrator/ui/ManualProgramController.h"
+#include "dehydrator/ui/NtcCalibrationController.h"
 #include "dehydrator/ui/SavePromptController.h"
 #include "dehydrator/ui/SettingsMenuController.h"
 #include "dehydrator/ui/TestModeController.h"
@@ -71,6 +74,8 @@ uint32_t buttonPressedAtMs = 0UL;
 bool buttonPressed = false;
 dehydrator::NtcReading latestNtc;
 dehydrator::TempRhReading latestTempRh;
+dehydrator::config::CalibrationConfig activeCalibration =
+    dehydrator::config::CALIBRATION;
 dehydrator::EncoderStepFilter encoderStepFilter(4);
 dehydrator::ControlStateMachine controlStateMachine;
 dehydrator::PresetRunController presetRunController;
@@ -80,6 +85,7 @@ enum class BringupScreen {
   Status,
   Menu,
   Test,
+  NtcCalibration,
   ManualProgram,
   Preset,
   SettingsMenu,
@@ -244,12 +250,13 @@ dehydrator::ArduinoDhtSensorDriver tempRhDriver(
     dehydrator::config::HARDWARE.pins.tempRhData);
 dehydrator::NtcReader ntcReader(
     analogInput, dehydrator::config::HARDWARE.pins.ntcAnalog,
-    dehydrator::config::CALIBRATION);
+    activeCalibration);
 dehydrator::TempRhReader tempRhReader(tempRhDriver,
-                                      dehydrator::config::CALIBRATION);
+                                      activeCalibration);
 dehydrator::MenuController menuController;
 dehydrator::SettingsMenuController settingsMenuController;
 dehydrator::TestModeController testModeController;
+dehydrator::NtcCalibrationController ntcCalibrationController;
 dehydrator::ManualProgramController manualProgramController;
 dehydrator::PresetSelectController presetSelectController;
 dehydrator::ConfirmReplaceRunController confirmReplaceRunController;
@@ -257,6 +264,7 @@ dehydrator::SavePromptController savePromptController;
 dehydrator::UserProfileSlotController userProfileSlotController;
 dehydrator::UserProfileActionController userProfileActionController;
 dehydrator::ArduinoEepromStorage eepromStorage;
+dehydrator::NtcCalibrationStore ntcCalibrationStore(eepromStorage);
 dehydrator::UserProfileStore userProfileStore(eepromStorage);
 dehydrator::UserProfileSlotRecord
     userProfileSlots[dehydrator::UserProfileStore::SLOT_COUNT] = {};
@@ -304,6 +312,7 @@ dehydrator::LogDispatcher logger(logSinks,
                                  dehydrator::config::LOGGING.sinkCapacity);
 dehydrator::LcdMenuView menuView(lcdDisplay);
 dehydrator::LcdTestView testView(lcdDisplay);
+dehydrator::LcdNtcCalibrationView ntcCalibrationView(lcdDisplay);
 dehydrator::LcdManualProgramView manualProgramView(lcdDisplay);
 dehydrator::LcdPresetView presetView(lcdDisplay);
 dehydrator::LcdConfirmReplaceRunView confirmReplaceRunView(lcdDisplay);
@@ -462,6 +471,46 @@ void logTestResult(const dehydrator::TestUiResult& result) {
 
   if (result.exitToMenu) {
     logEvent("ui", "test_close");
+  }
+}
+
+/**
+ * @brief Logs NTC calibration UI transitions and actions.
+ *
+ * @param result Result produced by the NTC calibration controller.
+ */
+void logNtcCalibrationResult(const dehydrator::NtcCalibrationResult& result) {
+  if (result.selectionChanged) {
+    switch (ntcCalibrationController.selectedField()) {
+      case dehydrator::NtcCalibrationField::Offset:
+        logEvent("ui", "ntc_cal_offset");
+        break;
+      case dehydrator::NtcCalibrationField::Scale:
+        logEvent("ui", "ntc_cal_scale");
+        break;
+      case dehydrator::NtcCalibrationField::Save:
+        logEvent("ui", "ntc_cal_save");
+        break;
+      case dehydrator::NtcCalibrationField::Restore:
+        logEvent("ui", "ntc_cal_restore");
+        break;
+      case dehydrator::NtcCalibrationField::Back:
+      default:
+        logEvent("ui", "ntc_cal_back");
+        break;
+    }
+  }
+
+  if (result.valueChanged) {
+    logEvent("param", "ntc_cal_changed");
+  }
+
+  if (result.saveRequested) {
+    logEvent("config", "ntc_cal_save_requested");
+  }
+
+  if (result.exitToSettings) {
+    logEvent("ui", "ntc_cal_close");
   }
 }
 
@@ -976,7 +1025,7 @@ void updateRunControlTask(uint32_t nowMs) {
   }
 
   const char* previousState = presetRunController.stateToken();
-  presetRunController.update(1U, latestNtc.valid, latestNtc.tempC);
+  presetRunController.update(1U, latestNtc.valid, latestNtc.tempDeciC);
   logRunStateChange(previousState, presetRunController.stateToken());
 
   activeOutputCommand = presetRunController.outputCommand();
@@ -1001,6 +1050,18 @@ void updateLcdTask(uint32_t nowMs) {
     testSnapshot.tempRh = latestTempRh;
     testSnapshot.command = testModeController.command();
     testView.render(testSnapshot);
+    return;
+  }
+
+  if (currentScreen == BringupScreen::NtcCalibration) {
+    dehydrator::LcdNtcCalibrationSnapshot calibrationSnapshot;
+    calibrationSnapshot.selectedField = ntcCalibrationController.selectedField();
+    calibrationSnapshot.selectedIndex = ntcCalibrationController.selectedIndex();
+    calibrationSnapshot.editing = ntcCalibrationController.editing();
+    calibrationSnapshot.offsetCentiC =
+        ntcCalibrationController.offsetCentiC();
+    calibrationSnapshot.scalePpm = ntcCalibrationController.scalePpm();
+    ntcCalibrationView.render(calibrationSnapshot);
     return;
   }
 
@@ -1133,7 +1194,7 @@ void updateLcdTask(uint32_t nowMs) {
           : 0U;
   snapshot.page = currentStatusPage();
   snapshot.programLabel = formatActiveProgramLabel(programLabel, sizeof(programLabel));
-  snapshot.ntcTempC = latestNtc.tempC;
+  snapshot.ntcTempDeciC = latestNtc.tempDeciC;
   snapshot.ntcValid = latestNtc.valid;
   snapshot.rhPercent = latestTempRh.rhPercent;
   snapshot.rhValid = latestTempRh.valid;
@@ -1172,6 +1233,8 @@ void updateInputTask(uint32_t nowMs) {
     logEvent("input", delta > 0 ? "encoder_cw" : "encoder_ccw");
     if (currentScreen == BringupScreen::Status) {
       navigateStatusPage(delta);
+    } else if (currentScreen == BringupScreen::NtcCalibration) {
+      logNtcCalibrationResult(ntcCalibrationController.onRotate(delta));
     } else if (currentScreen == BringupScreen::Test) {
       logTestResult(testModeController.onRotate(delta));
     } else if (currentScreen == BringupScreen::ManualProgram) {
@@ -1212,6 +1275,28 @@ void updateInputTask(uint32_t nowMs) {
     }
 
     logEvent("input", "button_short");
+    if (currentScreen == BringupScreen::NtcCalibration) {
+      const dehydrator::NtcCalibrationResult result =
+          ntcCalibrationController.onShortPress();
+      logNtcCalibrationResult(result);
+      if (result.saveRequested) {
+        if (ntcCalibrationStore.save(ntcCalibrationController.offsetCentiC(),
+                                     ntcCalibrationController.scalePpm())) {
+          ntcCalibrationController.markSaved();
+          activeCalibration.ntcOffsetCentiC =
+              ntcCalibrationController.offsetCentiC();
+          activeCalibration.ntcScalePpm = ntcCalibrationController.scalePpm();
+          latestNtc = ntcReader.read();
+          logEvent("config", "ntc_cal_saved");
+        } else {
+          logEvent("config", "ntc_cal_save_failed");
+        }
+      } else if (result.exitToSettings) {
+        currentScreen = BringupScreen::SettingsMenu;
+      }
+      return;
+    }
+
     if (currentScreen == BringupScreen::Test) {
       const dehydrator::TestUiResult result = testModeController.onShortPress();
       logTestResult(result);
@@ -1481,7 +1566,11 @@ void updateInputTask(uint32_t nowMs) {
     if (currentScreen == BringupScreen::SettingsMenu) {
       const dehydrator::SettingsMenuResult result =
           settingsMenuController.onShortPress();
-      if (result.openTest) {
+      if (result.openNtcCalibration) {
+        ntcCalibrationController.loadFromCalibration(activeCalibration);
+        currentScreen = BringupScreen::NtcCalibration;
+        logEvent("ui", "ntc_cal_open");
+      } else if (result.openTest) {
         currentScreen = BringupScreen::Test;
         logEvent("ui", "test_open");
       } else if (result.exitToMainMenu) {
@@ -1636,8 +1725,8 @@ void updateStateLogTask(uint32_t nowMs) {
   char line[dehydrator::config::LOGGING.lineSize] = {};
   if (dehydrator::LogFormatter::formatBringupState(
           line, sizeof(line), nowMs, ledOn, latestNtc.valid,
-          latestNtc.tempC, latestNtc.adcCount, latestTempRh.valid,
-          latestTempRh.tempC, latestTempRh.rhPercent,
+          latestNtc.tempDeciC, latestNtc.adcCount, latestTempRh.valid,
+          latestTempRh.tempDeciC, latestTempRh.rhPercent,
           presetRunController.stateToken(), presetRunController.activeRunToken(),
           activeOutputCommand.heaterOn, activeOutputCommand.fanOn)) {
     writeLogLine(line);
@@ -1692,6 +1781,15 @@ void setup() {
   relayOutputs.begin();
   lastEncoderPosition = rotaryEncoder.read();
   encoderStepFilter.reset(lastEncoderPosition);
+
+  if (ntcCalibrationStore.load(activeCalibration)) {
+    logEvent("config", "ntc_cal_loaded");
+  } else {
+    activeCalibration.ntcOffsetCentiC =
+        dehydrator::config::CALIBRATION.ntcOffsetCentiC;
+    activeCalibration.ntcScalePpm = dehydrator::config::CALIBRATION.ntcScalePpm;
+    logEvent("config", "ntc_cal_default");
+  }
 
   latestNtc = ntcReader.read();
   latestTempRh = tempRhReader.read();

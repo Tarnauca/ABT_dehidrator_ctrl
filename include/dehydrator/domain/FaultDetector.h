@@ -32,8 +32,8 @@ enum class FaultCode {
 struct FaultDetectorInput {
   /** True when the primary thermistor measurement is valid and present. */
   bool ntcValid = false;
-  /** Primary thermistor temperature in integer Celsius. */
-  int16_t ntcTempC = 0;
+  /** Primary thermistor temperature in deci-Celsius. */
+  int16_t ntcTempDeciC = 0;
   /** Logical heater command after control policy but before relay polarity. */
   bool heaterCommandOn = false;
   /** True while the encoder pushbutton is debounced active. */
@@ -75,12 +75,12 @@ class FaultDetector {
     latchedCode_ = FaultCode::None;
     noRiseTracking_ = false;
     noRiseAccumulatedSeconds_ = 0;
-    noRiseBaselineTempC_ = 0;
+    noRiseBaselineTempDeciC_ = 0;
     heaterWasCommandedOn_ = false;
     heaterOffSeconds_ = 0;
     stuckMonitoring_ = false;
     stuckMonitorSeconds_ = 0;
-    stuckBaselineTempC_ = 0;
+    stuckBaselineTempDeciC_ = 0;
     buttonActiveSeconds_ = 0;
   }
 
@@ -112,7 +112,8 @@ class FaultDetector {
       return result();
     }
 
-    if (input.ntcTempC >= config.hardFaultTempC) {
+    if (input.ntcTempDeciC >=
+        static_cast<int32_t>(config.hardFaultTempC) * 10L) {
       latch(FaultCode::OverTemperature);
       return result();
     }
@@ -133,9 +134,12 @@ class FaultDetector {
 
  private:
   static bool isNtcUsable(const config::SafetyConfig& config,
-                           const FaultDetectorInput& input) {
-    return input.ntcValid && input.ntcTempC >= config.ntcMinValidTempC &&
-           input.ntcTempC <= config.ntcMaxValidTempC;
+                          const FaultDetectorInput& input) {
+    return input.ntcValid &&
+           input.ntcTempDeciC >=
+               static_cast<int32_t>(config.ntcMinValidTempC) * 10L &&
+           input.ntcTempDeciC <=
+               static_cast<int32_t>(config.ntcMaxValidTempC) * 10L;
   }
 
   void updateButton(const config::SafetyConfig& config,
@@ -159,15 +163,17 @@ class FaultDetector {
 
     if (!noRiseTracking_) {
       noRiseTracking_ = true;
-      noRiseBaselineTempC_ = input.ntcTempC;
+      noRiseBaselineTempDeciC_ = input.ntcTempDeciC;
       noRiseAccumulatedSeconds_ = 0;
     }
 
     noRiseAccumulatedSeconds_ =
         saturatingAdd(noRiseAccumulatedSeconds_, input.deltaSeconds);
 
-    if (input.ntcTempC >= noRiseBaselineTempC_ + config.noRiseMinIncreaseC) {
-      noRiseBaselineTempC_ = input.ntcTempC;
+    if (input.ntcTempDeciC >=
+        noRiseBaselineTempDeciC_ +
+            static_cast<int32_t>(config.noRiseMinIncreaseC) * 10L) {
+      noRiseBaselineTempDeciC_ = input.ntcTempDeciC;
       noRiseAccumulatedSeconds_ = 0;
       return;
     }
@@ -199,21 +205,23 @@ class FaultDetector {
     if (!stuckMonitoring_) {
       stuckMonitoring_ = true;
       stuckMonitorSeconds_ = 0;
-      stuckBaselineTempC_ = input.ntcTempC;
+      stuckBaselineTempDeciC_ = input.ntcTempDeciC;
       return;
     }
 
     stuckMonitorSeconds_ =
         saturatingAdd(stuckMonitorSeconds_, input.deltaSeconds);
 
-    if (input.ntcTempC >= stuckBaselineTempC_ + config.stuckHeaterRiseC &&
+    if (input.ntcTempDeciC >=
+            stuckBaselineTempDeciC_ +
+                static_cast<int32_t>(config.stuckHeaterRiseC) * 10L &&
         stuckMonitorSeconds_ <= config.stuckHeaterWindowSeconds) {
       latch(FaultCode::HeaterStuckOnSuspected);
       return;
     }
 
     if (stuckMonitorSeconds_ >= config.stuckHeaterWindowSeconds) {
-      stuckBaselineTempC_ = input.ntcTempC;
+      stuckBaselineTempDeciC_ = input.ntcTempDeciC;
       stuckMonitorSeconds_ = 0;
     }
   }
@@ -235,12 +243,12 @@ class FaultDetector {
   FaultCode latchedCode_ = FaultCode::None;
   bool noRiseTracking_ = false;
   uint16_t noRiseAccumulatedSeconds_ = 0;
-  int16_t noRiseBaselineTempC_ = 0;
+  int16_t noRiseBaselineTempDeciC_ = 0;
   bool heaterWasCommandedOn_ = false;
   uint16_t heaterOffSeconds_ = 0;
   bool stuckMonitoring_ = false;
   uint16_t stuckMonitorSeconds_ = 0;
-  int16_t stuckBaselineTempC_ = 0;
+  int16_t stuckBaselineTempDeciC_ = 0;
   uint16_t buttonActiveSeconds_ = 0;
 };
 

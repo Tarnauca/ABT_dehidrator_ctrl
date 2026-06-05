@@ -33,7 +33,7 @@ void test_valid_temp_rh_sample_returns_temperature_and_rh() {
   const TempRhReading reading = reader.read();
 
   TEST_ASSERT_TRUE(reading.valid);
-  TEST_ASSERT_EQUAL_INT16(24, reading.tempC);
+  TEST_ASSERT_EQUAL_INT16(235, reading.tempDeciC);
   TEST_ASSERT_EQUAL_UINT8(43U, reading.rhPercent);
   TEST_ASSERT_EQUAL_UINT8(1U, driver.readCount);
 }
@@ -60,7 +60,7 @@ void test_temperature_offset_is_applied() {
   const TempRhReading reading = reader.read();
 
   TEST_ASSERT_TRUE(reading.valid);
-  TEST_ASSERT_EQUAL_INT16(22, reading.tempC);
+  TEST_ASSERT_EQUAL_INT16(215, reading.tempDeciC);
 }
 
 void test_rh_offset_is_applied() {

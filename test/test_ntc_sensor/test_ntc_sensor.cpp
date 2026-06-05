@@ -57,7 +57,7 @@ void test_nominal_resistance_converts_to_nominal_temperature() {
   const NtcReading reading = NtcSensorModel::convert(config, adc);
 
   TEST_ASSERT_TRUE(reading.valid);
-  TEST_ASSERT_INT_WITHIN(1, 25, reading.tempC);
+  TEST_ASSERT_INT_WITHIN(1, 250, reading.tempDeciC);
   TEST_ASSERT_INT32_WITHIN(250000, config.ntcNominalMilliOhms,
                            reading.resistanceMilliOhms);
 }
@@ -70,7 +70,7 @@ void test_lower_resistance_converts_to_higher_temperature() {
   const NtcReading reading = NtcSensorModel::convert(config, adc);
 
   TEST_ASSERT_TRUE(reading.valid);
-  TEST_ASSERT_INT_WITHIN(1, 100, reading.tempC);
+  TEST_ASSERT_INT_WITHIN(2, 1000, reading.tempDeciC);
 }
 
 void test_offset_calibration_adjusts_temperature() {
@@ -82,7 +82,7 @@ void test_offset_calibration_adjusts_temperature() {
   const NtcReading reading = NtcSensorModel::convert(config, adc);
 
   TEST_ASSERT_TRUE(reading.valid);
-  TEST_ASSERT_INT_WITHIN(1, 28, reading.tempC);
+  TEST_ASSERT_INT_WITHIN(1, 275, reading.tempDeciC);
 }
 
 void test_scale_calibration_adjusts_temperature_span() {
@@ -94,7 +94,7 @@ void test_scale_calibration_adjusts_temperature_span() {
   const NtcReading reading = NtcSensorModel::convert(config, adc);
 
   TEST_ASSERT_TRUE(reading.valid);
-  TEST_ASSERT_INT_WITHIN(1, 83, reading.tempC);
+  TEST_ASSERT_INT_WITHIN(1, 825, reading.tempDeciC);
 }
 
 void test_zero_adc_is_invalid() {
@@ -143,7 +143,7 @@ void test_ntc_high_side_orientation_is_supported() {
   const NtcReading reading = NtcSensorModel::convert(config, adc);
 
   TEST_ASSERT_TRUE(reading.valid);
-  TEST_ASSERT_INT_WITHIN(1, 25, reading.tempC);
+  TEST_ASSERT_INT_WITHIN(1, 250, reading.tempDeciC);
 }
 
 void test_ntc_high_side_orientation_high_temperature_direction() {
@@ -158,7 +158,7 @@ void test_ntc_high_side_orientation_high_temperature_direction() {
   const NtcReading reading = NtcSensorModel::convert(config, adc);
 
   TEST_ASSERT_TRUE(reading.valid);
-  TEST_ASSERT_INT_WITHIN(1, 100, reading.tempC);
+  TEST_ASSERT_INT_WITHIN(2, 1000, reading.tempDeciC);
 }
 
 void test_ntc_high_side_orientation_near_zero_adc_is_invalid() {
@@ -180,7 +180,7 @@ void test_reader_uses_configured_channel_and_conversion_model() {
 
   TEST_ASSERT_EQUAL_UINT8(7U, analog.lastChannel);
   TEST_ASSERT_TRUE(reading.valid);
-  TEST_ASSERT_INT_WITHIN(1, 25, reading.tempC);
+  TEST_ASSERT_INT_WITHIN(1, 250, reading.tempDeciC);
 }
 
 void setup() {
